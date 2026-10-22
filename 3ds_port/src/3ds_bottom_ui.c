@@ -50,6 +50,9 @@
 #include <string.h>
 
 #include "global.h"
+#ifdef PORT_EXPANSION
+#include "custom_difficulty.h"
+#endif
 #include "3ds_locale.h"
 #include "3ds_daynight.h"
 #include "3ds_encounters.h"
@@ -3384,6 +3387,9 @@ static void ReadOptionValues(u8 options[OPTION_ROWS])
     options[0] = gSaveBlock2Ptr->optionsTextSpeed;
     options[1] = gSaveBlock2Ptr->optionsBattleSceneOff;
     options[2] = gSaveBlock2Ptr->optionsBattleStyle;
+#ifdef PORT_EXPANSION
+    if(CustomDifficulty_ForceSet()) options[2]=OPTIONS_BATTLE_STYLE_SET;
+#endif
     options[3] = gSaveBlock2Ptr->optionsSound;
     options[4] = gSaveBlock2Ptr->optionsButtonMode;
     options[5] = gSaveBlock2Ptr->optionsWindowFrameType;
@@ -7105,6 +7111,9 @@ static void ActivateOption(u8 id)
     case 4: value = gSaveBlock2Ptr->optionsButtonMode; break;
     default: value = gSaveBlock2Ptr->optionsWindowFrameType; break;
     }
+#ifdef PORT_EXPANSION
+    if(row==2 && CustomDifficulty_ForceSet()) { PlaySE(SE_SELECT); return; }
+#endif
     value = (value + step) % counts[row];
     switch (row)
     {

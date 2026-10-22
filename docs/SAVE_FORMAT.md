@@ -1,4 +1,4 @@
-# Run configuration save format (Stages B/C)
+# Run configuration save format (Stages B/C/D)
 
 Schema 1 is native-expansion-only and stores critical run state in the same
 flash-sector transaction as progress. It is separate from the port's global
@@ -27,7 +27,7 @@ No flag/variable is allocated. Existing expansion item Exp Share uses flag
 `0x20`; Mega progression occupies `0x21–0x2B`; Kanto ferry uses `0x2C`.
 These remain untouched. Ordinary variables are `0x4000–0x40FF` (temporaries
 `0x4000–0x400F`), specials start at `0x8000`. `B_VAR_DIFFICULTY` remains 0;
-NewGameInitData still selects native Normal. Unused SaveBlock2 padding is not
+the PORT_BRIDGE script setter is inert. Native trainer difficulty reads the validated save record, while new-game commit still runs after destructive initialization. Unused SaveBlock2 padding is not
 extended or consumed, and no native save-sector checksum length changes.
 
 ## Wire format
@@ -37,44 +37,51 @@ CRC32 is the standard reflected polynomial `0xEDB88320`, initial/final XOR
 `0xFFFFFFFF`, over bytes 0–47. The independent record CRC detects errors even
 if a native sector checksum happens to match.
 
-| Offset | Bytes | Meaning / current Stage C value |
+| Offset | Bytes | Meaning / current Stage D value |
 | --- | ---: | --- |
 | 0 | 4 | Magic `E3RC` (`0x43523345`) |
 | 4 | 2 | Schema version 1 |
 | 6 | 2 | Record length 52 |
 | 8 | 4 | Unsigned seed, 0–4294967295 |
 | 12 | 4 | Randomizer bits: starters 1, wild 2, trainers 4; Standard 0 |
-| 16 | 4 | Difficulty option bits; all 0 |
-| 20 | 4 | Content-rules ID `0x00020001` (legacy fixed B: `0x00010001`) |
+| 16 | 4 | Difficulty bits: forced Set 1, no trainer bag healing/PP/revives 2, no trainer bag boosts 4, prepared bosses 8 |
+| 20 | 4 | Content-rules ID `0x00030001` (C Normal: `0x00020001`; fixed B: `0x00010001`) |
 | 24 | 4 | Independent run ID generated on setup entry |
 | 28 | 4 | Trainer ID binding, read after new-save initialization |
 | 32 | 2 | Algorithm 0 Standard; 1 seeded core Randomized |
 | 34 | 2 | Generation bitmask bits 0–8; default `0x01FF`, nonempty |
 | 36 | 1 | Mode 0 Standard; 1 Randomized core implemented |
-| 37 | 1 | Difficulty 0 Normal; 1 Hard / 2 Custom reserved/unavailable |
-| 38 | 1 | Cap policy 0: inherited native behavior |
-| 39 | 1 | AI policy 0: inherited native behavior |
+| 37 | 1 | Difficulty 0 Normal; 1 Hard; 2 Custom |
+| 38 | 1 | Cap policy 0 off; 1 hard; 2 soft (battle EXP only) |
+| 39 | 1 | AI policy 0 native; 1 tactical without hidden-knowledge flags |
 | 40 | 4 | Balance bits: no-legendaries 1, similar-BST 2; default 0 |
 | 44 | 4 | Reserved, must be 0 |
 | 48 | 4 | CRC32 |
 
-Rules ID `0x00020001` identifies Stage C's indexed safe species pool, keyed
-algorithm and exclusions documented in RULES.md. Randomized requires algorithm
-1, a nonzero subset of core option bits 1/2/4, a nonempty nine-generation mask,
-and only supported balance bits 1/2. Abilities (8), field items (16), held items
-(32), Hard/Custom, difficulty options, cap/AI policies and unknown bits are rejected.
-Standard uses algorithm 0, no random/balance bits and all generations; it accepts
-both current content rules and fixed-only Stage B rules `0x00010001`. A rules
-identifier is not a general content migration mechanism. There is no automatic
-import from B's SD directory and no promise that B can load C records.
+Rules ID `0x00030001` identifies Stage D difficulty/template policy plus C's
+unchanged indexed species pool and keyed randomizer algorithm. New D runs use
+this ID; because content rules enter stream keys, seed 42 alone does **not**
+reproduce C's starter/encounter mapping in a new D run. C Normal records retain
+their recorded rules/key when decoded, so reads cannot silently reroll them.
+No save namespace migration or cross-build campaign compatibility is promised.
 
-Schema 1/length 52 and the exact allocation/checksum remain unchanged in C.
-Native startup/Continue/save validation also checks the actual eligible pool
-(`CR_POOL`: NO VALID SPECIES POOL), including three distinct level-5 starters
-when starters or trainers are enabled (rival continuity), and a viable level-1 pool. Rejection preserves bytes and output
-configuration. Never reinterpret an unsupported randomized record as Standard.
-No event flags or variables were added. `VAR_STARTER_MON` continues its native
-chosen-index role for the rival, rather than storing new run settings.
+Normal requires all difficulty fields zero. Hard requires cap 1, AI 1 and all
+four supported difficulty bits (15). Custom accepts cap 0–2, AI 0–1 and any
+subset of bits 1/2/4/8. Unknown fields or contradictory preset values fail
+closed. Legacy B/C records permit only Normal with zero difficulty fields.
+There is no EXP multiplier field activated in D; EV caps remain inherited/off.
+Randomized still requires algorithm 1, a nonzero subset of starters/wild/trainers,
+a nonempty generation mask and supported balance bits. Abilities (8), field
+items (16), held items (32) and other unimplemented options remain rejected.
+Standard still requires algorithm 0, no random/balance bits, all generations.
+
+Schema remains 1 / 52 bytes, trainer binding and internal CRC unchanged, with
+no new native save fields or checksum boundary. Existing C software rejects D
+records because of their content ID, rather than silently ignoring Hard rules.
+Critical settings remain in the same two-slot native save transaction; no
+sidecar recovery procedure is needed. Cancellation/new-game/reset/Continue and
+native checksum fallback are exercised against production code. Runtime D
+storage is separate from C at `/3ds/emerald3ds-custom-stage-d/`.
 
 ## Lifecycle and failures
 

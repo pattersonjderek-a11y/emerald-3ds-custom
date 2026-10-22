@@ -6,6 +6,9 @@ export DEVKITPRO="${DEVKITPRO:-/opt/devkitpro}"
 export DEVKITARM="${DEVKITARM:-$DEVKITPRO/devkitARM}"
 export PATH="$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH"
 export EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-c-visuals"
+if [[ "${1:-build}" != versions ]] && grep -q '^diff --git c/include/custom_difficulty.h' patches/pokeemerald-expansion/0001-port.patch; then
+  echo 'Stage D patch: checkout fix/stage-c-visuals before rebuilding that baseline.' >&2; exit 2
+fi
 case "${1:-build}" in
   build)
     python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-c-visuals --make -j"${JOBS:-4}" --python python3

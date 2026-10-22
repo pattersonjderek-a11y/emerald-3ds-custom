@@ -146,3 +146,7 @@ static void BattleTransition_Start(unsigned kind) { assert(kind==B_TRANSITION_BL
 #define B_POOL_SETTING_USE_FIXED_SEED 0
 #define B_POOL_SETTING_FIXED_SEED 0
 #define READ_OTID_FROM_SAVE 123
+
+static void CustomDifficulty_BeginTrainer(u16 id) { (void)id; }
+static void CustomDifficulty_EndTrainer(void) {}
+static void CustomDifficulty_FinishMon(struct Pokemon *mon) { (void)mon; }

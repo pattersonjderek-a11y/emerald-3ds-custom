@@ -1,5 +1,85 @@
 # Stage C rules: seeded core species randomizer
 
+## Stage D difficulty (current)
+
+New records use content rules `0x00030001`, schema 1 and algorithm 1. The species
+pool and randomizer mixing algorithm are unchanged, but new content IDs enter
+keys; new D seeds can differ from C. Existing C Normal record keys are preserved
+by decoding their original rules. No automatic save import is provided.
+
+| Rule | Normal | Hard | Custom |
+| --- | --- | --- | --- |
+| Cap | Off | Hard progression ceiling | Off / hard / soft |
+| Style | Player choice | Set, including actual battle prompt and Options display | Choice / Set |
+| Trainer bag healing, revival, status and PP recovery | Allowed | Blocked | Independent toggle |
+| Trainer bag stat boosts, Focus Energy, Mist | Allowed | Blocked | Independent toggle |
+| AI | Native baseline | Tactical | Native / tactical |
+| Bosses | Native templates | Prepared variants | Native / prepared |
+| EXP | Inherited | Unchanged below cap | Same; multipliers unavailable |
+
+Hard and Custom apply independently to Standard/Randomized. Settings are saved
+once and cannot change during play. LEFT/RIGHT at confirmation shows the explicit
+rule summary; START in play opens Run Settings, A toggles the read-only rule page.
+The existing player style preference is preserved while forced Set is active.
+
+Caps use the **first missing badge**, not badge count. Before Roxanne 15; Brawly
+19; Wattson 24; Flannery 29; Norman 31; Winona 33; Tate/Liza 42; Juan 46; all
+four Elite Four members and Champion 58. The whole League uses one cap, including
+retries. First Champion status lifts it to 100, including rematches/postgame.
+These match native main-campaign ace levels, without boosting every trainer.
+Hard clamps battle EXP after all existing bonuses and caps Rare/EXP Candies and
+daycare. Already over-cap gifts are neither delevelled nor erased; they gain no
+new EXP until the cap passes them. Soft only scales **battle** EXP at/above the
+progression threshold by 1/4, 1/8, 1/16, 1/32, then 1/64. It allows higher levels,
+candies and daycare; there is no reduced EXP below the threshold. No EV cap or
+extra grind penalty is added. Caps/obey rules are distinct: catches are allowed.
+
+Restrictions are checked in native item validation before consumption/turn use.
+They affect player bag medicine/X-items in ordinary campaign trainer battles,
+including doubles. Wild medicine, ball throwing, held-item effects, overworld
+healing, catch/intro tutorials, key items and scripted actions retain native
+behavior. NPC bag items remain their native template items. Link/recorded,
+Frontier, Trainer Hill, Secret Base and e-reader battles retain native item/AI
+policy. Scripted allies keep their original team/AI; no extra omniscience.
+
+Tactical AI adds CHECK_BAD_MOVE, TRY_TO_FAINT, CHECK_VIABILITY, HP_AWARE,
+SMART_SWITCHING, SMART_MON_CHOICES, PP_STALL_PREVENTION and RANDOMIZE_SWITCHIN.
+It removes full or separate ability/item/move OMNISCIENCE, switch/move/incoming
+prediction, assumptions and KNOW_OPPONENT_PARTY inherited from a template.
+Double-battle flags still come from the native dispatcher. Native battle RNG
+still drives AI decisions; seeded identity does not promise identical actions.
+
+There were no Hard entries in the integration. D adds 49 native Difficulty: Hard
+variants covering all eight Gym Leaders and rematches, Elite Four, Champion,
+Archie and Maxie. Their 238 party entries retain levels, size, doubles/singles,
+identity/rewards, and existing special/gimmick items. IVs become 31 in all stats,
+EVs 64 in each stat (384 total); empty held-item slots gain Oran below level 20,
+Sitrus otherwise. Fixed Roxanne's second Geodude becomes Aron with Metal Claw,
+Mud-Slap, Rock Tomb and Harden; Brawly's Meditite uses Confusion instead of Focus
+Punch. Other fixed bosses retain their curated moves and roster composition.
+Trainers without a prepared entry safely use their native template. Prepared
+variants retain native AI flags; the saved tactical toggle adds stronger policy
+in the real dispatcher, so Custom prepared bosses plus native AI remain independent.
+
+Composition: choose prepared/native template → preserve levels/party size and
+seeded pool ordering → randomize eligible species → native legal ability/item/
+level-up moves → prepared randomized bosses select damaging level-up moves by
+power/accuracy, STAB and type coverage, retaining one available native status
+move → validate usable moves. Hard never writes original species back. The
+prepared-boss adapter is scoped to enemy generation; context clears before
+scripted ally/player generation. Rival family and Mega/Primal compatibility
+remain C's existing rules. Higher difficulty does not disable randomized bosses.
+
+Runtime difficulty reads the CRC/binding/version-validated record without repeating
+whole-pool selection on every Options/AI/cap read; Continue and menu preflight
+still validate pool usability.
+
+Production host fixtures and native linked-data audits verify the rules; actual
+battle balance, original-XL performance and complete campaign testing remain
+pending. Gen 1–9 data/art eligibility still differs from full follower coverage.
+
+## Historical Stage C baseline rules
+
 Implementation: `custom_random_core.c` and `custom_random.c` in the canonical
 expansion patch; locked engine `dfb0f843`. Schema 1 / algorithm 1 / content rules
 `0x00020001`. Same seed **and options, algorithm, rules and content** reproduce
@@ -12,7 +92,7 @@ with inherited expansion/QoL behavior. Randomized/Normal defaults starters,
 wild and enemy trainers ON. Each has an independent switch; at least one must
 remain enabled. All nine generations default enabled; at least one is required.
 No-legendaries and similar-strength default OFF (unrestricted valid pool).
-Hard/Custom difficulty, abilities, field/hidden-item randomization and held-item
+In the historical C build, Hard/Custom difficulty, abilities, field/hidden-item randomization and held-item
 randomization remain unavailable, including at serialization. Ordinary inherited
 item rewards, graphical options and native difficulty remain unchanged.
 

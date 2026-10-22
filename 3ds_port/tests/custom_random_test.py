@@ -8,7 +8,7 @@ from voxel_runtime_test import function
 HERE = Path(__file__).resolve().parent
 
 
-def compile_run(cc, tree, source):
+def compile_run(cc, tree, source, extra=()):
     with tempfile.TemporaryDirectory() as temporary:
         path = Path(temporary)
         (path / 'test.c').write_text(source)
@@ -17,7 +17,7 @@ def compile_run(cc, tree, source):
                         '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
                         '-iquote', str(tree / 'include'), str(path / 'test.c'),
                         str(tree / 'src/custom_run_config.c'), str(tree / 'src/custom_random_core.c'),
-                        '-o', str(path / 'test')], check=True)
+                        *extra, '-o', str(path / 'test')], check=True)
         subprocess.run([str(path / 'test')], check=True)
 
 
@@ -26,7 +26,7 @@ def native(tree):
     actual = (tree / 'src/custom_random.c').read_text()
     source += actual[actual.index('static struct CRPoolEntry'):actual.rindex('#endif')]
     run = (tree / 'src/custom_run.c').read_text()
-    for signature in ('static uint32_t TrainerId(void)', 'enum CRStatus CustomRun_Read(', 'bool CustomRun_CanPlay('):
+    for signature in ('static uint32_t TrainerId(void)', 'enum CRStatus CustomRun_ReadRules(', 'enum CRStatus CustomRun_Read(', 'bool CustomRun_CanPlay('):
         source += function(run, signature)
     battle = (tree / 'src/battle_setup.c').read_text()
     source += function(battle, 'void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party,')

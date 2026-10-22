@@ -13,8 +13,10 @@ int main(void)
     pool[28]=(struct CRPoolEntry){29,300,0,0,1};
     pool[29]=(struct CRPoolEntry){30,300,10,0,1};
     assert(CR_Validate(&c)==CR_OK);
+    c.contentRules=CR_RULES_STAGE_C; /* C saves retain their historical key. */
     const uint32_t golden[]={0x5151ed33u,0x143b4572u,0x74e5cf8au,0xdceb3b81u};
     for(unsigned i=0;i<4;++i) assert(CRandom_Key(&c,CR_STREAM_STARTERS+i,7,12,3)==golden[i]);
+    c.contentRules=CR_CONTENT_RULES;
     unsigned variation=0;
     for(unsigned seed=0;seed<10000;++seed) {
         c.seed=seed; c.generations=1u<<(seed%9); c.balanceFlags=CR_BALANCE_NO_LEGENDS;

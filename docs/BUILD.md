@@ -1,5 +1,70 @@
 # Emerald 3DS Custom: reproducible builds
 
+## Stage D (current `project/stage-d`)
+
+Builds on visual-fix checkpoint `45d3796`; uses the same frozen SDK/image and
+unchanged upstream.lock. All earlier build trees, branches, private ZIPs and
+matching output metadata remain intact. `tools/stage_c_visuals.sh` now refuses
+the D patch; use its historical branch to rebuild that package.
+
+Actual commands in the existing SDK container (UID/GID 1000, `/project` bind):
+
+```sh
+docker --host=unix:///var/run/docker.sock exec emerald-visual-fixes bash -lc 'tools/stage_d.sh build'
+docker --host=unix:///var/run/docker.sock exec emerald-visual-fixes bash -lc 'tools/stage_d.sh test'
+docker --host=unix:///var/run/docker.sock exec emerald-visual-fixes bash -lc 'tools/stage_d.sh package'
+```
+
+`build` runs `python3 tools/bootstrap.py --upstream pokeemerald-expansion
+--dir build/stage-d --make -j4 --python python3`; `test` runs full make verify,
+9 enhancement adapters, 95 builder checks (2 existing skips), source audit.
+The existing generated-asset cache was copied into a distinct D tree. Changed
+native game/platform sources are compiled and linked; no baseline files are
+hardlinked or edited. Required D symbols and actual linked trainer variants
+are checked by make verify. SDK/host-tool versions remain recorded below.
+
+Focused checks:
+
+```sh
+python3 3ds_port/tests/custom_difficulty_test.py --tree build/stage-d
+python3 3ds_port/tests/custom_run_test.py --tree build/stage-d
+python3 3ds_port/tests/custom_random_test.py --tree build/stage-d
+python3 3ds_port/tests/visual_regressions_test.py --tree build/stage-d
+python3 3ds_port/tests/custom_difficulty_data_test.py --tree build/stage-d \
+  --gdb /opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb \
+  --output work/stage-d-trainer-audit.json
+```
+
+The first four execute production code in controlled host fixtures under
+ASan/UBSan. The last reads the native linked-data image and validates 49 Hard
+variants / 238 mons; it is neither emulator execution nor hardware testing.
+
+```sh
+python3 tools/regenerate_expansion_patch.py --tree build/stage-d \
+  --add include/custom_difficulty.h src/custom_difficulty.c
+# On a constrained workspace share pinned Git objects, never mutable build outputs:
+git -C build/stage-d worktree add --detach ../../work/stage-d-clean \
+  dfb0f84374230f4d462191601179b742f9f077df
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-d-clean
+python3 3ds_port/tests/custom_difficulty_test.py --tree work/stage-d-clean
+```
+
+Create and bootstrap that worktree on the same side of the Docker bind mount;
+host absolute `.git` paths do not resolve inside `/project`. Fresh source/host
+reproduction is distinct from the native compilation in `build/stage-d`.
+Engine changes are in the canonical 283-file patch; root platform/tests/tools
+are copied by bootstrap. No dependency upgrade or source pin change.
+
+Native outputs under `build/stage-d/3ds_port/`: `emerald3ds.3dsx`, `.smdh`,
+`.elf`, `build/gamedata_image.elf`, engine-only `dist/Emerald3DS.3dsx` and
+`.smdh`, private matching `build/emerald3ds.pak`. Private ZIP/manifest:
+`work/stage-d-private/Emerald3DS-Custom-StageD-private.zip` / `manifest.json`.
+Packaging reruns checks, checks every pack CRC and embedded ABI/namespace.
+Only the separate engine-only audit ZIP may be considered for publication.
+Stage D runtime state stays in `/3ds/emerald3ds-custom-stage-d/`.
+
+Historical workflows and tool installation instructions follow.
+
 The product specification is the repository-root `PROJECT_BLUEPRINT.md`.
 Do not reset to the blueprint's example clone or fetch newer engine code.
 The initial clean `work` branch was `a30828a` (blueprint upload), directly

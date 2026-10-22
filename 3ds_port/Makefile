@@ -48,6 +48,9 @@ endif
 ifneq ($(wildcard $(ROOT)/include/custom_random_core.h),)
 APP_TITLE := Emerald 3DS Custom Stage C
 endif
+ifneq ($(wildcard $(ROOT)/include/custom_difficulty.h),)
+APP_TITLE := Emerald 3DS Custom Stage D
+endif
 SCRIPTS := ../tools/port_common
 EXESUFFIX := $(if $(filter Windows_NT,$(OS)),.exe,)
 SOURCES := src/main_3ds.c src/3ds_log.c src/3ds_platform.c src/3ds_input.c src/3ds_input_decode.c src/3ds_fs.c src/3ds_audio.c
@@ -374,4 +377,12 @@ verify: verify-custom-random
 verify-custom-random:
 	"$(PYTHON)" tests/custom_random_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/custom_random_pool_test.py --tree "$(ROOT)" --gdb "$(DEVKITARM)/bin/arm-none-eabi-gdb" --output build/randomizer-pool.json
+endif
+
+ifneq ($(wildcard $(ROOT)/include/custom_difficulty.h),)
+.PHONY: verify-difficulty
+verify: verify-difficulty
+verify-difficulty: build/gamedata_image.elf
+	"$(PYTHON)" tests/custom_difficulty_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/custom_difficulty_data_test.py --tree "$(ROOT)" --gdb "$(DEVKITARM)/bin/arm-none-eabi-gdb" --output build/difficulty-trainers.json
 endif

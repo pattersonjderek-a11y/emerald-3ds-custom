@@ -1,6 +1,78 @@
 # Emerald 3DS Custom device tests
 
-Current follow-up: **Stage C VisualFixes**. Follow the first checklist below
+## Stage D private package — current, all device results PENDING
+
+Derek previously reported general Stage C play on an **original 3DS XL**, plus
+black voxel edges, wrong/flickering Torchic follower and stock scenic battles.
+The subsequent visual-fix package has no supplied retest result. Stage D includes
+those source fixes at Derek's explicit request; neither D nor those visual fixes
+are claimed hardware-accepted. No emulator was used. See the preserved checklists
+below to retest the older independent VisualFixes package if preferred.
+
+On the laptop:
+
+1. Back up the SD card's existing Emerald directories and saves. Keep the C and
+   VisualFixes ZIPs. Extract `Emerald3DS-Custom-StageD-private.zip`.
+2. Copy the extracted `3ds` folder to the SD card root. It adds only
+   `3ds/emerald3ds-custom-stage-d/`. Leave original/A/B/C directories intact.
+   Do not copy old saves, settings, clock files, `.pak` files or firmware into D.
+3. Insert SD, open Homebrew Launcher, launch **Emerald 3DS Custom Stage D**.
+   This embedded private app needs no separately downloaded game-data pack.
+   Runtime saves/backups/settings/clock/logs all use the D directory.
+4. Record the manifest source revision/ZIP hash and original-XL model. All
+   observations below remain pending until you report actual console results.
+
+Difficulty smoke checklist (use separate SD backups before replacing a test run):
+
+- **Cancel:** with a saved D run, enter New Game, choose different difficulty,
+  then B back/cancel. Continue must load the old run/rules. A confirmed new run
+  only replaces disk progress when you actually save it; back up before doing so.
+- **Standard/Normal:** fixed Treecko/Torchic/Mudkip, usual wild/trainer parties,
+  player-chosen Shift/Set, trainer Potion use allowed. Check native visual/QoL
+  toggles, double-screen controls and audio.
+- **Standard/Hard:** first cap is 15. Read both confirmation pages (LEFT/RIGHT).
+  START opens Run Settings; A toggles the rules page, which must show Hard,
+  cap 15, Set, blocked trainer healing/boosts, tactical AI, prepared bosses.
+  Save, quit, restart, Continue: same seed and rules.
+- Fight an early ordinary trainer: a bag Potion/X-item must be refused without
+  being consumed or using your turn. Medicine must still work in wild battles
+  and outside battle, and balls must work in wild encounters/Wally's tutorial.
+- At cap 15: battle EXP cannot raise level; Rare/EXP Candies have no effect and
+  must remain in the bag. Below cap, EXP is the normal rate. Over-cap gifts must
+  remain intact. After beating Roxanne the displayed cap must become 19. Roxanne
+  has a prepared Aron coverage slot, retained ace level 15, stronger stats/items.
+- **Randomized/Hard:** choose manual seed 42; leave core starters/wild/trainers ON.
+  To prove Gen 9 selection, Customize Randomizer → Eligible Generations, turn
+  1–8 OFF, leave 9 ON; leave No Legendaries and Similar Strength OFF. Predicted
+  D starter slots from production resolver/linked data: **Tarountula, Tandemaus,
+  Scream Tail**. These differ from C because D records a new rules ID. Check
+  displayed names/art match the received starter and battle/summary. No debug
+  grants are included. Full follower-art correctness remains a separate audit.
+- Check rival continuity, ordinary trainers, Roxanne and later Gym/Elite Four
+  parties: randomized species must remain randomized under Hard. Reset/reload
+  before a trainer battle must preserve its species, moves, levels and held items.
+  Battle actions/encounter occurrence still use native RNG and may differ.
+- **Custom:** check each setting independently. Soft cap still permits level 16,
+  reducing only over-threshold battle EXP; candies/daycare can exceed soft caps.
+  Off removes caps. Bag healing and X-item toggles are separate. Native versus
+  tactical AI and native versus prepared bosses must match the read-only page.
+  There is no EXP multiplier or ability/item-randomizer option unlocked in D.
+- Campaign follow-up: double/opponent/partner battles; eight badge transitions;
+  League cap stays 58 through Champion/retries, lifts to 100 afterward; Gym
+  rematches/postgame permit normal progression. These are host/data-verified,
+  not a completed console campaign.
+- Retest Littleroot voxel boundaries, Torchic follower (2D/voxel, hide/show,
+  doors, map/party changes) and encounter-location scenic wild battles at
+  different route positions. Report FPS, flicker/stalls and any crashes on
+  original XL; do not infer visual acceptance from host tests.
+
+Report chosen mode/difficulty/seed/options, map/battle, expected/observed result,
+cap before/after, item count before/after, save/Continue outcome, and any D
+`port.log`/crash dump. Keep all logs/saves private. Do not share a save publicly.
+
+## Historical package instructions
+
+Previous follow-up: **Stage C VisualFixes**. Follow the first checklist below
 to update the existing C app after backup; baseline A/B/C instructions are
 preserved afterward for their original packages.
 

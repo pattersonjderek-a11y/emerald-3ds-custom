@@ -52,7 +52,7 @@ The existing integration remains the foundation. The current custom branch adds
 save-bound seeded starters/wild/trainer species through the existing native
 factories/table readers, without replacing renderer, followers or QoL systems.
 See RULES.md for exact pool/exclusions and DEVICE_TESTS.md for pending acceptance.
-Hard/Custom difficulty and optional ability/item randomization remain unavailable.
+Stage D adds real Normal/Hard/Custom difficulty through native cap/variant/AI/item adapters; see RULES.md. Optional ability/item randomization remains unavailable.
 Indexed Gen 1–9 eligibility does not certify every cry/follower/form implementation.
 
 The post-C visual follow-up fixes effective Hoenn/FRLG border dimensions,

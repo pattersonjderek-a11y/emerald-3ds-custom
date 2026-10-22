@@ -70,6 +70,7 @@ static void Codec(void)
     CR_Begin(&d,42,100); d.config.contentRules=0x00010001u;
     assert(CR_Confirm(&d) && CR_Commit(&d,b,123) && CR_Decode(b,123,&c)==CR_OK && c.algorithm==0);
     CR_Begin(&d,123,100); d.config.difficulty=CR_HARD; assert(!CR_Confirm(&d));
+    CR_SetDifficulty(&d.config,CR_HARD); assert(CR_Confirm(&d));
     CR_Cancel(&d); assert(!d.editing && !d.confirmed && !CR_Commit(&d,b,123));
     uint32_t seed=77;
     const char *bad[]={"","-1","+1"," 1","1 ","0x10","4294967296","9999999999","00000000000","1a",NULL};
@@ -85,9 +86,9 @@ static void Menu(void)
     CR_MenuBegin(&m,123,456);
     Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.draft.config.mode==CR_RANDOMIZED);
     assert(m.draft.config.randomOptions==CR_CORE_OPTIONS && m.draft.config.algorithm==1);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.notice && m.draft.config.difficulty==CR_NORMAL);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.notice);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SEED);
+    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SEED && m.draft.config.difficulty==CR_HARD);
+    Key(&m,CR_B); m.selected=2; Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY_CUSTOM);
+    m.selected=6; Key(&m,CR_A); assert(m.page==CR_PAGE_SEED && m.draft.config.difficulty==CR_CUSTOM);
     m.selected=2; Key(&m,CR_A); assert(m.page==CR_PAGE_CUSTOM);
     for(unsigned i=3;i<6;++i) { m.selected=i; Key(&m,CR_A); assert(m.notice && m.draft.config.randomOptions==CR_CORE_OPTIONS); }
     m.selected=0; Key(&m,CR_A); assert(m.draft.config.randomOptions==6);

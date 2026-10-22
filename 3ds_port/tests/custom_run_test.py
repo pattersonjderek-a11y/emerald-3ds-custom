@@ -43,7 +43,7 @@ static struct { u8 playerTrainerId[4]; uint32_t encryptionKey; u8 specialSaveWar
 static struct CRMenu sMenu;
 '''
     for signature in ['static uint32_t TrainerId(void)',
-                      'enum CRStatus CustomRun_Read(', 'bool CustomRun_CanPlay(',
+                      'enum CRStatus CustomRun_ReadRules(', 'enum CRStatus CustomRun_Read(', 'bool CustomRun_CanPlay(',
                       'bool CustomRun_HasConfirmedDraft(', 'bool CustomRun_CommitNewSave(']:
         source += function(actual, signature)
     # Execute the complete real initialization routine; unrelated subsystems are
@@ -190,7 +190,7 @@ static struct { u8 playerTrainerId[4]; } save2;
 #define gSaveBlock1Ptr (&save1)
 #define gSaveBlock2Ptr (&save2)
 '''
-    for signature in ['static uint32_t TrainerId(void)', 'enum CRStatus CustomRun_Read(', 'bool CustomRun_CanPlay(']:
+    for signature in ['static uint32_t TrainerId(void)', 'enum CRStatus CustomRun_ReadRules(', 'enum CRStatus CustomRun_Read(', 'bool CustomRun_CanPlay(']:
         source += function(actual, signature)
     header = (tree / 'include/save.h').read_text()
     source += header.split('#include "main.h"', 1)[1].split('extern u16', 1)[0]

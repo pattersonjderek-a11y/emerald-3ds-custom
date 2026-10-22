@@ -65,7 +65,7 @@ int main(void) {
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             protected = {}
-            for app in ('emerald3ds', 'pokeemerald') + (('emerald3ds-custom', 'emerald3ds-custom-stage-b') if expanded else ()):
+            for app in ('emerald3ds', 'pokeemerald') + (('emerald3ds-custom', 'emerald3ds-custom-stage-b', 'emerald3ds-custom-stage-c') if expanded else ()):
                 folder = root / 'sdmc:' / '3ds' / app
                 folder.mkdir(parents=True)
                 for name in ('emerald3ds.sav', 'pokeemerald.sav', 'settings.txt',

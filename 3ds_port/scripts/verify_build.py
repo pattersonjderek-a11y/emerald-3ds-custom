@@ -57,6 +57,8 @@ def main():
     if args.full and args.expansion and (root.parent / 'include/custom_random_core.h').is_file():
         required += ['CustomRandom_Starter', 'CustomRandom_Header', 'CustomRandom_TrainerMon',
                      'CustomRandom_EnsureMoves', 'CRandom_Key', 'CRandom_Pick']
+    if args.full and args.expansion and (root.parent / 'include/custom_difficulty.h').is_file():
+        required += ['CustomDifficulty_ExpCap', 'CustomDifficulty_ItemBlocked', 'CustomDifficulty_AiFlags', 'CustomDifficulty_FinishMon', 'CustomDifficulty_ClampExp']
     if args.full and args.expansion:
         required += ['VisibleWild_Update', 'VisibleWild_StepOnto', 'VisibleWild_CameraShift', 'VisibleWild_IsSprite']
     if args.full:

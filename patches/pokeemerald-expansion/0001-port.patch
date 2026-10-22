@@ -7258,6 +7258,27 @@ index 36e27d78..d41f03c6 100644
  
  #define MAP_GROUP(map) (map >> 8)
  #define MAP_NUM(map) (map & 0xFF)
+diff --git c/include/custom_difficulty.h w/include/custom_difficulty.h
+new file mode 100644
+index 00000000..55070d44
+--- /dev/null
++++ w/include/custom_difficulty.h
+@@ -0,0 +1,15 @@
++#ifndef CUSTOM_DIFFICULTY_H
++#define CUSTOM_DIFFICULTY_H
++#include "custom_run_config.h"
++struct Pokemon;
++unsigned CustomDifficulty_ExpCap(void);
++u32 CustomDifficulty_ClampExp(struct Pokemon *mon, u32 reward);
++unsigned CustomDifficulty_ProgressCap(void);
++bool CustomDifficulty_ForceSet(void);
++bool CustomDifficulty_Bosses(void);
++bool CustomDifficulty_ItemBlocked(unsigned usage);
++u64 CustomDifficulty_AiFlags(u16 trainerId, unsigned battler, u64 flags);
++void CustomDifficulty_BeginTrainer(u16 trainerId);
++void CustomDifficulty_EndTrainer(void);
++void CustomDifficulty_FinishMon(struct Pokemon *mon);
++#endif
 diff --git c/include/custom_random.h w/include/custom_random.h
 new file mode 100644
 index 00000000..5964c8c3
@@ -7316,10 +7337,10 @@ index 00000000..e46323ee
 +#endif
 diff --git c/include/custom_run.h w/include/custom_run.h
 new file mode 100644
-index 00000000..fcfc7b80
+index 00000000..6df778eb
 --- /dev/null
 +++ w/include/custom_run.h
-@@ -0,0 +1,13 @@
+@@ -0,0 +1,15 @@
 +#ifndef CUSTOM_RUN_H
 +#define CUSTOM_RUN_H
 +#include "custom_run_config.h"
@@ -7328,6 +7349,8 @@ index 00000000..fcfc7b80
 +bool CustomRun_HasConfirmedDraft(void);
 +bool CustomRun_CommitNewSave(void);
 +bool CustomRun_CanPlay(void);
++enum CRStatus CustomRun_ReadRules(struct CRConfig *out);
++/* Full Continue/menu preflight also checks randomizer pool usability. */
 +enum CRStatus CustomRun_Read(struct CRConfig *out);
 +void CustomRunMenu_Setup(MainCallback accepted, MainCallback cancelled);
 +void CustomRunMenu_View(MainCallback returnTo);
@@ -7335,10 +7358,10 @@ index 00000000..fcfc7b80
 +#endif
 diff --git c/include/custom_run_config.h w/include/custom_run_config.h
 new file mode 100644
-index 00000000..579c90bb
+index 00000000..124cdf91
 --- /dev/null
 +++ w/include/custom_run_config.h
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,53 @@
 +#ifndef CUSTOM_RUN_CONFIG_H
 +#define CUSTOM_RUN_CONFIG_H
 +#include <stdbool.h>
@@ -7348,7 +7371,15 @@ index 00000000..579c90bb
 +#define CR_RECORD_SIZE 52
 +#define CR_SCHEMA 1
 +#define CR_ALGORITHM 1 /* stable keyed core species algorithm; Standard uses 0 */
-+#define CR_CONTENT_RULES 0x00020001u
++#define CR_CONTENT_RULES 0x00030001u
++#define CR_RULES_STAGE_C 0x00020001u
++#define CR_FORCE_SET 1u
++#define CR_NO_HEAL 2u
++#define CR_NO_BOOST 4u
++#define CR_BOSS_PREP 8u
++#define CR_DIFFICULTY_OPTIONS 15u
++enum CRCap { CR_CAP_OFF, CR_CAP_HARD, CR_CAP_SOFT };
++enum CRAi { CR_AI_NATIVE, CR_AI_TACTICAL };
 +#define CR_GENERATIONS 0x01FFu
 +#define CR_RANDOM_STARTERS (1u << 0)
 +#define CR_RANDOM_WILD (1u << 1)
@@ -7370,6 +7401,9 @@ index 00000000..579c90bb
 +    struct CRConfig config;
 +    bool editing, confirmed, manualSeed;
 +};
++void CR_SetDifficulty(struct CRConfig *config, unsigned preset);
++const char *CR_DifficultyName(unsigned preset);
++unsigned CR_ProgressCap(unsigned badges, bool champion);
 +uint32_t CR_Crc32(const uint8_t *bytes, size_t size);
 +enum CRStatus CR_Validate(const struct CRConfig *config);
 +enum CRStatus CR_Decode(const uint8_t bytes[CR_RECORD_SIZE], uint32_t trainerId, struct CRConfig *out);
@@ -7383,14 +7417,14 @@ index 00000000..579c90bb
 +#endif
 diff --git c/include/custom_run_menu_model.h w/include/custom_run_menu_model.h
 new file mode 100644
-index 00000000..296688a5
+index 00000000..6660cf64
 --- /dev/null
 +++ w/include/custom_run_menu_model.h
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,19 @@
 +#ifndef CUSTOM_RUN_MENU_MODEL_H
 +#define CUSTOM_RUN_MENU_MODEL_H
 +#include "custom_run_config.h"
-+enum CRPage { CR_PAGE_MODE, CR_PAGE_DIFFICULTY, CR_PAGE_CUSTOM, CR_PAGE_SEED, CR_PAGE_DIGITS, CR_PAGE_SUMMARY, CR_PAGE_GENERATIONS, CR_PAGE_BALANCE };
++enum CRPage { CR_PAGE_MODE, CR_PAGE_DIFFICULTY, CR_PAGE_CUSTOM, CR_PAGE_SEED, CR_PAGE_DIGITS, CR_PAGE_SUMMARY, CR_PAGE_GENERATIONS, CR_PAGE_BALANCE, CR_PAGE_DIFFICULTY_CUSTOM };
 +enum CRKeys { CR_UP=1, CR_DOWN=2, CR_LEFT=4, CR_RIGHT=8, CR_A=16, CR_B=32 };
 +enum CROutcome { CR_STAY, CR_CANCELLED, CR_ACCEPTED };
 +struct CRMenu {
@@ -7398,11 +7432,12 @@ index 00000000..296688a5
 +    enum CRPage page;
 +    unsigned selected, digit;
 +    char digits[11];
-+    bool notice;
++    bool notice, summaryRules;
 +};
 +void CR_MenuBegin(struct CRMenu *menu, uint32_t seed, uint32_t runId);
 +enum CROutcome CR_MenuInput(struct CRMenu *menu, unsigned keys, uint32_t newSeed);
 +void CR_GenerationText(char out[36],uint16_t generations);
++void CR_DifficultyLines(const struct CRConfig *config, char lines[12][36]);
 +void CR_MenuLines(const struct CRMenu *menu, char lines[12][36]);
 +#endif
 diff --git c/include/dodrio_berry_picking.h w/include/dodrio_berry_picking.h
@@ -11158,6 +11193,28 @@ index 012cac7a..51b7d869 100644
          gApprenticeFunc();
          DestroyTask(taskId);
      }
+diff --git c/src/battle_ai_main.c w/src/battle_ai_main.c
+index 7618dcaa..0e9fd0cd 100644
+--- c/src/battle_ai_main.c
++++ w/src/battle_ai_main.c
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
+ #include "main.h"
+ #include "malloc.h"
+ #include "battle.h"
+@@ -286,6 +289,9 @@ static u64 GetAiFlags(u16 trainerId, enum BattlerId battler)
+             flags = GetTrainerAIFlagsFromId(trainerId);
+     }
+ 
++#ifdef PORT_BRIDGE
++    flags=CustomDifficulty_AiFlags(trainerId,battler,flags);
++#endif
+     if (IsDoubleBattle() && flags != 0)
+     {
+         flags |= AI_FLAG_DOUBLE_BATTLE;
 diff --git c/src/battle_anim.c w/src/battle_anim.c
 index 10c3eb24..6b0f0f93 100644
 --- c/src/battle_anim.c
@@ -11649,18 +11706,21 @@ index f3a1186d..1d6f19ad 100644
  {
      DestroyTask(taskId);
 diff --git c/src/battle_main.c w/src/battle_main.c
-index 46af80f3..ac0ed2da 100644
+index 46af80f3..a93f0e5e 100644
 --- c/src/battle_main.c
 +++ w/src/battle_main.c
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,10 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
 +#ifdef PLATFORM_3DS
 +#include "3ds_extras.h"
 +#endif
  #include "battle.h"
  #include "battle_anim.h"
  #include "battle_ai_main.h"
-@@ -78,6 +81,9 @@
+@@ -78,6 +84,9 @@
  #include "constants/trainers.h"
  #include "constants/weather.h"
  #include "cable_club.h"
@@ -11670,7 +11730,7 @@ index 46af80f3..ac0ed2da 100644
  
  extern const struct BgTemplate gBattleBgTemplates[];
  extern const struct WindowTemplate *const gBattleWindowTemplates[];
-@@ -239,7 +245,7 @@ EWRAM_DATA bool8 gLastUsedBallMenuPresent = FALSE;
+@@ -239,7 +248,7 @@ EWRAM_DATA bool8 gLastUsedBallMenuPresent = FALSE;
  EWRAM_DATA u8 gPartyCriticalHits[PARTY_SIZE] = {0};
  EWRAM_DATA u8 gCategoryIconSpriteId = 0;
  
@@ -11679,7 +11739,13 @@ index 46af80f3..ac0ed2da 100644
  COMMON_DATA void (*gBattleMainFunc)(void) = NULL;
  COMMON_DATA struct BattleResults gBattleResults = {0};
  COMMON_DATA u8 gLeveledUpInBattle = 0;
-@@ -2748,7 +2754,11 @@ static void ClearSetBScriptingStruct(void)
+@@ -2745,10 +2754,17 @@ static void ClearSetBScriptingStruct(void)
+ 
+     gBattleScripting.windowsType = temp;
+     gBattleScripting.battleStyle = gSaveBlock2Ptr->optionsBattleStyle;
++#ifdef PORT_BRIDGE
++    if(CustomDifficulty_ForceSet()) gBattleScripting.battleStyle=OPTIONS_BATTLE_STYLE_SET;
++#endif
      #if TESTING
      gBattleScripting.battleStyle = OPTIONS_BATTLE_STYLE_SET;
      #endif
@@ -11691,7 +11757,7 @@ index 46af80f3..ac0ed2da 100644
      gBattleScripting.specialTrainerBattleType = specialBattleType;
  }
  
-@@ -3786,9 +3796,53 @@ enum
+@@ -3786,9 +3802,53 @@ enum
      STATE_SELECTION_SCRIPT_MAY_RUN
  };
  
@@ -11745,7 +11811,7 @@ index 46af80f3..ac0ed2da 100644
  
      gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
      for (enum BattlerId battlerIndex = 0; battlerIndex < gBattlersCount; battlerIndex++)
-@@ -3908,6 +3962,15 @@ static void HandleTurnActionSelectionState(void)
+@@ -3908,6 +3968,15 @@ static void HandleTurnActionSelectionState(void)
                                                              i);
                          }
  
@@ -11761,7 +11827,7 @@ index 46af80f3..ac0ed2da 100644
                          BtlController_EmitChooseMove(battler, B_COMM_TO_CONTROLLER, IsDoubleBattle() != 0, FALSE, &moveInfo);
                          MarkBattlerForControllerExec(battler);
                      }
-@@ -4144,6 +4207,14 @@ static void HandleTurnActionSelectionState(void)
+@@ -4144,6 +4213,14 @@ static void HandleTurnActionSelectionState(void)
                                      gimmick = gBattleStruct->gimmick.usableGimmick[battler];
                                  TestRunner_Battle_CheckChosenMove(battler, gChosenMoveByBattler[battler], gBattleStruct->moveTarget[battler], gimmick);
                              }
@@ -11776,7 +11842,7 @@ index 46af80f3..ac0ed2da 100644
                          }
                          break;
                      }
-@@ -5317,6 +5388,15 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
+@@ -5317,6 +5394,15 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
  {
      if (!gPaletteFade.active)
      {
@@ -11792,7 +11858,7 @@ index 46af80f3..ac0ed2da 100644
          memset(&gBattleMons, 0, sizeof(struct BattlePokemon) * MAX_BATTLERS_COUNT);
          gIsFishingEncounter = FALSE;
          gIsSurfingEncounter = FALSE;
-@@ -5351,6 +5431,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
+@@ -5351,6 +5437,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
          }
      }
  
@@ -11800,7 +11866,7 @@ index 46af80f3..ac0ed2da 100644
      FreeAllWindowBuffers();
      if (!(gBattleTypeFlags & BATTLE_TYPE_LINK))
      {
-@@ -5365,6 +5446,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
+@@ -5365,6 +5452,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
          FreeBattleResources();
          FreeBattleSpritesData();
      }
@@ -11862,18 +11928,39 @@ index 64154442..aabc4426 100644
      FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(1));
      DisplayMessageAndContinueTask(taskId, WIN_MSG, 0xA, 0xD, FONT_NORMAL, GetPlayerTextSpeedDelay(), str, callback);
 diff --git c/src/battle_script_commands.c w/src/battle_script_commands.c
-index 2d8de986..5ba13071 100644
+index 2d8de986..4deb1944 100644
 --- c/src/battle_script_commands.c
 +++ w/src/battle_script_commands.c
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,10 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
 +#ifdef PLATFORM_3DS
 +#include "3ds_extras.h"
 +#endif
  #include "battle.h"
  #include "battle_hold_effects.h"
  #include "battle_message.h"
-@@ -3044,6 +3047,12 @@ static void Cmd_endselectionscript(void)
+@@ -2302,6 +2308,9 @@ static void Cmd_getexp(void)
+ 
+                     ApplyExperienceMultipliers(&gBattleStruct->battlerExpReward, *expMonId, gBattlerFainted);
+ 
++#ifdef PORT_BRIDGE
++                    gBattleStruct->battlerExpReward=CustomDifficulty_ClampExp(&gParties[B_TRAINER_PLAYER][*expMonId],gBattleStruct->battlerExpReward);
++#else
+                     if (B_EXP_CAP_TYPE == EXP_CAP_HARD && gBattleStruct->battlerExpReward != 0)
+                     {
+                         enum GrowthRate growthRate = gSpeciesInfo[GetMonData(&gParties[B_TRAINER_PLAYER][*expMonId], MON_DATA_SPECIES)].growthRate;
+@@ -2313,6 +2322,7 @@ static void Cmd_getexp(void)
+                         else if (gExperienceTables[growthRate][levelCap] < currentExp + gBattleStruct->battlerExpReward)
+                             gBattleStruct->battlerExpReward = gExperienceTables[growthRate][levelCap] - currentExp;
+                     }
++#endif
+ 
+                     if (IsTradedMon(&gParties[B_TRAINER_PLAYER][*expMonId]))
+                     {
+@@ -3044,6 +3054,12 @@ static void Cmd_endselectionscript(void)
      gBattleStruct->battlerState[gBattlerAttacker].selectionScriptFinished = TRUE;
  }
  
@@ -11886,7 +11973,7 @@ index 2d8de986..5ba13071 100644
  static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr, const u8 *nextInstr)
  {
      if (B_TERRAIN_BG_CHANGE == FALSE && animId == B_ANIM_RESTORE_BG)
-@@ -3066,7 +3075,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr,
+@@ -3066,7 +3082,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr,
       || animId == B_ANIM_TERA_ACTIVATE
       || animId == B_ANIM_FORM_CHANGE_INSTANT)
      {
@@ -11895,7 +11982,7 @@ index 2d8de986..5ba13071 100644
          MarkBattlerForControllerExec(battler);
          gBattlescriptCurrInstr = nextInstr;
      }
-@@ -3082,7 +3091,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr,
+@@ -3082,7 +3098,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr,
            || animId == B_ANIM_SNOW_CONTINUES
            || animId == B_ANIM_FOG_CONTINUES)
      {
@@ -11904,7 +11991,7 @@ index 2d8de986..5ba13071 100644
          MarkBattlerForControllerExec(battler);
          gBattlescriptCurrInstr = nextInstr;
      }
-@@ -3092,7 +3101,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr,
+@@ -3092,7 +3108,7 @@ static void PlayAnimation(enum BattlerId battler, u8 animId, const u16 *argPtr,
      }
      else
      {
@@ -11913,7 +12000,7 @@ index 2d8de986..5ba13071 100644
          MarkBattlerForControllerExec(battler);
          gBattlescriptCurrInstr = nextInstr;
      }
-@@ -3112,8 +3121,16 @@ static void Cmd_playanimation_var(void)
+@@ -3112,8 +3128,16 @@ static void Cmd_playanimation_var(void)
      CMD_ARGS(u8 battler, const u8 *animIdPtr, const u16 *argPtr);
  
      enum BattlerId battler = GetBattlerForBattleScript(cmd->battler);
@@ -11930,7 +12017,7 @@ index 2d8de986..5ba13071 100644
  
  static void Cmd_jumpfifsemiinvulnerable(void)
  {
-@@ -8156,8 +8173,10 @@ static bool32 CriticalCapture(u32 odds)
+@@ -8156,8 +8180,10 @@ static bool32 CriticalCapture(u32 odds)
  
  static u32 ComputeBallShakeOdds(u32 odds)
  {
@@ -11943,7 +12030,7 @@ index 2d8de986..5ba13071 100644
      return odds;
  }
  
-@@ -8177,7 +8196,7 @@ static void SetBallThrowShakes(void)
+@@ -8177,7 +8203,7 @@ static void SetBallThrowShakes(void)
      gBattleSpritesDataPtr->animationData->criticalCaptureSuccess = FALSE;
  
      // Master Ball check occurs before critical capture check
@@ -11953,13 +12040,14 @@ index 2d8de986..5ba13071 100644
          FinalizeCapture();
          return;
 diff --git c/src/battle_setup.c w/src/battle_setup.c
-index 6024da3c..e1624c75 100644
+index 6024da3c..7444eb2a 100644
 --- c/src/battle_setup.c
 +++ w/src/battle_setup.c
-@@ -1,6 +1,12 @@
+@@ -1,6 +1,13 @@
  #include "global.h"
 +#ifdef PORT_BRIDGE
 +#include "custom_random.h"
++#include "custom_difficulty.h"
 +#endif
  #include "data.h"
  #include "main.h"
@@ -11969,7 +12057,7 @@ index 6024da3c..e1624c75 100644
  #include "battle.h"
  #include "battle_frontier.h"
  #include "battle_pike.h"
-@@ -1011,6 +1017,10 @@ static void CB2_GiveStarter(void)
+@@ -1011,6 +1018,10 @@ static void CB2_GiveStarter(void)
      *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
      starterMon = GetStarterPokemon(gSpecialVar_Result);
      ScriptGiveMon(starterMon, 5, ITEM_NONE);
@@ -11980,7 +12068,7 @@ index 6024da3c..e1624c75 100644
      ResetTasks();
      PlayBattleBGM();
      SetMainCallback2(CB2_StartFirstBattle);
-@@ -1095,6 +1105,17 @@ void TrainerBattleLoadArgs(const u8 *data)
+@@ -1095,6 +1106,17 @@ void TrainerBattleLoadArgs(const u8 *data)
  {
      InitTrainerBattleParameter();
      memcpy(gTrainerBattleParameter.data, data, sizeof(TrainerBattleParameter));
@@ -11998,7 +12086,7 @@ index 6024da3c..e1624c75 100644
      sTrainerBattleEndScript = (u8*)data + sizeof(TrainerBattleParameter);
  }
  
-@@ -1109,6 +1130,12 @@ void TrainerBattleLoadArgsSecondTrainer(const u8 *data)
+@@ -1109,6 +1131,12 @@ void TrainerBattleLoadArgsSecondTrainer(const u8 *data)
      TRAINER_BATTLE_PARAM.introTextB = temp->params.introTextA;
      TRAINER_BATTLE_PARAM.defeatTextB = temp->params.defeatTextA;
      TRAINER_BATTLE_PARAM.battleScriptRetAddrB = temp->params.battleScriptRetAddrA;
@@ -12011,7 +12099,7 @@ index 6024da3c..e1624c75 100644
  }
  
  void SetMapVarsToTrainerA(void)
-@@ -1372,6 +1399,9 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
+@@ -1372,6 +1400,9 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
  
  bool32 GetTrainerFlagFromScriptPointer(const u8 *data)
  {
@@ -12021,7 +12109,7 @@ index 6024da3c..e1624c75 100644
      TrainerBattleParameter *temp = (TrainerBattleParameter*)(data + TRAINERBATTLE_OPCODE_OFFSET);
      return FlagGet(TRAINER_FLAGS_START + temp->params.opponentA);
  }
-@@ -1784,10 +1814,14 @@ void PlayTrainerEncounterMusic(void)
+@@ -1784,10 +1815,14 @@ void PlayTrainerEncounterMusic(void)
  
  static const u8 *ReturnEmptyStringIfNull(const u8 *string)
  {
@@ -12036,7 +12124,7 @@ index 6024da3c..e1624c75 100644
  }
  
  static const u8 *GetIntroSpeechOfApproachingTrainer(void)
-@@ -2247,34 +2281,49 @@ void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Traine
+@@ -2247,34 +2282,52 @@ void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Traine
      u32 monIndices[monsCount];
      struct TrainerGenerator *trainerGen = AllocZeroed(sizeof(struct TrainerGenerator));
      MakeTrainerGenerator(trainerGen, trainer);
@@ -12055,6 +12143,7 @@ index 6024da3c..e1624c75 100644
 +        {
 +            GenerateMonFromTrainerMon(&party[i], &mapped, trainerGen);
 +            CustomRandom_EnsureMoves(&party[i]);
++            CustomDifficulty_FinishMon(&party[i]);
 +        }
 +        else
 +#endif
@@ -12066,6 +12155,7 @@ index 6024da3c..e1624c75 100644
  static void CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum)
  {
 +#ifdef PORT_BRIDGE
++    CustomDifficulty_BeginTrainer(trainerNum);
 +    CustomRandom_BeginTrainer(trainerNum);
 +#endif
      if (!GetTrainerStructFromId(trainerNum)->overrideTrainer)
@@ -12097,6 +12187,7 @@ index 6024da3c..e1624c75 100644
 +    }
 +#ifdef PORT_BRIDGE
 +    CustomRandom_EndTrainer();
++    CustomDifficulty_EndTrainer();
 +#endif
  }
  
@@ -12466,6 +12557,57 @@ index 93f1aac0..40eb3e4e 100644
      DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
      DecompressGlyphTile(glyphs + 0x8, gCurGlyph.gfxBufferTop + 8);
      DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
+diff --git c/src/caps.c w/src/caps.c
+index f8e171c8..116977a4 100644
+--- c/src/caps.c
++++ w/src/caps.c
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
+ #include "battle.h"
+ #include "event_data.h"
+ #include "caps.h"
+@@ -22,6 +25,9 @@ u32 GetCurrentLevelCap(void)
+ 
+     u32 i;
+ 
++#ifdef PORT_BRIDGE
++    return CustomDifficulty_ExpCap()==CR_CAP_HARD ? CustomDifficulty_ProgressCap() : MAX_LEVEL;
++#endif
+     if (B_LEVEL_CAP_TYPE == LEVEL_CAP_FLAG_LIST)
+     {
+         for (i = 0; i < ARRAY_COUNT(sLevelCapFlagMap); i++)
+@@ -45,8 +51,13 @@ u32 GetSoftLevelCapExpValue(u32 level, u32 expValue)
+ 
+     u32 levelDifference;
+     u32 currentLevelCap = GetCurrentLevelCap();
++    u32 capType = B_EXP_CAP_TYPE;
++#ifdef PORT_BRIDGE
++    capType=CustomDifficulty_ExpCap();
++    currentLevelCap=CustomDifficulty_ProgressCap();
++#endif
+ 
+-    if (B_EXP_CAP_TYPE == EXP_CAP_NONE)
++    if (capType == EXP_CAP_NONE)
+         return expValue;
+ 
+     if (level < currentLevelCap)
+@@ -64,11 +75,11 @@ u32 GetSoftLevelCapExpValue(u32 level, u32 expValue)
+             return expValue;
+         }
+     }
+-    else if (B_EXP_CAP_TYPE == EXP_CAP_HARD)
++    else if (capType == EXP_CAP_HARD)
+     {
+         return 0;
+     }
+-    else if (B_EXP_CAP_TYPE == EXP_CAP_SOFT)
++    else if (capType == EXP_CAP_SOFT)
+     {
+         levelDifference = level - currentLevelCap;
+         if (levelDifference > ARRAY_COUNT(sExpScalingDown) - 1)
 diff --git c/src/clear_save_data_screen.c w/src/clear_save_data_screen.c
 index bc407fa3..f7d68f7a 100644
 --- c/src/clear_save_data_screen.c
@@ -12566,6 +12708,132 @@ index 28e8b87a..86b2de3b 100644
  
          for (i = 0; i < MON_PIC_SIZE; i++)
          {
+diff --git c/src/custom_difficulty.c w/src/custom_difficulty.c
+new file mode 100644
+index 00000000..27aab04b
+--- /dev/null
++++ w/src/custom_difficulty.c
+@@ -0,0 +1,120 @@
++/* Save-bound runtime adapters for the expansion's native systems. */
++#include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#include "custom_run.h"
++#include "battle.h"
++#include "data.h"
++#include "event_data.h"
++#include "pokemon.h"
++#include "move.h"
++#include "constants/battle_ai.h"
++#include "constants/item_effects.h"
++
++static bool sPreparedTrainer;
++static bool Read(struct CRConfig *c) { return CustomRun_ReadRules(c)==CR_OK; }
++static bool CampaignBattle(void)
++{
++    return (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
++        && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED | BATTLE_TYPE_FRONTIER
++            | BATTLE_TYPE_TRAINER_HILL | BATTLE_TYPE_SECRET_BASE | BATTLE_TYPE_EREADER_TRAINER
++            | BATTLE_TYPE_FIRST_BATTLE | BATTLE_TYPE_CATCH_TUTORIAL | BATTLE_TYPE_POKEDUDE));
++}
++unsigned CustomDifficulty_ExpCap(void)
++{
++    struct CRConfig c;
++    return Read(&c) ? c.capMode : CR_CAP_OFF;
++}
++u32 CustomDifficulty_ClampExp(struct Pokemon *mon,u32 reward)
++{
++    u32 current,limit,species;
++    if(CustomDifficulty_ExpCap()!=CR_CAP_HARD) return reward;
++    species=GetMonData(mon,MON_DATA_SPECIES);
++    current=GetMonData(mon,MON_DATA_EXP);
++    limit=gExperienceTables[gSpeciesInfo[species].growthRate][CustomDifficulty_ProgressCap()];
++    if(GetMonData(mon,MON_DATA_LEVEL)>=CustomDifficulty_ProgressCap() || current>=limit) return 0;
++    return reward>limit-current ? limit-current : reward;
++}
++unsigned CustomDifficulty_ProgressCap(void)
++{
++    unsigned i,badges=0;
++    for(i=0;i<8;++i) if(FlagGet(FLAG_BADGE01_GET+i)) badges|=1u<<i;
++    return CR_ProgressCap(badges,FlagGet(FLAG_IS_CHAMPION));
++}
++bool CustomDifficulty_ForceSet(void)
++{
++    struct CRConfig c;
++    return Read(&c) && (c.difficultyOptions & CR_FORCE_SET);
++}
++bool CustomDifficulty_Bosses(void)
++{
++    struct CRConfig c;
++    return !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED | BATTLE_TYPE_FRONTIER
++        | BATTLE_TYPE_TRAINER_HILL | BATTLE_TYPE_SECRET_BASE | BATTLE_TYPE_EREADER_TRAINER))
++        && Read(&c) && (c.difficultyOptions & CR_BOSS_PREP);
++}
++bool CustomDifficulty_ItemBlocked(unsigned usage)
++{
++    struct CRConfig c;
++    if(!CampaignBattle() || !Read(&c)) return false;
++    switch(usage) {
++    case EFFECT_ITEM_RESTORE_HP: case EFFECT_ITEM_CURE_STATUS:
++    case EFFECT_ITEM_HEAL_AND_CURE_STATUS: case EFFECT_ITEM_REVIVE: case EFFECT_ITEM_RESTORE_PP:
++        return (c.difficultyOptions & CR_NO_HEAL)!=0;
++    case EFFECT_ITEM_INCREASE_STAT: case EFFECT_ITEM_SET_FOCUS_ENERGY:
++    case EFFECT_ITEM_SET_MIST: case EFFECT_ITEM_INCREASE_ALL_STATS:
++        return (c.difficultyOptions & CR_NO_BOOST)!=0;
++    default: return false; /* Balls, escapes, key/script items retain native checks. */
++    }
++}
++u64 CustomDifficulty_AiFlags(u16 trainerId,unsigned battler,u64 flags)
++{
++    struct CRConfig c;
++    const u64 hiddenKnowledge = AI_FLAG_OMNISCIENT | AI_FLAG_ABILITY_OMNISCIENCE
++        | AI_FLAG_ITEM_OMNISCIENCE | AI_FLAG_MOVE_OMNISCIENCE | AI_FLAG_PREDICTION
++        | AI_FLAG_ASSUMPTIONS | AI_FLAG_KNOW_OPPONENT_PARTY;
++    if(!CampaignBattle() || !(battler & 1) || trainerId>=TRAINERS_COUNT || !Read(&c) || !c.aiPolicy) return flags;
++    flags &= ~hiddenKnowledge;
++    return flags | AI_FLAG_BASIC_TRAINER | AI_FLAG_HP_AWARE | AI_FLAG_SMART_SWITCHING
++        | AI_FLAG_SMART_MON_CHOICES | AI_FLAG_PP_STALL_PREVENTION | AI_FLAG_RANDOMIZE_SWITCHIN;
++}
++void CustomDifficulty_BeginTrainer(u16 id)
++{
++    sPreparedTrainer = CampaignBattle() && id<TRAINERS_COUNT && CustomDifficulty_Bosses()
++        && gTrainers[DIFFICULTY_HARD][id].party!=NULL;
++}
++void CustomDifficulty_EndTrainer(void) { sPreparedTrainer=false; }
++/* Randomized prepared bosses keep their new species. Select distinct damaging
++ * level-up moves with type coverage, and preserve one species-appropriate status
++ * move when available. No illegal fixed-species moves or global RNG calls. */
++void CustomDifficulty_FinishMon(struct Pokemon *mon)
++{
++    u16 selected[4]={0},species=GetMonData(mon,MON_DATA_SPECIES);
++    unsigned level=GetMonData(mon,MON_DATA_LEVEL),slot,i,j;
++    const struct LevelUpMove *learnset=gSpeciesInfo[species].levelUpLearnset;
++    if(!sPreparedTrainer || !learnset) return;
++    for(slot=0;slot<4;++slot) {
++        u32 best=0;
++        for(i=0;i<512 && learnset[i].move!=LEVEL_UP_MOVE_END;++i) {
++            u16 move=learnset[i].move;
++            u32 power=GetMovePower(move),score;
++            bool duplicate=false,sameType=false;
++            if(learnset[i].level>level || !power || move==MOVE_SNORE || move==MOVE_DREAM_EATER
++               || move==MOVE_LAST_RESORT || move==MOVE_EXPLOSION || move==MOVE_SELF_DESTRUCT) continue;
++            for(j=0;j<slot;++j) { if(selected[j]==move) duplicate=true; if(GetMoveType(selected[j])==GetMoveType(move)) sameType=true; }
++            if(duplicate) continue;
++            score=power*(GetMoveAccuracy(move) ? GetMoveAccuracy(move) : 100);
++            if(GetMoveType(move)==gSpeciesInfo[species].types[0] || GetMoveType(move)==gSpeciesInfo[species].types[1]) score=score*3/2;
++            if(!sameType) score+=12000;
++            if(score>best) { best=score; selected[slot]=move; }
++        }
++    }
++    /* Keep one of the native constructor's status moves rather than turning
++       every prepared randomized opponent into four attacks. */
++    for(i=0;i<4;++i) {
++        u16 move=GetMonData(mon,MON_DATA_MOVE1+i);
++        if(move!=MOVE_NONE && GetMoveCategory(move)==DAMAGE_CATEGORY_STATUS) { selected[3]=move; break; }
++    }
++    if(selected[0]) for(i=0;i<4;++i) SetMonMoveSlot(mon,selected[i],i);
++}
++#endif
 diff --git c/src/custom_random.c w/src/custom_random.c
 new file mode 100644
 index 00000000..c9937968
@@ -12914,14 +13182,15 @@ index 00000000..5e4dcecf
 +}
 diff --git c/src/custom_run.c w/src/custom_run.c
 new file mode 100644
-index 00000000..2d287b7f
+index 00000000..641838ea
 --- /dev/null
 +++ w/src/custom_run.c
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,185 @@
 +#include "global.h"
 +#ifdef PORT_BRIDGE
 +#include "custom_run.h"
 +#include "custom_random.h"
++#include "custom_difficulty.h"
 +#include "custom_run_menu_model.h"
 +#include "config/save.h"
 +#include "bg.h"
@@ -12947,6 +13216,7 @@ index 00000000..2d287b7f
 +
 +static struct CRMenu sMenu;
 +static bool sReadOnly;
++static bool sDifficultyPage;
 +static MainCallback sAccept, sReturn;
 +static const struct BgTemplate sBg = { .bg=0, .charBaseIndex=0, .mapBaseIndex=31, .priority=0 };
 +static const struct WindowTemplate sWindows[] = {
@@ -12960,10 +13230,14 @@ index 00000000..2d287b7f
 +    const u8 *p=gSaveBlock2Ptr->playerTrainerId;
 +    return p[0] | ((uint32_t)p[1]<<8) | ((uint32_t)p[2]<<16) | ((uint32_t)p[3]<<24);
 +}
++enum CRStatus CustomRun_ReadRules(struct CRConfig *out)
++{
++    return CR_Decode(gSaveBlock1Ptr->customRunConfig,TrainerId(),out);
++}
 +enum CRStatus CustomRun_Read(struct CRConfig *out)
 +{
 +    struct CRConfig c;
-+    enum CRStatus status=CR_Decode(gSaveBlock1Ptr->customRunConfig,TrainerId(),&c);
++    enum CRStatus status=CustomRun_ReadRules(&c);
 +    if(status==CR_OK && !CustomRandom_Validate(&c)) return CR_POOL;
 +    if(status==CR_OK && out) *out=c;
 +    return status;
@@ -13009,7 +13283,7 @@ index 00000000..2d287b7f
 +        strcpy(lines[0],"RUN SETTINGS - READ ONLY");
 +        snprintf(lines[1],36,"%s",CR_StatusText(status));
 +        if(status==CR_OK || status==CR_LEGACY) {
-+            strcpy(lines[3],status==CR_OK && c.mode==CR_RANDOMIZED ? "RANDOMIZED / NORMAL" : "STANDARD / NORMAL");
++            snprintf(lines[3],36,"%s / %s",status==CR_OK && c.mode==CR_RANDOMIZED ? "RANDOMIZED" : "STANDARD",status==CR_OK ? CR_DifficultyName(c.difficulty) : "NORMAL");
 +            if(status==CR_OK) {
 +                snprintf(lines[4],36,"SEED: %lu",(unsigned long)c.seed);
 +                snprintf(lines[5],36,"RUN ID: %08lX",(unsigned long)c.runId);
@@ -13017,7 +13291,7 @@ index 00000000..2d287b7f
 +            } else strcpy(lines[4],"SEED: NOT RECORDED");
 +            if(status==CR_OK) {
 +                snprintf(lines[6],36,"STARTERS %s / WILD %s",c.randomOptions&CR_RANDOM_STARTERS ? "ON":"OFF",c.randomOptions&CR_RANDOM_WILD ? "ON":"OFF");
-+                snprintf(lines[7],36,"TRAINERS %s / NORMAL",c.randomOptions&CR_RANDOM_TRAINERS ? "ON":"OFF");
++                snprintf(lines[7],36,"TRAINERS %s",c.randomOptions&CR_RANDOM_TRAINERS ? "ON":"OFF");
 +                CR_GenerationText(lines[8],c.generations);
 +                snprintf(lines[10],36,"NO LEGENDS %s / SIMILAR %s",c.balanceFlags&1 ? "ON":"OFF",c.balanceFlags&2 ? "ON":"OFF");
 +            } else strcpy(lines[6],"ALL RANDOMIZATION OFF");
@@ -13026,7 +13300,11 @@ index 00000000..2d287b7f
 +            strcpy(lines[5],"RUN RECORD KEPT - NO RESET");
 +            strcpy(lines[7],"USE MATCHING BUILD OR BACKUP");
 +        }
-+        strcpy(lines[11],"B RETURN");
++        if(sDifficultyPage && status==CR_OK) {
++            CR_DifficultyLines(&c,lines);
++            if(c.capMode) snprintf(lines[8],36,"PROGRESSION CAP: %u",CustomDifficulty_ProgressCap());
++        }
++        strcpy(lines[11],"A RULES / OVERVIEW - B RETURN");
 +    } else CR_MenuLines(&sMenu,lines);
 +    FillWindowPixelBuffer(0,PIXEL_FILL(0));
 +    for(row=0;row<12;++row) {
@@ -13046,7 +13324,11 @@ index 00000000..2d287b7f
 +    uint32_t seed=0;
 +    (void)taskId;
 +    if(gPaletteFade.active) return;
-+    if(sReadOnly) { if(JOY_NEW(B_BUTTON|A_BUTTON)) Close(sReturn); return; }
++    if(sReadOnly) {
++        if(JOY_NEW(B_BUTTON)) Close(sReturn);
++        else if(JOY_NEW(A_BUTTON|DPAD_LEFT|DPAD_RIGHT)) { sDifficultyPage=!sDifficultyPage; Draw(); }
++        return;
++    }
 +    if(JOY_NEW(DPAD_UP)) keys|=CR_UP;
 +    if(JOY_NEW(DPAD_DOWN)) keys|=CR_DOWN;
 +    if(JOY_NEW(DPAD_LEFT)) keys|=CR_LEFT;
@@ -13086,15 +13368,15 @@ index 00000000..2d287b7f
 +}
 +void CustomRunMenu_View(MainCallback returnTo)
 +{
-+    sReadOnly=true; sReturn=returnTo; SetMainCallback2(Init);
++    sReadOnly=true; sDifficultyPage=false; sReturn=returnTo; SetMainCallback2(Init);
 +}
 +#endif
 diff --git c/src/custom_run_config.c w/src/custom_run_config.c
 new file mode 100644
-index 00000000..d15ee48a
+index 00000000..ca51bca5
 --- /dev/null
 +++ w/src/custom_run_config.c
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,141 @@
 +/* Versioned, explicitly little-endian data in SaveBlock1's reserved 52 bytes.
 + * No sidecar, event flag, variable, global options file or native RNG access. */
 +#include "custom_run_config.h"
@@ -13118,8 +13400,12 @@ index 00000000..d15ee48a
 +}
 +enum CRStatus CR_Validate(const struct CRConfig *c)
 +{
-+    if (c->contentRules != CR_CONTENT_RULES && c->contentRules != 0x00010001u) return CR_CONTENT;
-+    if (c->difficulty != CR_NORMAL || c->difficultyOptions || c->capMode || c->aiPolicy) return CR_RULES;
++    if (c->contentRules != CR_CONTENT_RULES && c->contentRules != CR_RULES_STAGE_C && c->contentRules != 0x00010001u) return CR_CONTENT;
++    if (c->difficulty > CR_CUSTOM || c->capMode > CR_CAP_SOFT || c->aiPolicy > CR_AI_TACTICAL
++        || (c->difficultyOptions & ~CR_DIFFICULTY_OPTIONS)) return CR_RULES;
++    if (c->difficulty == CR_NORMAL && (c->difficultyOptions || c->capMode || c->aiPolicy)) return CR_RULES;
++    if (c->difficulty == CR_HARD && (c->difficultyOptions != CR_DIFFICULTY_OPTIONS || c->capMode != CR_CAP_HARD || c->aiPolicy != CR_AI_TACTICAL)) return CR_RULES;
++    if (c->contentRules != CR_CONTENT_RULES && c->difficulty != CR_NORMAL) return CR_CONTENT;
 +    if (c->mode == CR_STANDARD) {
 +        if (c->randomOptions || c->balanceFlags || c->generations != CR_GENERATIONS) return CR_RULES;
 +        if (c->algorithm != 0) return CR_VERSION;
@@ -13128,7 +13414,7 @@ index 00000000..d15ee48a
 +            || !c->generations || (c->generations & ~CR_GENERATIONS)
 +            || (c->balanceFlags & ~(CR_BALANCE_NO_LEGENDS | CR_BALANCE_SIMILAR))) return CR_RULES;
 +        if (c->algorithm != CR_ALGORITHM) return CR_VERSION;
-+        if (c->contentRules != CR_CONTENT_RULES) return CR_CONTENT;
++        if (c->contentRules != CR_CONTENT_RULES && c->contentRules != CR_RULES_STAGE_C) return CR_CONTENT;
 +    } else return CR_RULES;
 +    return CR_OK;
 +}
@@ -13213,12 +13499,31 @@ index 00000000..d15ee48a
 +    default: return "CORRUPT RUN RECORD";
 +    }
 +}
++
++void CR_SetDifficulty(struct CRConfig *c, unsigned preset)
++{
++    c->difficulty = preset;
++    c->difficultyOptions = preset == CR_HARD ? CR_DIFFICULTY_OPTIONS : 0;
++    c->capMode = preset == CR_HARD ? CR_CAP_HARD : CR_CAP_OFF;
++    c->aiPolicy = preset == CR_HARD ? CR_AI_TACTICAL : CR_AI_NATIVE;
++}
++const char *CR_DifficultyName(unsigned preset)
++{
++    return preset == CR_HARD ? "HARD" : preset == CR_CUSTOM ? "CUSTOM" : "NORMAL";
++}
++unsigned CR_ProgressCap(unsigned badges, bool champion)
++{
++    static const unsigned caps[8] = {15,19,24,29,31,33,42,46};
++    unsigned i;
++    for(i=0;i<8;++i) if(!(badges & (1u<<i))) return caps[i];
++    return champion ? 100 : 58; /* One cap for the entire League; 100 after first title. */
++}
 diff --git c/src/custom_run_menu_model.c w/src/custom_run_menu_model.c
 new file mode 100644
-index 00000000..05a72615
+index 00000000..982ebe2b
 --- /dev/null
 +++ w/src/custom_run_menu_model.c
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,171 @@
 +#include "custom_run_menu_model.h"
 +#include "custom_random_core.h"
 +#include <stdio.h>
@@ -13230,7 +13535,7 @@ index 00000000..05a72615
 +static void Page(struct CRMenu *m,enum CRPage p) { m->page=p; m->selected=0; m->notice=false; }
 +enum CROutcome CR_MenuInput(struct CRMenu *m,unsigned keys,uint32_t newSeed)
 +{
-+    static const unsigned counts[]={2,3,10,4,1,2,10,3};
++    static const unsigned counts[]={2,3,10,4,1,2,10,3,7};
 +    struct CRConfig *c=&m->draft.config;
 +    if(m->draft.confirmed || !m->draft.editing) return CR_STAY;
 +    if(m->page==CR_PAGE_DIGITS) {
@@ -13249,10 +13554,11 @@ index 00000000..05a72615
 +    if(keys&CR_B) {
 +        enum CRPage back;
 +        if(m->page==CR_PAGE_MODE) { CR_Cancel(&m->draft); return CR_CANCELLED; }
-+        back=m->page==CR_PAGE_DIFFICULTY ? CR_PAGE_MODE : m->page==CR_PAGE_CUSTOM || m->page==CR_PAGE_SUMMARY ? CR_PAGE_SEED
++        back=m->page==CR_PAGE_DIFFICULTY_CUSTOM ? CR_PAGE_DIFFICULTY : m->page==CR_PAGE_DIFFICULTY ? CR_PAGE_MODE : m->page==CR_PAGE_CUSTOM || m->page==CR_PAGE_SUMMARY ? CR_PAGE_SEED
 +            : m->page==CR_PAGE_GENERATIONS || m->page==CR_PAGE_BALANCE ? CR_PAGE_CUSTOM : CR_PAGE_DIFFICULTY;
 +        Page(m,back); return CR_STAY;
 +    }
++    if(m->page==CR_PAGE_SUMMARY && (keys&(CR_LEFT|CR_RIGHT))) { m->summaryRules=!m->summaryRules; return CR_STAY; }
 +    if(keys&CR_UP) m->selected=(m->selected+counts[m->page]-1)%counts[m->page];
 +    if(keys&CR_DOWN) m->selected=(m->selected+1)%counts[m->page];
 +    if(!(keys&CR_A)) return CR_STAY;
@@ -13264,7 +13570,14 @@ index 00000000..05a72615
 +        c->contentRules=CR_CONTENT_RULES; c->generations=CR_GENERATIONS; c->balanceFlags=0;
 +        Page(m,CR_PAGE_DIFFICULTY); break;
 +    case CR_PAGE_DIFFICULTY:
-+        if(!m->selected) Page(m,CR_PAGE_SEED); else m->notice=true;
++        CR_SetDifficulty(c,m->selected);
++        Page(m,c->difficulty==CR_CUSTOM ? CR_PAGE_DIFFICULTY_CUSTOM : CR_PAGE_SEED);
++        break;
++    case CR_PAGE_DIFFICULTY_CUSTOM:
++        if(m->selected==0) c->capMode=(c->capMode+1)%3;
++        else if(m->selected==4) c->aiPolicy^=1;
++        else if(m->selected==6) Page(m,CR_PAGE_SEED);
++        else c->difficultyOptions^=m->selected==5 ? CR_BOSS_PREP : 1u<<(m->selected-1);
 +        break;
 +    case CR_PAGE_CUSTOM:
 +        if(m->selected<3) {
@@ -13272,6 +13585,7 @@ index 00000000..05a72615
 +            if(options) { c->randomOptions=options; m->notice=false; } else m->notice=true;
 +        } else if(m->selected==6) Page(m,CR_PAGE_GENERATIONS);
 +        else if(m->selected==7) Page(m,CR_PAGE_BALANCE);
++        else if(m->selected==8) Page(m,CR_PAGE_DIFFICULTY);
 +        else if(m->selected==9) Page(m,CR_PAGE_SEED);
 +        else m->notice=true;
 +        break;
@@ -13315,15 +13629,18 @@ index 00000000..05a72615
 +    case CR_PAGE_MODE:
 +        strcpy(l[0],"NEW GAME - MODE"); strcpy(l[2],"STANDARD - FIXED CAMPAIGN"); strcpy(l[3],"RANDOMIZED - CORE SPECIES"); break;
 +    case CR_PAGE_DIFFICULTY:
-+        strcpy(l[0],"NEW GAME - DIFFICULTY"); strcpy(l[2],"NORMAL"); strcpy(l[3],"HARD - UNAVAILABLE");
-+        strcpy(l[4],"CUSTOM DIFFICULTY - UNAVAILABLE"); strcpy(l[7],"HARD RULES ARRIVE IN STAGE D"); break;
++        strcpy(l[0],"NEW GAME - DIFFICULTY"); strcpy(l[2],"NORMAL"); strcpy(l[3],"HARD");
++        strcpy(l[4],"CUSTOM"); strcpy(l[6],"HARD: CAPS / SET / LIMITED BAG");
++        strcpy(l[7],"TACTICAL AI / PREPARED BOSSES"); strcpy(l[8],"NORMAL EXP BELOW THE CAP"); break;
++    case CR_PAGE_DIFFICULTY_CUSTOM:
++        first=2; CR_DifficultyLines(c,l); strcpy(l[0],"CUSTOM DIFFICULTY"); strcpy(l[8],"DONE - CONTINUE TO SEED"); break;
 +    case CR_PAGE_CUSTOM:
 +        first=1; strcpy(l[0],"CUSTOMIZE RANDOMIZER");
 +        snprintf(l[1],36,"STARTERS: %s",On(c->randomOptions&CR_RANDOM_STARTERS));
 +        snprintf(l[2],36,"WILD: %s",On(c->randomOptions&CR_RANDOM_WILD));
 +        snprintf(l[3],36,"TRAINERS: %s",On(c->randomOptions&CR_RANDOM_TRAINERS));
 +        strcpy(l[4],"ABILITIES - OFF / LOCKED"); strcpy(l[5],"FIELD ITEMS - OFF / LOCKED"); strcpy(l[6],"HELD ITEMS - OFF / LOCKED");
-+        strcpy(l[7],"ELIGIBLE GENERATIONS"); strcpy(l[8],"OPTIONAL BALANCE RULES"); strcpy(l[9],"CUSTOM DIFFICULTY - UNAVAILABLE"); strcpy(l[10],"BACK TO SEED"); break;
++        strcpy(l[7],"ELIGIBLE GENERATIONS"); strcpy(l[8],"OPTIONAL BALANCE RULES"); strcpy(l[9],"CHOOSE DIFFICULTY"); strcpy(l[10],"BACK TO SEED"); break;
 +    case CR_PAGE_GENERATIONS:
 +        first=1; strcpy(l[0],"ELIGIBLE GENERATIONS");
 +        for(i=0;i<9;++i) snprintf(l[i+1],36,"GEN %u: %s",i+1,On(c->generations&(1u<<i)));
@@ -13344,18 +13661,39 @@ index 00000000..05a72615
 +        strcpy(l[8],"RANGE 0 TO 4294967295"); if(m->notice) strcpy(l[10],"SEED EXCEEDS 4294967295"); return;
 +    case CR_PAGE_SUMMARY:
 +        strcpy(l[0],"CONFIRM NEW RUN"); strcpy(l[2],"START THIS RUN"); strcpy(l[3],"BACK TO SEED");
-+        strcpy(l[4],c->mode==CR_RANDOMIZED ? "RANDOMIZED / NORMAL" : "STANDARD / NORMAL");
++        snprintf(l[4],36,"%s / %s",c->mode==CR_RANDOMIZED ? "RANDOMIZED" : "STANDARD",CR_DifficultyName(c->difficulty));
 +        snprintf(l[5],36,"SEED: %lu",(unsigned long)c->seed);
 +        snprintf(l[6],36,"STARTERS %s / WILD %s",On(c->randomOptions&CR_RANDOM_STARTERS),On(c->randomOptions&CR_RANDOM_WILD));
 +        snprintf(l[7],36,"TRAINERS %s / ALG %u",On(c->randomOptions&CR_RANDOM_TRAINERS),c->algorithm);
 +        CR_GenerationText(l[8],c->generations);
-+        snprintf(l[9],36,"NO LEGENDS %s / SIMILAR %s",On(c->balanceFlags&1),On(c->balanceFlags&2)); strcpy(l[10],"OLD SAVE STAYS UNTIL YOU SAVE"); break;
++        snprintf(l[9],36,"NO LEGENDS %s / SIMILAR %s",On(c->balanceFlags&1),On(c->balanceFlags&2)); snprintf(l[10],36,"LEFT/RIGHT: READ DIFFICULTY RULES"); break;
++    }
++    if(m->page==CR_PAGE_SUMMARY && m->summaryRules) {
++        char rules[12][36]; CR_DifficultyLines(c,rules);
++        for(i=0;i<6;++i) strcpy(l[4+i],rules[2+i]);
++        strcpy(l[10],"LEFT/RIGHT: READ RUN OVERVIEW");
 +    }
 +    {
 +        unsigned row=m->selected+first;
 +        size_t len=strlen(l[row]); memmove(l[row]+2,l[row],len+1); l[row][0]='>'; l[row][1]=' ';
 +    }
 +    strcpy(l[11],m->notice ? "UNAVAILABLE OR LAST CHOICE" : "A SELECT - B BACK / CANCEL");
++}
++
++void CR_DifficultyLines(const struct CRConfig *c,char l[12][36])
++{
++    static const char *caps[]={"OFF","HARD","SOFT"};
++    memset(l,0,12*36);
++    strcpy(l[0],"DIFFICULTY - READ ONLY");
++    snprintf(l[1],36,"PRESET: %s",CR_DifficultyName(c->difficulty));
++    snprintf(l[2],36,"CAP: %s",caps[c->capMode<=2 ? c->capMode : 0]);
++    snprintf(l[3],36,"STYLE: %s",c->difficultyOptions&CR_FORCE_SET ? "SET" : "PLAYER CHOICE");
++    snprintf(l[4],36,"TRAINER BAG HEALING: %s",c->difficultyOptions&CR_NO_HEAL ? "BLOCKED" : "ALLOWED");
++    snprintf(l[5],36,"TRAINER BAG BOOSTS: %s",c->difficultyOptions&CR_NO_BOOST ? "BLOCKED" : "ALLOWED");
++    snprintf(l[6],36,"AI: %s",c->aiPolicy ? "TACTICAL" : "NATIVE");
++    snprintf(l[7],36,"BOSSES: %s",c->difficultyOptions&CR_BOSS_PREP ? "PREPARED" : "NATIVE");
++    strcpy(l[9],"EXP: NORMAL BELOW CAP");
++    strcpy(l[10],"CAPS END AFTER CHAMPION");
 +}
 diff --git c/src/data/items.h w/src/data/items.h
 index c51a5acf..08ffbee9 100644
@@ -14619,7 +14957,7 @@ index f82ea00f..fdbc22b6 100644
 +
 +const u16 gMetatileAttributes_PokemonCenter_Frlg[] = INCBIN_U16("data/tilesets/secondary/pokemon_center_frlg/metatile_attributes.bin");
 diff --git c/src/data/trainers.party w/src/data/trainers.party
-index fbe4a37f..10bd6a14 100644
+index fbe4a37f..bf270849 100644
 --- c/src/data/trainers.party
 +++ w/src/data/trainers.party
 @@ -608,7 +608,7 @@ Crobat
@@ -14748,8 +15086,2653 @@ index fbe4a37f..10bd6a14 100644
  Level: 78
  IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
  - Earthquake
+@@ -16877,3 +16877,2644 @@ Double Battle: No
+ Kyogre
+ Level: 5
+ IVs: 0 HP / 0 Atk / 0 Def / 0 SpA / 0 SpD / 0 Spe
++
++/* Stage D prepared variants. Same IDs, levels, party sizes and battle types.
++ * Selected by save-bound difficulty before the core randomizer. */
++
++=== TRAINER_ARCHIE ===
++Difficulty: Hard
++Name: ARCHIE
++Class: Aqua Leader
++Pic: Aqua Leader Archie
++Gender: Male
++Music: Aqua
++Items: Super Potion / Super Potion
++Double Battle: No
++AI: Basic Trainer
++
++Mightyena @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Crobat @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Sharpedo @ Sharpedonite
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++=== TRAINER_SIDNEY ===
++Difficulty: Hard
++Name: SIDNEY
++Class: Elite Four
++Pic: Elite Four Sidney
++Gender: Male
++Music: Elite Four
++Items: Full Restore / Full Restore
++Double Battle: No
++AI: Basic Trainer / Force Setup First Turn
++Mugshot: Purple
++
++Mightyena @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Roar
++- Double Edge
++- Sand Attack
++- Crunch
++
++Shiftry @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Torment
++- Double Team
++- Swagger
++- Extrasensory
++
++Cacturne @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Leech Seed
++- Feint Attack
++- Needle Arm
++- Cotton Spore
++
++Crawdaunt @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Surf
++- Swords Dance
++- Strength
++- Facade
++
++Absol @ Absolite
++Level: 49
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Aerial Ace
++- Rock Slide
++- Swords Dance
++- Slash
++
++=== TRAINER_PHOEBE ===
++Difficulty: Hard
++Name: PHOEBE
++Class: Elite Four
++Pic: Elite Four Phoebe
++Gender: Female
++Music: Elite Four
++Items: Full Restore / Full Restore
++Double Battle: No
++AI: Basic Trainer
++Mugshot: Green
++
++Dusclops @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shadow Punch
++- Confuse Ray
++- Curse
++- Protect
++
++Banette @ Sitrus Berry
++Level: 49
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shadow Ball
++- Grudge
++- Will O Wisp
++- Feint Attack
++
++Sableye @ Sablenite
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shadow Ball
++- Double Team
++- Night Shade
++- Feint Attack
++
++Banette @ Sitrus Berry
++Level: 49
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shadow Ball
++- Psychic
++- Thunderbolt
++- Facade
++
++Dusclops @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shadow Ball
++- Ice Beam
++- Rock Slide
++- Earthquake
++
++=== TRAINER_GLACIA ===
++Difficulty: Hard
++Name: GLACIA
++Class: Elite Four
++Pic: Elite Four Glacia
++Gender: Female
++Music: Elite Four
++Items: Full Restore / Full Restore
++Double Battle: No
++AI: Basic Trainer
++Mugshot: Pink
++
++Sealeo @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Encore
++- Body Slam
++- Hail
++- Ice Ball
++
++Glalie @ Glalitite
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Light Screen
++- Crunch
++- Icy Wind
++- Ice Beam
++
++Sealeo @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Attract
++- Double Edge
++- Hail
++- Blizzard
++
++Glalie @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shadow Ball
++- Explosion
++- Hail
++- Ice Beam
++
++Walrein @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Surf
++- Body Slam
++- Ice Beam
++- Sheer Cold
++
++=== TRAINER_DRAKE ===
++Difficulty: Hard
++Name: DRAKE
++Class: Elite Four
++Pic: Elite Four Drake
++Gender: Male
++Music: Elite Four
++Items: Full Restore / Full Restore
++Double Battle: No
++AI: Basic Trainer
++Mugshot: Blue
++
++Shelgon @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rock Tomb
++- Dragon Claw
++- Protect
++- Double Edge
++
++Altaria @ Sitrus Berry
++Level: 54
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Double Edge
++- Dragon Breath
++- Dragon Dance
++- Aerial Ace
++
++Kingdra @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Smokescreen
++- Dragon Dance
++- Surf
++- Body Slam
++
++Flygon @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Flamethrower
++- Crunch
++- Dragon Breath
++- Earthquake
++
++Salamence @ Salamencite
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Flamethrower
++- Dragon Claw
++- Rock Slide
++- Crunch
++
++=== TRAINER_ROXANNE_1 ===
++Difficulty: Hard
++Name: ROXANNE
++Class: Leader
++Pic: Leader Roxanne
++Gender: Female
++Music: Female
++Items: Potion / Potion
++Double Battle: No
++AI: Basic Trainer
++
++Geodude @ Oran Berry
++Level: 12
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Tackle
++- Defense Curl
++- Rock Throw
++- Rock Tomb
++
++Aron @ Oran Berry
++Level: 12
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Metal Claw
++- Mud-Slap
++- Rock Tomb
++- Harden
++
++Nosepass @ Oran Berry
++Level: 15
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Block
++- Harden
++- Rock Throw
++- Rock Tomb
++
++=== TRAINER_BRAWLY_1 ===
++Difficulty: Hard
++Name: BRAWLY
++Class: Leader
++Pic: Leader Brawly
++Gender: Male
++Music: Male
++Items: Super Potion / Super Potion
++Double Battle: No
++AI: Basic Trainer
++
++Machop @ Oran Berry
++Level: 16
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Karate Chop
++- Low Kick
++- Seismic Toss
++- Bulk Up
++
++Meditite @ Oran Berry
++Level: 16
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Confusion
++- Light Screen
++- Reflect
++- Bulk Up
++
++Makuhita @ Sitrus Berry
++Level: 19
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Arm Thrust
++- Vital Throw
++- Reversal
++- Bulk Up
++
++=== TRAINER_WATTSON_1 ===
++Difficulty: Hard
++Name: WATTSON
++Class: Leader
++Pic: Leader Wattson
++Gender: Male
++Music: Male
++Items: Super Potion / Super Potion
++Double Battle: No
++AI: Basic Trainer
++
++Voltorb @ Sitrus Berry
++Level: 20
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rollout
++- Spark
++- Self Destruct
++- Shock Wave
++
++Electrike @ Sitrus Berry
++Level: 20
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Shock Wave
++- Leer
++- Quick Attack
++- Howl
++
++Magneton @ Sitrus Berry
++Level: 22
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Supersonic
++- Shock Wave
++- Thunder Wave
++- Sonic Boom
++
++Manectric @ Sitrus Berry
++Level: 24
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Quick Attack
++- Thunder Wave
++- Shock Wave
++- Howl
++
++=== TRAINER_FLANNERY_1 ===
++Difficulty: Hard
++Name: FLANNERY
++Class: Leader
++Pic: Leader Flannery
++Gender: Female
++Music: Female
++Items: Hyper Potion / Hyper Potion
++Double Battle: No
++AI: Basic Trainer
++
++Numel @ Sitrus Berry
++Level: 24
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Take Down
++- Magnitude
++- Sunny Day
++
++Slugma @ Sitrus Berry
++Level: 24
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Smog
++- Light Screen
++- Sunny Day
++
++Camerupt @ Sitrus Berry
++Level: 26
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Tackle
++- Sunny Day
++- Attract
++
++Torkoal @ White Herb
++Level: 29
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Body Slam
++- Attract
++
++=== TRAINER_NORMAN_1 ===
++Difficulty: Hard
++Name: NORMAN
++Class: Leader
++Pic: Leader Norman
++Gender: Male
++Music: Male
++Items: Hyper Potion / Hyper Potion
++Double Battle: No
++AI: Basic Trainer
++
++Spinda @ Sitrus Berry
++Level: 27
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Teeter Dance
++- Psybeam
++- Facade
++- Encore
++
++Vigoroth @ Sitrus Berry
++Level: 27
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Slash
++- Facade
++- Encore
++- Feint Attack
++
++Linoone @ Sitrus Berry
++Level: 29
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Slash
++- Belly Drum
++- Facade
++- Headbutt
++
++Slaking @ Sitrus Berry
++Level: 31
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Counter
++- Yawn
++- Facade
++- Feint Attack
++
++=== TRAINER_WINONA_1 ===
++Difficulty: Hard
++Name: WINONA
++Class: Leader
++Pic: Leader Winona
++Gender: Female
++Music: Female
++Items: Hyper Potion / Hyper Potion
++Double Battle: No
++AI: Basic Trainer / Risky
++
++Swablu @ Sitrus Berry
++Level: 29
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Perish Song
++- Mirror Move
++- Safeguard
++- Aerial Ace
++
++Tropius @ Sitrus Berry
++Level: 29
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Aerial Ace
++- Solar Beam
++- Synthesis
++
++Pelipper @ Sitrus Berry
++Level: 30
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Gun
++- Supersonic
++- Protect
++- Aerial Ace
++
++Skarmory @ Sitrus Berry
++Level: 31
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sand Attack
++- Fury Attack
++- Steel Wing
++- Aerial Ace
++
++Altaria @ Altarianite
++Level: 33
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Dragon Breath
++- Dragon Dance
++- Aerial Ace
++
++=== TRAINER_TATE_AND_LIZA_1 ===
++Difficulty: Hard
++Name: TATE&LIZA
++Class: Leader
++Pic: Leader Tate And Liza
++Gender: Male
++Music: Female
++Items: Hyper Potion / Hyper Potion / Hyper Potion / Hyper Potion
++Double Battle: Yes
++AI: Basic Trainer
++
++Claydol @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Ancient Power
++- Psychic
++- Light Screen
++
++Xatu @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Sunny Day
++- Confuse Ray
++- Calm Mind
++
++Lunatone @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Light Screen
++- Psychic
++- Hypnosis
++- Calm Mind
++
++Solrock @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Solar Beam
++- Psychic
++- Flamethrower
++
++=== TRAINER_JUAN_1 ===
++Difficulty: Hard
++Name: JUAN
++Class: Leader
++Pic: Leader Juan
++Gender: Male
++Music: Male
++Items: Hyper Potion / Hyper Potion
++Double Battle: No
++AI: Basic Trainer
++
++Luvdisc @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Attract
++- Sweet Kiss
++- Flail
++
++Whiscash @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rain Dance
++- Water Pulse
++- Amnesia
++- Earthquake
++
++Sealeo @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Encore
++- Body Slam
++- Aurora Beam
++- Water Pulse
++
++Crawdaunt @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Crabhammer
++- Taunt
++- Leer
++
++Kingdra @ Chesto Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Double Team
++- Ice Beam
++- Rest
++
++=== TRAINER_WALLACE ===
++Difficulty: Hard
++Name: WALLACE
++Class: Champion
++Pic: Champion Wallace
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore / Full Restore
++Double Battle: No
++AI: Basic Trainer
++Mugshot: Yellow
++
++Wailord @ Sitrus Berry
++Level: 57
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rain Dance
++- Water Spout
++- Double Edge
++- Blizzard
++
++Tentacruel @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Toxic
++- Hydro Pump
++- Sludge Bomb
++- Ice Beam
++
++Ludicolo @ Sitrus Berry
++Level: 56
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Giga Drain
++- Surf
++- Leech Seed
++- Double Team
++
++Whiscash @ Sitrus Berry
++Level: 56
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Surf
++- Amnesia
++- Hyper Beam
++
++Gyarados @ Gyaradosite
++Level: 56
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Dragon Dance
++- Earthquake
++- Hyper Beam
++- Surf
++
++Milotic @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Recover
++- Surf
++- Ice Beam
++- Toxic
++
++=== TRAINER_MAXIE_MAGMA_HIDEOUT ===
++Difficulty: Hard
++Name: MAXIE
++Class: Magma Leader
++Pic: Magma Leader Maxie
++Gender: Male
++Music: Magma
++Items: Super Potion / Super Potion
++Double Battle: No
++AI: Basic Trainer
++
++Mightyena @ Sitrus Berry
++Level: 37
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Crobat @ Sitrus Berry
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Camerupt @ Cameruptite
++Level: 39
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++=== TRAINER_MAXIE_MT_CHIMNEY ===
++Difficulty: Hard
++Name: MAXIE
++Class: Magma Leader
++Pic: Magma Leader Maxie
++Gender: Male
++Music: Magma
++Items: Super Potion / Super Potion
++Double Battle: No
++AI: Basic Trainer
++
++Mightyena @ Sitrus Berry
++Level: 24
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Zubat @ Sitrus Berry
++Level: 24
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Camerupt @ Sitrus Berry
++Level: 25
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++=== TRAINER_MAXIE_MOSSDEEP ===
++Difficulty: Hard
++Name: MAXIE
++Class: Magma Leader
++Pic: Magma Leader Maxie
++Gender: Male
++Music: Magma
++Double Battle: No
++AI: Basic Trainer
++Multi Party: Half
++
++Mightyena @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Crobat @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++Camerupt @ Cameruptite
++Level: 44
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++
++=== TRAINER_ROXANNE_2 ===
++Difficulty: Hard
++Name: ROXANNE
++Class: Leader
++Pic: Leader Roxanne
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Golem @ Sitrus Berry
++Level: 32
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Rollout
++- Magnitude
++- Explosion
++
++Kabuto @ Sitrus Berry
++Level: 35
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Swords Dance
++- Ice Beam
++- Surf
++- Rock Slide
++
++Onix @ Sitrus Berry
++Level: 35
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Iron Tail
++- Explosion
++- Roar
++- Rock Slide
++
++Nosepass @ Sitrus Berry
++Level: 37
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Double Team
++- Explosion
++- Protect
++- Rock Slide
++
++=== TRAINER_ROXANNE_3 ===
++Difficulty: Hard
++Name: ROXANNE
++Class: Leader
++Pic: Leader Roxanne
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Omanyte @ Sitrus Berry
++Level: 37
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Ice Beam
++- Rock Slide
++- Surf
++
++Golem @ Sitrus Berry
++Level: 37
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Rollout
++- Magnitude
++- Explosion
++
++Kabutops @ Sitrus Berry
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Swords Dance
++- Ice Beam
++- Surf
++- Rock Slide
++
++Onix @ Sitrus Berry
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Iron Tail
++- Explosion
++- Roar
++- Rock Slide
++
++Nosepass @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Double Team
++- Explosion
++- Protect
++- Rock Slide
++
++=== TRAINER_ROXANNE_4 ===
++Difficulty: Hard
++Name: ROXANNE
++Class: Leader
++Pic: Leader Roxanne
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Omastar @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Ice Beam
++- Rock Slide
++- Surf
++
++Golem @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Rollout
++- Earthquake
++- Explosion
++
++Kabutops @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Swords Dance
++- Ice Beam
++- Surf
++- Rock Slide
++
++Onix @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Iron Tail
++- Explosion
++- Roar
++- Rock Slide
++
++Nosepass @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Double Team
++- Explosion
++- Protect
++- Rock Slide
++
++=== TRAINER_ROXANNE_5 ===
++Difficulty: Hard
++Name: ROXANNE
++Class: Leader
++Pic: Leader Roxanne
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Aerodactyl @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rock Slide
++- Hyper Beam
++- Supersonic
++- Protect
++
++Golem @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Focus Punch
++- Rollout
++- Earthquake
++- Explosion
++
++Omastar @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Ice Beam
++- Rock Slide
++- Surf
++
++Kabutops @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Swords Dance
++- Ice Beam
++- Surf
++- Rock Slide
++
++Steelix @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Iron Tail
++- Explosion
++- Roar
++- Rock Slide
++
++Nosepass @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Double Team
++- Explosion
++- Protect
++- Rock Slide
++
++=== TRAINER_BRAWLY_2 ===
++Difficulty: Hard
++Name: BRAWLY
++Class: Leader
++Pic: Leader Brawly
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Machamp @ Sitrus Berry
++Level: 33
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Karate Chop
++- Rock Slide
++- Focus Punch
++- Bulk Up
++
++Meditite @ Sitrus Berry
++Level: 33
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Light Screen
++- Reflect
++- Focus Punch
++
++Hitmontop @ Sitrus Berry
++Level: 35
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Pursuit
++- Counter
++- Protect
++- Triple Kick
++
++Hariyama @ Sitrus Berry
++Level: 37
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Focus Punch
++- Belly Drum
++- Earthquake
++
++=== TRAINER_BRAWLY_3 ===
++Difficulty: Hard
++Name: BRAWLY
++Class: Leader
++Pic: Leader Brawly
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Machamp @ Sitrus Berry
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Karate Chop
++- Rock Slide
++- Focus Punch
++- Bulk Up
++
++Medicham @ Sitrus Berry
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Light Screen
++- Reflect
++- Focus Punch
++
++Hitmontop @ Sitrus Berry
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Pursuit
++- Counter
++- Protect
++- Triple Kick
++
++Hariyama @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Focus Punch
++- Belly Drum
++- Earthquake
++
++=== TRAINER_BRAWLY_4 ===
++Difficulty: Hard
++Name: BRAWLY
++Class: Leader
++Pic: Leader Brawly
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Hitmonchan @ Sitrus Berry
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sky Uppercut
++- Protect
++- Fire Punch
++- Ice Punch
++
++Machamp @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Karate Chop
++- Rock Slide
++- Focus Punch
++- Bulk Up
++
++Medicham @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Focus Punch
++- Light Screen
++- Reflect
++- Psychic
++
++Hitmontop @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Pursuit
++- Counter
++- Protect
++- Triple Kick
++
++Hariyama @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Focus Punch
++- Belly Drum
++- Earthquake
++
++=== TRAINER_BRAWLY_5 ===
++Difficulty: Hard
++Name: BRAWLY
++Class: Leader
++Pic: Leader Brawly
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Hitmonlee @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Mega Kick
++- Focus Punch
++- Earthquake
++- Bulk Up
++
++Hitmonchan @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sky Uppercut
++- Protect
++- Fire Punch
++- Ice Punch
++
++Machamp @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Cross Chop
++- Rock Slide
++- Focus Punch
++- Bulk Up
++
++Medicham @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Focus Punch
++- Light Screen
++- Reflect
++- Psychic
++
++Hitmontop @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Pursuit
++- Counter
++- Protect
++- Triple Kick
++
++Hariyama @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Focus Punch
++- Belly Drum
++- Earthquake
++
++=== TRAINER_WATTSON_2 ===
++Difficulty: Hard
++Name: WATTSON
++Class: Leader
++Pic: Leader Wattson
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Mareep @ Sitrus Berry
++Level: 36
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Protect
++- Thunder Wave
++- Light Screen
++
++Electrode @ Sitrus Berry
++Level: 36
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rollout
++- Thunder
++- Explosion
++- Rain Dance
++
++Magneton @ Sitrus Berry
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Supersonic
++- Protect
++- Thunder
++- Rain Dance
++
++Manectric @ Sitrus Berry
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Bite
++- Thunder Wave
++- Thunder
++- Protect
++
++=== TRAINER_WATTSON_3 ===
++Difficulty: Hard
++Name: WATTSON
++Class: Leader
++Pic: Leader Wattson
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Pikachu @ Sitrus Berry
++Level: 39
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Slam
++- Rain Dance
++- Shock Wave
++
++Flaaffy @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Protect
++- Thunder Wave
++- Light Screen
++
++Electrode @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rollout
++- Thunder
++- Explosion
++- Rain Dance
++
++Magneton @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Supersonic
++- Protect
++- Thunder
++- Rain Dance
++
++Manectric @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Bite
++- Thunder Wave
++- Thunder
++- Protect
++
++=== TRAINER_WATTSON_4 ===
++Difficulty: Hard
++Name: WATTSON
++Class: Leader
++Pic: Leader Wattson
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Raichu @ Sitrus Berry
++Level: 44
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Slam
++- Rain Dance
++- Protect
++
++Ampharos @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Protect
++- Thunder Wave
++- Light Screen
++
++Electrode @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rollout
++- Thunder
++- Explosion
++- Rain Dance
++
++Magneton @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Supersonic
++- Protect
++- Thunder
++- Rain Dance
++
++Manectric @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Bite
++- Thunder Wave
++- Thunder
++- Protect
++
++=== TRAINER_WATTSON_5 ===
++Difficulty: Hard
++Name: WATTSON
++Class: Leader
++Pic: Leader Wattson
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Electabuzz @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Swift
++- Focus Punch
++- Thunder Punch
++- Light Screen
++
++Raichu @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Slam
++- Rain Dance
++- Protect
++
++Ampharos @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder
++- Protect
++- Thunder Wave
++- Light Screen
++
++Electrode @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rollout
++- Thunder
++- Explosion
++- Rain Dance
++
++Magneton @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Supersonic
++- Protect
++- Thunder
++- Rain Dance
++
++Manectric @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Bite
++- Thunder Wave
++- Thunder
++- Protect
++
++=== TRAINER_FLANNERY_2 ===
++Difficulty: Hard
++Name: FLANNERY
++Class: Leader
++Pic: Leader Flannery
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Magcargo @ White Herb
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Attract
++- Light Screen
++- Rock Slide
++
++Ponyta @ Sitrus Berry
++Level: 36
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Flamethrower
++- Attract
++- Solar Beam
++- Bounce
++
++Camerupt @ White Herb
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Earthquake
++- Attract
++
++Torkoal @ White Herb
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Explosion
++- Attract
++
++=== TRAINER_FLANNERY_3 ===
++Difficulty: Hard
++Name: FLANNERY
++Class: Leader
++Pic: Leader Flannery
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Growlithe @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Helping Hand
++- Flamethrower
++- Roar
++- Sunny Day
++
++Magcargo @ White Herb
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Attract
++- Light Screen
++- Rock Slide
++
++Ponyta @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Flamethrower
++- Attract
++- Solar Beam
++- Bounce
++
++Camerupt @ White Herb
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Earthquake
++- Attract
++
++Torkoal @ White Herb
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Explosion
++- Attract
++
++=== TRAINER_FLANNERY_4 ===
++Difficulty: Hard
++Name: FLANNERY
++Class: Leader
++Pic: Leader Flannery
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Houndour @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Roar
++- Solar Beam
++- Taunt
++- Sunny Day
++
++Growlithe @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Helping Hand
++- Flamethrower
++- Sunny Day
++- Roar
++
++Magcargo @ White Herb
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Attract
++- Light Screen
++- Rock Slide
++
++Rapidash @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Flamethrower
++- Attract
++- Solar Beam
++- Bounce
++
++Camerupt @ White Herb
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Earthquake
++- Attract
++
++Torkoal @ White Herb
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Explosion
++- Attract
++
++=== TRAINER_FLANNERY_5 ===
++Difficulty: Hard
++Name: FLANNERY
++Class: Leader
++Pic: Leader Flannery
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Arcanine @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Helping Hand
++- Flamethrower
++- Sunny Day
++- Roar
++
++Magcargo @ White Herb
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Attract
++- Light Screen
++- Rock Slide
++
++Houndoom @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Roar
++- Solar Beam
++- Taunt
++- Sunny Day
++
++Rapidash @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Flamethrower
++- Attract
++- Solar Beam
++- Bounce
++
++Camerupt @ White Herb
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Earthquake
++- Attract
++
++Torkoal @ White Herb
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Overheat
++- Sunny Day
++- Explosion
++- Attract
++
++=== TRAINER_NORMAN_2 ===
++Difficulty: Hard
++Name: NORMAN
++Class: Leader
++Pic: Leader Norman
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Chansey @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Light Screen
++- Sing
++- Skill Swap
++- Focus Punch
++
++Slaking @ Sitrus Berry
++Level: 42
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Blizzard
++- Shadow Ball
++- Double Edge
++- Fire Blast
++
++Spinda @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Teeter Dance
++- Skill Swap
++- Facade
++- Hypnosis
++
++Slaking @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hyper Beam
++- Flamethrower
++- Thunderbolt
++- Shadow Ball
++
++=== TRAINER_NORMAN_3 ===
++Difficulty: Hard
++Name: NORMAN
++Class: Leader
++Pic: Leader Norman
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Slaking @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Blizzard
++- Shadow Ball
++- Double Edge
++- Fire Blast
++
++Chansey @ Sitrus Berry
++Level: 47
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Light Screen
++- Sing
++- Skill Swap
++- Focus Punch
++
++Kangaskhan @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Dizzy Punch
++- Endure
++- Reversal
++
++Spinda @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Teeter Dance
++- Skill Swap
++- Facade
++- Hypnosis
++
++Slaking @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hyper Beam
++- Flamethrower
++- Thunderbolt
++- Shadow Ball
++
++=== TRAINER_NORMAN_4 ===
++Difficulty: Hard
++Name: NORMAN
++Class: Leader
++Pic: Leader Norman
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Slaking @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Blizzard
++- Shadow Ball
++- Double Edge
++- Fire Blast
++
++Blissey @ Sitrus Berry
++Level: 52
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Light Screen
++- Sing
++- Skill Swap
++- Focus Punch
++
++Kangaskhan @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Dizzy Punch
++- Endure
++- Reversal
++
++Spinda @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Teeter Dance
++- Skill Swap
++- Facade
++- Hypnosis
++
++Slaking @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hyper Beam
++- Flamethrower
++- Thunderbolt
++- Shadow Ball
++
++=== TRAINER_NORMAN_5 ===
++Difficulty: Hard
++Name: NORMAN
++Class: Leader
++Pic: Leader Norman
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Slaking @ Sitrus Berry
++Level: 57
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Blizzard
++- Shadow Ball
++- Double Edge
++- Fire Blast
++
++Blissey @ Sitrus Berry
++Level: 57
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Protect
++- Sing
++- Skill Swap
++- Focus Punch
++
++Kangaskhan @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Fake Out
++- Dizzy Punch
++- Endure
++- Reversal
++
++Tauros @ Sitrus Berry
++Level: 57
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Take Down
++- Protect
++- Fire Blast
++- Earthquake
++
++Spinda @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Teeter Dance
++- Skill Swap
++- Facade
++- Hypnosis
++
++Slaking @ Sitrus Berry
++Level: 60
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hyper Beam
++- Flamethrower
++- Thunderbolt
++- Shadow Ball
++
++=== TRAINER_WINONA_2 ===
++Difficulty: Hard
++Name: WINONA
++Class: Leader
++Pic: Leader Winona
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer / Risky
++
++Dratini @ Sitrus Berry
++Level: 40
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder Wave
++- Thunderbolt
++- Protect
++- Ice Beam
++
++Tropius @ Sitrus Berry
++Level: 38
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Aerial Ace
++- Solar Beam
++- Earthquake
++
++Pelipper @ Sitrus Berry
++Level: 41
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Surf
++- Supersonic
++- Protect
++- Aerial Ace
++
++Skarmory @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Whirlwind
++- Spikes
++- Steel Wing
++- Aerial Ace
++
++Altaria @ Altarianite
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Aerial Ace
++- Rest
++- Dragon Dance
++- Earthquake
++
++=== TRAINER_WINONA_3 ===
++Difficulty: Hard
++Name: WINONA
++Class: Leader
++Pic: Leader Winona
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer / Risky
++
++Hoothoot @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Psychic
++- Reflect
++- Dream Eater
++
++Tropius @ Sitrus Berry
++Level: 43
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Aerial Ace
++- Solar Beam
++- Earthquake
++
++Dragonair @ Sitrus Berry
++Level: 45
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder Wave
++- Thunderbolt
++- Protect
++- Ice Beam
++
++Pelipper @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Surf
++- Supersonic
++- Protect
++- Aerial Ace
++
++Skarmory @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Whirlwind
++- Spikes
++- Steel Wing
++- Aerial Ace
++
++Altaria @ Altarianite
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Aerial Ace
++- Rest
++- Dragon Dance
++- Earthquake
++
++=== TRAINER_WINONA_4 ===
++Difficulty: Hard
++Name: WINONA
++Class: Leader
++Pic: Leader Winona
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer / Risky
++
++Noctowl @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Psychic
++- Reflect
++- Dream Eater
++
++Tropius @ Sitrus Berry
++Level: 49
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Aerial Ace
++- Solar Beam
++- Earthquake
++
++Dragonair @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Thunder Wave
++- Thunderbolt
++- Protect
++- Ice Beam
++
++Pelipper @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Surf
++- Supersonic
++- Protect
++- Aerial Ace
++
++Skarmory @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Whirlwind
++- Spikes
++- Steel Wing
++- Aerial Ace
++
++Altaria @ Altarianite
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Aerial Ace
++- Rest
++- Dragon Dance
++- Earthquake
++
++=== TRAINER_WINONA_5 ===
++Difficulty: Hard
++Name: WINONA
++Class: Leader
++Pic: Leader Winona
++Gender: Female
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer / Risky
++
++Noctowl @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Psychic
++- Reflect
++- Dream Eater
++
++Tropius @ Sitrus Berry
++Level: 54
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Aerial Ace
++- Solar Beam
++- Earthquake
++
++Pelipper @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Surf
++- Supersonic
++- Protect
++- Aerial Ace
++
++Dragonite @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hyper Beam
++- Thunderbolt
++- Earthquake
++- Ice Beam
++
++Skarmory @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Whirlwind
++- Spikes
++- Steel Wing
++- Aerial Ace
++
++Altaria @ Altarianite
++Level: 60
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sky Attack
++- Rest
++- Dragon Dance
++- Earthquake
++
++=== TRAINER_TATE_AND_LIZA_2 ===
++Difficulty: Hard
++Name: TATE&LIZA
++Class: Leader
++Pic: Leader Tate And Liza
++Gender: Male
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Slowpoke @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Yawn
++- Psychic
++- Calm Mind
++- Protect
++
++Claydol @ Sitrus Berry
++Level: 49
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Ancient Power
++- Psychic
++- Light Screen
++
++Xatu @ Chesto Berry
++Level: 49
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Rest
++- Confuse Ray
++- Calm Mind
++
++Lunatone @ Chesto Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Psychic
++- Rest
++- Calm Mind
++
++Solrock @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Solar Beam
++- Psychic
++- Flamethrower
++
++=== TRAINER_TATE_AND_LIZA_3 ===
++Difficulty: Hard
++Name: TATE&LIZA
++Class: Leader
++Pic: Leader Tate And Liza
++Gender: Male
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Drowzee @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Dream Eater
++- Headbutt
++- Protect
++
++Slowpoke @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Yawn
++- Psychic
++- Calm Mind
++- Protect
++
++Claydol @ Sitrus Berry
++Level: 54
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Explosion
++- Psychic
++- Light Screen
++
++Xatu @ Chesto Berry
++Level: 54
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Rest
++- Confuse Ray
++- Calm Mind
++
++Lunatone @ Chesto Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Psychic
++- Rest
++- Calm Mind
++
++Solrock @ Sitrus Berry
++Level: 55
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Solar Beam
++- Psychic
++- Flamethrower
++
++=== TRAINER_TATE_AND_LIZA_4 ===
++Difficulty: Hard
++Name: TATE&LIZA
++Class: Leader
++Pic: Leader Tate And Liza
++Gender: Male
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Hypno @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Dream Eater
++- Headbutt
++- Protect
++
++Claydol @ Sitrus Berry
++Level: 59
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Explosion
++- Psychic
++- Light Screen
++
++Slowpoke @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Yawn
++- Psychic
++- Calm Mind
++- Protect
++
++Xatu @ Chesto Berry
++Level: 59
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Rest
++- Confuse Ray
++- Calm Mind
++
++Lunatone @ Chesto Berry
++Level: 60
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Psychic
++- Rest
++- Calm Mind
++
++Solrock @ Sitrus Berry
++Level: 60
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Solar Beam
++- Psychic
++- Flamethrower
++
++=== TRAINER_TATE_AND_LIZA_5 ===
++Difficulty: Hard
++Name: TATE&LIZA
++Class: Leader
++Pic: Leader Tate And Liza
++Gender: Male
++Music: Female
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Hypno @ Sitrus Berry
++Level: 63
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Dream Eater
++- Headbutt
++- Protect
++
++Claydol @ Sitrus Berry
++Level: 64
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Explosion
++- Psychic
++- Light Screen
++
++Slowking @ Sitrus Berry
++Level: 63
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Yawn
++- Psychic
++- Calm Mind
++- Protect
++
++Xatu @ Chesto Berry
++Level: 64
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Psychic
++- Rest
++- Confuse Ray
++- Calm Mind
++
++Lunatone @ Chesto Berry
++Level: 65
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Earthquake
++- Psychic
++- Rest
++- Calm Mind
++
++Solrock @ Sitrus Berry
++Level: 65
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Sunny Day
++- Solar Beam
++- Psychic
++- Flamethrower
++
++=== TRAINER_JUAN_2 ===
++Difficulty: Hard
++Name: JUAN
++Class: Leader
++Pic: Leader Juan
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Poliwag @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Rain Dance
++- Protect
++- Hydro Pump
++
++Whiscash @ Sitrus Berry
++Level: 46
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rain Dance
++- Water Pulse
++- Double Team
++- Fissure
++
++Walrein @ Sitrus Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Body Slam
++- Protect
++- Ice Beam
++
++Crawdaunt @ Chesto Berry
++Level: 48
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rest
++- Crabhammer
++- Taunt
++- Double Team
++
++Kingdra @ Chesto Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Double Team
++- Ice Beam
++- Rest
++
++=== TRAINER_JUAN_3 ===
++Difficulty: Hard
++Name: JUAN
++Class: Leader
++Pic: Leader Juan
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Poliwhirl @ Sitrus Berry
++Level: 50
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Rain Dance
++- Protect
++- Hydro Pump
++
++Whiscash @ Sitrus Berry
++Level: 51
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rain Dance
++- Water Pulse
++- Double Team
++- Fissure
++
++Walrein @ Sitrus Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Body Slam
++- Protect
++- Ice Beam
++
++Crawdaunt @ Chesto Berry
++Level: 53
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rest
++- Guillotine
++- Taunt
++- Double Team
++
++Kingdra @ Chesto Berry
++Level: 56
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Double Team
++- Ice Beam
++- Rest
++
++=== TRAINER_JUAN_4 ===
++Difficulty: Hard
++Name: JUAN
++Class: Leader
++Pic: Leader Juan
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Lapras @ Sitrus Berry
++Level: 56
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hydro Pump
++- Perish Song
++- Ice Beam
++- Confuse Ray
++
++Whiscash @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rain Dance
++- Water Pulse
++- Double Team
++- Fissure
++
++Poliwhirl @ Sitrus Berry
++Level: 56
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Rain Dance
++- Protect
++- Hydro Pump
++
++Walrein @ Sitrus Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Body Slam
++- Protect
++- Ice Beam
++
++Crawdaunt @ Chesto Berry
++Level: 58
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rest
++- Guillotine
++- Taunt
++- Double Team
++
++Kingdra @ Chesto Berry
++Level: 61
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Double Team
++- Ice Beam
++- Rest
++
++=== TRAINER_JUAN_5 ===
++Difficulty: Hard
++Name: JUAN
++Class: Leader
++Pic: Leader Juan
++Gender: Male
++Music: Male
++Items: Full Restore / Full Restore / Full Restore
++Double Battle: Yes
++AI: Basic Trainer
++
++Lapras @ Sitrus Berry
++Level: 61
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hydro Pump
++- Perish Song
++- Ice Beam
++- Confuse Ray
++
++Whiscash @ Sitrus Berry
++Level: 63
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rain Dance
++- Water Pulse
++- Double Team
++- Fissure
++
++Politoed @ Sitrus Berry
++Level: 61
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Hypnosis
++- Rain Dance
++- Hydro Pump
++- Perish Song
++
++Walrein @ Sitrus Berry
++Level: 63
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Body Slam
++- Protect
++- Sheer Cold
++
++Crawdaunt @ Chesto Berry
++Level: 63
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Rest
++- Guillotine
++- Taunt
++- Double Team
++
++Kingdra @ Chesto Berry
++Level: 66
++IVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe
++EVs: 64 HP / 64 Atk / 64 Def / 64 SpA / 64 SpD / 64 Spe
++- Water Pulse
++- Double Team
++- Ice Beam
++- Rest
 diff --git c/src/daycare.c w/src/daycare.c
-index 264f0100..a0c77e2e 100644
+index 264f0100..4455c458 100644
 --- c/src/daycare.c
 +++ w/src/daycare.c
 @@ -1,4 +1,7 @@
@@ -14760,6 +17743,15 @@ index 264f0100..a0c77e2e 100644
  #include "pokemon.h"
  #include "battle.h"
  #include "daycare.h"
+@@ -388,7 +391,7 @@ static u8 GetNumLevelsGainedFromSteps(struct DaycareMon *daycareMon)
+     levelAfter = GetLevelAfterDaycareSteps(&daycareMon->mon, daycareMon->steps);
+     if (levelAfter > GetCurrentLevelCap())
+         levelAfter = GetCurrentLevelCap();
+-    return levelAfter - levelBefore;
++    return levelAfter > levelBefore ? levelAfter - levelBefore : 0;
+ }
+ 
+ static u8 GetNumLevelsGainedForDaycareMon(struct DaycareMon *daycareMon)
 @@ -1129,6 +1132,28 @@ static u32 GetEggCyclesToSubtract(void)
  
  static bool32 TryToHatchEgg(struct DayCare *daycare)
@@ -15107,6 +18099,77 @@ index 2a6685de..9d8b612f 100644
                      environment = ENCOUNTER_TYPE_WATER;
  
                  }
+diff --git c/src/difficulty.c w/src/difficulty.c
+index 470c7fb3..e6c211f6 100644
+--- c/src/difficulty.c
++++ w/src/difficulty.c
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
+ #include "data.h"
+ #include "event_data.h"
+ #include "script.h"
+@@ -6,6 +9,9 @@
+ 
+ enum DifficultyLevel GetCurrentDifficultyLevel(void)
+ {
++#ifdef PORT_BRIDGE
++    return CustomDifficulty_Bosses() ? DIFFICULTY_HARD : DIFFICULTY_NORMAL;
++#endif
+     if (!B_VAR_DIFFICULTY)
+         return DIFFICULTY_NORMAL;
+ 
+@@ -14,6 +20,9 @@ enum DifficultyLevel GetCurrentDifficultyLevel(void)
+ 
+ void SetCurrentDifficultyLevel(enum DifficultyLevel desiredDifficulty)
+ {
++#ifdef PORT_BRIDGE
++    return; /* Presets are immutable for this save; no event variable allocation. */
++#endif
+     if (!B_VAR_DIFFICULTY)
+         return;
+ 
+@@ -27,6 +36,9 @@ enum DifficultyLevel GetBattlePartnerDifficultyLevel(u16 partnerId)
+ {
+     enum DifficultyLevel difficulty = GetCurrentDifficultyLevel();
+ 
++#ifdef PORT_BRIDGE
++    return DIFFICULTY_NORMAL; /* Scripted allies keep their original parties. */
++#endif
+     if (partnerId > TRAINER_PARTNER(PARTNER_NONE))
+         partnerId -= TRAINER_PARTNER(PARTNER_NONE);
+ 
+@@ -46,7 +58,7 @@ enum DifficultyLevel GetTrainerDifficultyLevel(u16 trainerId)
+     if (difficulty == DIFFICULTY_NORMAL)
+         return DIFFICULTY_NORMAL;
+ 
+-    if (gTrainers[difficulty][trainerId].party == NULL)
++    if (trainerId >= TRAINERS_COUNT || gTrainers[difficulty][trainerId].party == NULL)
+         return DIFFICULTY_NORMAL;
+ 
+     return difficulty;
+@@ -56,6 +68,9 @@ void Script_IncreaseDifficulty(void)
+ {
+     enum DifficultyLevel currentDifficulty;
+ 
++#ifdef PORT_BRIDGE
++    return; /* Presets are immutable for this save; no event variable allocation. */
++#endif
+     if (!B_VAR_DIFFICULTY)
+         return;
+ 
+@@ -74,6 +89,9 @@ void Script_DecreaseDifficulty(void)
+ {
+     enum DifficultyLevel currentDifficulty;
+ 
++#ifdef PORT_BRIDGE
++    return; /* Presets are immutable for this save; no event variable allocation. */
++#endif
+     if (!B_VAR_DIFFICULTY)
+         return;
+ 
 diff --git c/src/dma3_manager.c w/src/dma3_manager.c
 index 8ddc36f1..e131bfbf 100644
 --- c/src/dma3_manager.c
@@ -17832,11 +20895,15 @@ index fbe882b9..0901e139 100644
      spriteId = CreateSprite(&newSprTemplate, x, y, 0);
      StoreWordInTwoHalfwords((u16 *) &gSprites[spriteId].data[BERRY_ICON_GFX_PTR_DATA_ID], (u32) dynamicGfx);
 diff --git c/src/item_use.c w/src/item_use.c
-index d6ab7971..5e04f456 100644
+index d6ab7971..685ddab6 100644
 --- c/src/item_use.c
 +++ w/src/item_use.c
-@@ -1,4 +1,10 @@
+@@ -1,4 +1,14 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++static const u8 sText_RunItemRestricted[] = _("This run restricts that item\nin TRAINER battles.");
++#endif
 +#ifdef PLATFORM_3DS
 +#include "3ds_extras.h"
 +#include "braille_puzzles.h"
@@ -17846,7 +20913,7 @@ index d6ab7971..5e04f456 100644
  #include "item_use.h"
  #include "battle.h"
  #include "battle_anim.h"
-@@ -98,7 +104,7 @@ static const u8 sText_PlayedPokeFlute[] = _("Played the POKé FLUTE.");
+@@ -98,7 +108,7 @@ static const u8 sText_PlayedPokeFlute[] = _("Played the POKé FLUTE.");
  static const u8 sText_PokeFluteAwakenedMon[] = _("The POKé FLUTE awakened sleeping\nPOKéMON.{PAUSE_UNTIL_PRESS}");
  
  // EWRAM variables
@@ -17855,7 +20922,7 @@ index d6ab7971..5e04f456 100644
  
  // Below is set TRUE by UseRegisteredKeyItemOnField
  #define tUsingRegisteredKeyItem  data[3]
-@@ -911,8 +917,86 @@ void ItemUseOutOfBattle_DynamaxCandy(u8 taskId)
+@@ -911,8 +921,86 @@ void ItemUseOutOfBattle_DynamaxCandy(u8 taskId)
      SetUpItemUseCallback(taskId);
  }
  
@@ -17942,7 +21009,7 @@ index d6ab7971..5e04f456 100644
      if (GetItemTMHMIndex(gSpecialVar_ItemId) > NUM_TECHNICAL_MACHINES)
          DisplayItemMessage(taskId, FONT_NORMAL, sText_BootedUpHM, BootUpSoundTMHM); // HM
      else
-@@ -1198,7 +1282,7 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
+@@ -1198,7 +1286,7 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
      bool8 cannotUse = FALSE;
      const u8* failStr = NULL;
      u32 i, battlerTarget;
@@ -17951,6 +21018,20 @@ index d6ab7971..5e04f456 100644
  
      if (gPartyMenu.slotId == 0)
          battlerTarget = B_POSITION_PLAYER_LEFT;
+@@ -1207,6 +1295,13 @@ bool32 CannotUseItemsInBattle(enum Item itemId, struct Pokemon *mon)
+     else
+         battlerTarget = MAX_POSITION_COUNT;
+ 
++#ifdef PORT_BRIDGE
++    if(CustomDifficulty_ItemBlocked(battleUsage))
++    {
++        StringExpandPlaceholders(gStringVar4,sText_RunItemRestricted);
++        return TRUE; /* Shared party/bag/touch path, before item use or removal. */
++    }
++#endif
+     // Embargo Check
+     if (battlerTarget < MAX_POSITION_COUNT && GetItemType(itemId) != ITEM_USE_BAG_MENU)
+     {
 diff --git c/src/landmark.c w/src/landmark.c
 index c26e61f4..9d641d01 100644
 --- c/src/landmark.c
@@ -21838,6 +24919,50 @@ index 89a2bf4c..41e4fec3 100644
  }
  
  static void ResetMiniGamesRecords(void)
+diff --git c/src/option_menu.c w/src/option_menu.c
+index a10b727b..77d51a99 100644
+--- c/src/option_menu.c
++++ w/src/option_menu.c
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
+ #include "option_menu.h"
+ #include "bg.h"
+ #include "gpu_regs.h"
+@@ -247,6 +250,9 @@ void CB2_InitOptionMenu(void)
+         gTasks[taskId].tTextSpeed = gSaveBlock2Ptr->optionsTextSpeed;
+         gTasks[taskId].tBattleSceneOff = gSaveBlock2Ptr->optionsBattleSceneOff;
+         gTasks[taskId].tBattleStyle = gSaveBlock2Ptr->optionsBattleStyle;
++#ifdef PORT_BRIDGE
++        if(CustomDifficulty_ForceSet()) gTasks[taskId].tBattleStyle=OPTIONS_BATTLE_STYLE_SET;
++#endif
+         gTasks[taskId].tSound = gSaveBlock2Ptr->optionsSound;
+         gTasks[taskId].tButtonMode = gSaveBlock2Ptr->optionsButtonMode;
+         gTasks[taskId].tWindowFrameType = gSaveBlock2Ptr->optionsWindowFrameType;
+@@ -368,7 +374,10 @@ static void Task_OptionMenuSave(u8 taskId)
+ {
+     gSaveBlock2Ptr->optionsTextSpeed = gTasks[taskId].tTextSpeed;
+     gSaveBlock2Ptr->optionsBattleSceneOff = gTasks[taskId].tBattleSceneOff;
+-    gSaveBlock2Ptr->optionsBattleStyle = gTasks[taskId].tBattleStyle;
++#ifdef PORT_BRIDGE
++    if(!CustomDifficulty_ForceSet())
++#endif
++        gSaveBlock2Ptr->optionsBattleStyle = gTasks[taskId].tBattleStyle;
+     gSaveBlock2Ptr->optionsSound = gTasks[taskId].tSound;
+     gSaveBlock2Ptr->optionsButtonMode = gTasks[taskId].tButtonMode;
+     gSaveBlock2Ptr->optionsWindowFrameType = gTasks[taskId].tWindowFrameType;
+@@ -482,6 +491,9 @@ static void BattleScene_DrawChoices(u8 selection)
+ 
+ static u8 BattleStyle_ProcessInput(u8 selection)
+ {
++#ifdef PORT_BRIDGE
++    if(CustomDifficulty_ForceSet()) return OPTIONS_BATTLE_STYLE_SET;
++#endif
+     if (JOY_NEW(DPAD_LEFT | DPAD_RIGHT))
+     {
+         selection ^= 1;
 diff --git c/src/overworld.c w/src/overworld.c
 index 4d01b45e..78de22ac 100644
 --- c/src/overworld.c
@@ -29063,18 +32188,21 @@ index 550127f5..c5b5c237 100644
      u16 offset;
      u16 temp;
 diff --git c/src/pokemon.c w/src/pokemon.c
-index 82017777..e14e7979 100644
+index 82017777..504dcec8 100644
 --- c/src/pokemon.c
 +++ w/src/pokemon.c
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,10 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_difficulty.h"
++#endif
 +#ifdef PLATFORM_3DS
 +#include "3ds_extras.h"
 +#endif
  #include "malloc.h"
  #include "apprentice.h"
  #include "battle.h"
-@@ -77,6 +80,10 @@
+@@ -77,6 +83,10 @@
  #include "constants/union_room.h"
  #include "constants/weather.h"
  
@@ -29085,7 +32213,7 @@ index 82017777..e14e7979 100644
  extern enum Item gSpecialVar_ItemId;
  
  #define FRIENDSHIP_EVO_THRESHOLD ((P_FRIENDSHIP_EVO_THRESHOLD >= GEN_8) ? 160 : 220)
-@@ -880,6 +887,13 @@ bool32 ComputePlayerShinyOdds(u32 personality, u32 value)
+@@ -880,6 +890,13 @@ bool32 ComputePlayerShinyOdds(u32 personality, u32 value)
      if (P_NO_SHINIES_WITHOUT_POKEBALLS && !HasAtLeastOnePokeBall() && FlagGet(FLAG_SYS_POKEDEX_GET))
          return FALSE;
  
@@ -29099,7 +32227,7 @@ index 82017777..e14e7979 100644
      u32 totalRerolls = 0;
  
      if (CheckBagHasItem(ITEM_SHINY_CHARM, 1))
-@@ -893,13 +907,13 @@ bool32 ComputePlayerShinyOdds(u32 personality, u32 value)
+@@ -893,13 +910,13 @@ bool32 ComputePlayerShinyOdds(u32 personality, u32 value)
      if (gDexNavSpecies)
          totalRerolls += CalculateDexNavShinyRolls();
  
@@ -29115,7 +32243,7 @@ index 82017777..e14e7979 100644
  }
  
  void SetBoxMonIVs(struct BoxPokemon *mon, u8 fixedIV)
-@@ -1019,6 +1033,21 @@ void CreateBoxMon(struct BoxPokemon *boxMon, enum Species species, u8 level, u32
+@@ -1019,6 +1036,21 @@ void CreateBoxMon(struct BoxPokemon *boxMon, enum Species species, u8 level, u32
      //using gen 3-4 ability formula, it was changed in later gens
      if (GetSpeciesAbility(species, 1))
          SetBoxMonData(boxMon, MON_DATA_ABILITY_NUM, &value);
@@ -29137,7 +32265,46 @@ index 82017777..e14e7979 100644
  }
  
  static bool32 IsValidGender(u32 gender)
-@@ -4234,6 +4263,13 @@ bool32 DoesMonMeetAdditionalConditions(struct Pokemon *mon, const struct Evoluti
+@@ -3510,6 +3542,10 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, enum Item item, u8 partyIndex,
+                 u8 param = GetItemHoldEffectParam(item);
+                 dataUnsigned = 0;
+ 
++#ifdef PORT_BRIDGE
++                if(CustomDifficulty_ExpCap()==CR_CAP_HARD && GetMonData(mon,MON_DATA_LEVEL)>=GetCurrentLevelCap())
++                    break; /* No item consumption and no reduction of already-overcap gifts. */
++#endif
+                 if (param == 0) // Rare Candy
+                 {
+                     dataUnsigned = gExperienceTables[gSpeciesInfo[GetMonData(mon, MON_DATA_SPECIES)].growthRate][GetMonData(mon, MON_DATA_LEVEL) + 1];
+@@ -3519,7 +3555,13 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, enum Item item, u8 partyIndex,
+                     enum Species species = GetMonData(mon, MON_DATA_SPECIES);
+                     dataUnsigned = sExpCandyExperienceTable[param - 1] + GetMonData(mon, MON_DATA_EXP);
+ 
+-                    if (B_RARE_CANDY_CAP && B_EXP_CAP_TYPE == EXP_CAP_HARD)
++                    if (
++#ifdef PORT_BRIDGE
++                        CustomDifficulty_ExpCap()==CR_CAP_HARD
++#else
++                        B_RARE_CANDY_CAP && B_EXP_CAP_TYPE == EXP_CAP_HARD
++#endif
++                        )
+                     {
+                         u32 currentLevelCap = GetCurrentLevelCap();
+                         if (dataUnsigned > gExperienceTables[gSpeciesInfo[species].growthRate][currentLevelCap])
+@@ -3531,6 +3573,12 @@ bool8 PokemonUseItemEffects(struct Pokemon *mon, enum Item item, u8 partyIndex,
+                     }
+                 }
+ 
++#ifdef PORT_BRIDGE
++                if(dataUnsigned!=0 && CustomDifficulty_ExpCap()==CR_CAP_HARD) {
++                    u32 current=GetMonData(mon,MON_DATA_EXP);
++                    dataUnsigned=current+CustomDifficulty_ClampExp(mon,dataUnsigned>current ? dataUnsigned-current : 0);
++                }
++#endif
+                 if (dataUnsigned != 0) // Failsafe
+                 {
+                     SetMonData(mon, MON_DATA_EXP, &dataUnsigned);
+@@ -4234,6 +4282,13 @@ bool32 DoesMonMeetAdditionalConditions(struct Pokemon *mon, const struct Evoluti
              break;
          // Gen 5
          case IF_TRADE_PARTNER_SPECIES:
@@ -29151,7 +32318,7 @@ index 82017777..e14e7979 100644
              if (params[i].arg1 == partnerSpecies && partnerHoldEffect != HOLD_EFFECT_PREVENT_EVOLVE)
                  currentCondition = TRUE;
              break;
-@@ -4440,6 +4476,11 @@ enum Species GetEvolutionTargetSpecies(struct Pokemon *mon, enum EvolutionMode m
+@@ -4440,6 +4495,11 @@ enum Species GetEvolutionTargetSpecies(struct Pokemon *mon, enum EvolutionMode m
                  if (evolutions[i].param <= level)
                      conditionsMet = TRUE;
                  break;
@@ -29163,7 +32330,7 @@ index 82017777..e14e7979 100644
              case EVO_LEVEL_BATTLE_ONLY:
                  if (mode == EVO_MODE_BATTLE_ONLY && evolutions[i].param <= level)
                      conditionsMet = TRUE;
-@@ -6271,6 +6312,12 @@ static struct PartyState *GetBattlerPartyStateByPokemon(struct Pokemon *partyMon
+@@ -6271,6 +6331,12 @@ static struct PartyState *GetBattlerPartyStateByPokemon(struct Pokemon *partyMon
  {
      struct Pokemon *party = GetTrainerParty(trainer);
  

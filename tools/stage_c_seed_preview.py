@@ -35,7 +35,7 @@ def main():
     data=json.loads(args.pool.read_text())['entries']
     entries=(Entry*len(data))(*(Entry(e['species_id'],e['bst'],e['generation'],e['legendary_or_ultra'],e['first_attack_level']) for e in data))
     names={int(number):name for name,number in re.findall(r'^\s*(SPECIES_\w+) = (\d+),',(tree/'include/constants/species.h').read_text(),re.M)}
-    config=Config(seed=args.seed,randomOptions=7,contentRules=0x00020001,algorithm=1,generations=args.generations,mode=1,balanceFlags=args.balance)
+    config=Config(seed=args.seed,randomOptions=7,contentRules=int((tree / "include/custom_run_config.h").read_text().split("#define CR_CONTENT_RULES ")[1].split("u")[0],16),algorithm=1,generations=args.generations,mode=1,balanceFlags=args.balance)
     with tempfile.TemporaryDirectory() as temp:
         so=Path(temp)/'resolver.so'
         subprocess.run([args.cc,'-std=c99','-shared','-fPIC','-iquote',str(tree/'include'),str(tree/'src/custom_random_core.c'),'-o',str(so)],check=True)

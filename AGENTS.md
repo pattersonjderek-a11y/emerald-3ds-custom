@@ -7,9 +7,11 @@ adds no randomizer/difficulty systems. `docs/BUILD.md` records the frozen SDK
 and `tools/stage_a.sh build|test|versions` workflow. All runtime state belongs
 under `3ds_paths.h`; Stage A/original-engine uses `/3ds/emerald3ds-custom/`,
 Stage B expansion uses `/3ds/emerald3ds-custom-stage-b/`, Stage C uses
-`/3ds/emerald3ds-custom-stage-c/`. Never migrate legacy saves.
-Use `tools/stage_c_visuals.sh build|test|package` for the current follow-up,
-with the same frozen SDK and separate `build/stage-c-visuals` tree.
+`/3ds/emerald3ds-custom-stage-c/`; Stage D uses `/3ds/emerald3ds-custom-stage-d/`. Never migrate legacy saves.
+Use `tools/stage_d.sh build|test|package` on `project/stage-d` with the same
+frozen SDK and separate `build/stage-d` tree. Preserve the visual-fix tree/ZIP
+as well; its hardware acceptance is still pending. Derek explicitly authorized
+Stage D before that retest. Never mark host/native evidence as device acceptance.
 The original `project/stage-c` branch uses `tools/stage_c.sh` / `build/stage-c`. Preserve both Stage A/B trees,
 private ZIPs and remote checkpoints. A/B wrappers refuse C patches; checkout
 the matching branch before rebuilding a historical stage. Run `verify-storage-isolation` after storage changes. Content-bearing builds,
@@ -19,7 +21,17 @@ Working notes for agents building/testing this port. See
 `docs/DEVELOPMENT.md` for the project's own description; this file records the
 debugging gotchas that are easy to relearn the hard way.
 
-## Active visual follow-up
+## Stage D difficulty workflow
+
+Read RULES.md/SAVE_FORMAT.md. No flags or variables are allocated. Hard/Custom
+use existing record fields and rules ID 00030001. Preserve older C keys, no
+save import. Native boss variants are canonical src/data/trainers.party sources,
+not generated trainers.h. Difficulty template selection precedes randomization;
+never restore fixed boss species afterward. Use verify-difficulty (production
+host hooks plus linked trainer-data audit), all existing checks and fresh-source
+bootstrap. Regenerate with --tree build/stage-d; include new engine files.
+
+## Historical visual follow-up
 
 Derek confirmed an original 3DS XL and general C play, then reported black voxel
 borders, Torchic follower flicker/wrong appearance in Littleroot and stock scenic

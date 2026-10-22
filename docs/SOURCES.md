@@ -1,5 +1,16 @@
 # Sources and attribution
 
+## Stage D provenance
+
+Stage D builds on this repository's `fix/stage-c-visuals` checkpoint `45d3796`.
+Pins, SDK and existing Gen 1–9 assets are unchanged. New runtime difficulty and
+host/data checks are project code. Native cap machinery, AI flag policies,
+Difficulty: Hard trainer parser and existing trainer definitions are adapted
+from the **same pinned expansion integration**, not donor merges. New Hard
+`.party` entries derive from that integration's Normal bosses; preserve its
+existing notices. No new art, ROM, save, firmware, game-data pack or embedded
+application is committed. Historical attribution and component terms follow.
+
 Stage A inspection: 21 October 2026 (America/Los_Angeles). No donor merge,
 engine pin update, ROM, save, or firmware was used.
 
