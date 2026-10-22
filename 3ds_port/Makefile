@@ -42,6 +42,9 @@ DATA_BACKEND ?= 0
 PYTHON ?= python
 HOSTCC ?= gcc
 ROOT := ..
+ifneq ($(wildcard $(ROOT)/include/custom_run_config.h),)
+APP_TITLE := Emerald 3DS Custom Stage B
+endif
 SCRIPTS := ../tools/port_common
 EXESUFFIX := $(if $(filter Windows_NT,$(OS)),.exe,)
 SOURCES := src/main_3ds.c src/3ds_log.c src/3ds_platform.c src/3ds_input.c src/3ds_input_decode.c src/3ds_fs.c src/3ds_audio.c
@@ -353,3 +356,11 @@ clean:
 	rm -rf build dist $(TARGET).elf $(TARGET).3dsx $(TARGET).smdh
 
 -include $(OBJECTS:.o=.d)
+
+# Only expanded Stage B trees contain the run-record engine.
+ifneq ($(wildcard $(ROOT)/include/custom_run_config.h),)
+.PHONY: verify-custom-run
+verify: verify-custom-run
+verify-custom-run:
+	"$(PYTHON)" tests/custom_run_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+endif

@@ -1,9 +1,10 @@
 # Development
 
 For **Emerald 3DS Custom**, start with [BUILD.md](BUILD.md) and
-[DEVICE_TESTS.md](DEVICE_TESTS.md). This fork uses `/3ds/emerald3ds-custom/`
-for all state/data; the historical upstream paths below describe the original
-port. Do not use its public builder or a pack from another release for this
+[DEVICE_TESTS.md](DEVICE_TESTS.md). Stage B expansion uses
+`/3ds/emerald3ds-custom-stage-b/`; the frozen Stage A/original-engine build
+uses `/3ds/emerald3ds-custom/`. The historical upstream paths below describe
+the original port. Do not use its public builder or a pack from another release for this
 expansion build.
 
 ## Requirements

@@ -57,33 +57,35 @@ int main(void) {
     FILE *f = CtrFs_OpenData("settings.txt", "w");
     assert(f && fputs("custom\n", f) >= 0 && fclose(f) == 0);
     CtrFs_Shutdown();
+    puts(CTR_DATA_DIR);
     return 0;
 }
 '''
-    with tempfile.TemporaryDirectory() as directory:
-        root = Path(directory)
-        protected = {}
-        for app in ('emerald3ds', 'pokeemerald'):
-            folder = root / 'sdmc:' / '3ds' / app
-            folder.mkdir(parents=True)
-            for name in ('emerald3ds.sav', 'pokeemerald.sav', 'settings.txt',
-                         'emerald3ds.clock', 'emerald3ds.clock.bak', 'port.log',
-                         'emerald3ds.pak', 'debug.txt'):
-                path = folder / name
-                path.write_bytes(b'legacy must survive: ' + name.encode())
-                protected[path] = path.read_bytes()
-        (root / 'romfs:').mkdir()
-        (root / 'romfs:' / 'boot.txt').write_text('Emerald3DS RomFS v1\n')
-        (root / 'isolation.c').write_text(harness)
-        subprocess.run([os.environ.get('CC', 'gcc'), '-std=c99', '-Wall', '-Wextra',
-                        '-Werror', '-I' + str(PORT / 'include'), str(root / 'isolation.c'),
-                        '-o', str(root / 'isolation')], check=True)
-        subprocess.run([str(root / 'isolation')], cwd=root, check=True)
-        for path, original in protected.items():
-            assert path.read_bytes() == original, path
-        custom = root / 'sdmc:' / '3ds' / 'emerald3ds-custom'
-        assert (custom / 'emerald3ds.sav').stat().st_size == 128 * 1024
-        assert (custom / 'settings.txt').read_text() == 'custom\n'
+    for expanded in (False, True):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            protected = {}
+            for app in ('emerald3ds', 'pokeemerald') + (('emerald3ds-custom',) if expanded else ()):
+                folder = root / 'sdmc:' / '3ds' / app
+                folder.mkdir(parents=True)
+                for name in ('emerald3ds.sav', 'pokeemerald.sav', 'settings.txt',
+                             'emerald3ds.clock', 'emerald3ds.clock.bak', 'port.log',
+                             'emerald3ds.pak', 'debug.txt'):
+                    path = folder / name
+                    path.write_bytes(b'legacy must survive: ' + name.encode())
+                    protected[path] = path.read_bytes()
+            (root / 'romfs:').mkdir()
+            (root / 'romfs:' / 'boot.txt').write_text('Emerald3DS RomFS v1\n')
+            (root / 'isolation.c').write_text(harness)
+            subprocess.run([os.environ.get('CC', 'gcc'), '-std=c99', '-Wall', '-Wextra',
+                            '-Werror', *(['-DPORT_EXPANSION'] if expanded else []), '-I' + str(PORT / 'include'), str(root / 'isolation.c'),
+                            '-o', str(root / 'isolation')], check=True)
+            result = subprocess.run([str(root / 'isolation')], cwd=root, check=True, text=True, capture_output=True)
+            for path, original in protected.items():
+                assert path.read_bytes() == original, path
+            custom = root / result.stdout.strip()
+            assert (custom / 'emerald3ds.sav').stat().st_size == 128 * 1024
+            assert (custom / 'settings.txt').read_text() == 'custom\n'
     print('PASS production save/filesystem isolation: no migration, isolated writes, traversal rejection, legacy sentinels intact')
 
 

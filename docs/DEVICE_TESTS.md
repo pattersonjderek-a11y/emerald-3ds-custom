@@ -9,7 +9,81 @@ No emulator was run. Successful source inspection, host tests and native
 compilation do not establish boot, frame rate, campaign stability or complete
 Gen 1–9 art. Do not reuse historical upstream hardware results as new results.
 
-## Laptop and SD card
+## Stage B: separate console test (all results PENDING)
+
+The baseline Stage A ZIP is unchanged and separately preserved; test it using
+the original checklist below. Stage B is a different app and runtime namespace.
+No emulator, physical-console, restart or campaign result is claimed for Stage B.
+
+1. Back up the SD card on your laptop, including existing Emerald installations
+   and Stage A. Record original 3DS XL versus New 3DS XL and launcher version.
+2. Extract **Emerald3DS-Custom-StageB-private.zip** onto the SD root. Its app is
+   `3ds/emerald3ds-custom-stage-b/Emerald3DS.3dsx` with matching `.smdh` and an
+   empty debug marker. Launch **Emerald 3DS Custom Stage B** through Homebrew
+   Launcher. Leave Stage A's `3ds/emerald3ds-custom` and the original app folders
+   intact. Use a fresh Stage B directory; copy no saves, settings, clocks,
+   packs or loose-data markers from another installation.
+3. The embedded app includes its matching generated data. Do not install a
+   stock pack, use the generic builder installer, or use a CIA forwarder.
+   Existing sound setup remains the same read-only shared DSP file described
+   below; no firmware is included.
+4. Choose New Game. Randomized and Hard must say UNAVAILABLE and refuse A.
+   Custom is a locked preview; all rule changes remain unavailable. Confirm
+   Standard/Normal. Try automatic seed regeneration and manual seeds 0 and
+   4294967295; 4294967296 must be rejected. B discards an unaccepted digit edit.
+5. Read the summary; confirm the chosen seed, fixed mode and Normal difficulty.
+   Finish the normal introduction/name selection. Press START in the normal field to open RUN SETTINGS;
+   confirm the same seed, fixed mode, rules ID and algorithm 0. B must restore
+   the field/menu cleanly, with working graphics, controls and sound.
+6. Save, exit cleanly, relaunch, Continue and read RUN SETTINGS again: seed/run
+   ID/rules must be identical. Confirm player, party, location and progress.
+   Open graphical/QoL settings, change display preferences and reopen RUN
+   SETTINGS: its rules must stay unchanged.
+7. With that existing save backed up, choose New Game, edit choices and B back
+   to the mode page, then B cancel. Continue must still show the previous run
+   and progress. On the laptop, compare the save against its pre-cancel copy.
+   Opening setup/Run Settings must not change stored bytes. Clock/log files may
+   legitimately advance independently, so compare the save specifically.
+8. Back up the entire Stage B directory before replacing a run. A confirmed
+   second New Game changes the in-RAM run only after initialization; without
+   explicitly saving, restarting should still Continue the previous on-card
+   run. After intentionally saving the second run, its new seed/run ID must
+   survive restart. Keep the first backup outside the SD runtime directory.
+9. Test the baseline rendering/follower/dual-screen/battle checks below in
+   Stage B too. With optional DexNav enabled and every normal pause-menu item
+   unlocked, RUN SETTINGS occupies the ninth row; B/START closes the menu
+   (the explicit EXIT row is omitted in that full-menu case).
+10. Copy `port.log`/`port-prev.log` and the Stage B package manifest to the
+    laptop after a failure before relaunching rotates logs. Record exact menu
+    actions and displayed error. Do not upload saves/logs publicly. Delete
+    only Stage B's debug marker when routine logging is no longer needed.
+
+| Stage B check | Result |
+| --- | --- |
+| Launcher/boot, readable setup, disabled choices | PENDING |
+| Manual/automatic seed, overflow and summary | PENDING |
+| Intro, name, first field, read-only page and return | PENDING |
+| Save/restart/Continue preserves identity/options/progress | PENDING |
+| Cancel leaves existing on-card save intact | PENDING |
+| Confirmed new game without saving preserves old disk save | PENDING |
+| New run after intentional save resets identity | PENDING |
+| Display options do not modify run settings | PENDING |
+| Original, Stage A and Stage B directories remain isolated | PENDING |
+| Full normal pause menu, DexNav and B/START exit | PENDING |
+| Existing graphics, voxel effects, followers and dual screens | PENDING |
+| Corrupt/unsupported recovery UI on disposable synthetic test save | PENDING; developer-assisted only |
+| Physical SD/FAT interruption recovery | PENDING; not part of this smoke test |
+
+Stage B isolation was exercised with the production save/filesystem code on the
+host: sentinels for `/3ds/emerald3ds`, `/3ds/pokeemerald` and Stage A remained
+unchanged. The same central path macro controls saves, settings, clocks, logs,
+external data and diagnostic paths. This is distinct from a real SD/FAT test.
+If a run error appears, back up the full Stage B folder, restore a matching
+complete save/clock backup or use its matching build; do not delete/zero the
+run record to bypass rejection. See SAVE_FORMAT.md. Rollback removes only
+Stage B's directory after backup; Stage A and the original installations stay.
+
+## Stage A laptop and SD card
 
 1. Back up the SD card to your laptop. Record whether the console is an
    **original Nintendo 3DS XL** or **New Nintendo 3DS XL**; this does not block
@@ -39,7 +113,7 @@ installation. No CIA is included in the private package.
 
 ## Isolation audit
 
-Canonical `3ds_port/include/3ds_paths.h` selects
+The frozen Stage A version of `3ds_port/include/3ds_paths.h` selects
 `sdmc:/3ds/emerald3ds-custom/`. Production save and filesystem tests create
 sentinels for both legacy installations, initialize and write a new custom
 save, reload it, write custom settings, reject traversal/absolute paths, and

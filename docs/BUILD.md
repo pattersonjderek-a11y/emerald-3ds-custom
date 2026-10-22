@@ -1,4 +1,4 @@
-# Emerald 3DS Custom: Stage A build
+# Emerald 3DS Custom: reproducible builds
 
 The product specification is the repository-root `PROJECT_BLUEPRINT.md`.
 Do not reset to the blueprint's example clone or fetch newer engine code.
@@ -7,6 +7,73 @@ above candidate baseline `8ebb7355742ce43bbb10528044f9a175fc990a64`.
 `upstream.lock` remains unchanged: expansion
 `dfb0f84374230f4d462191601179b742f9f077df`, original engine
 `76463dac15cad36aca5e2b3f6366abf9e53f814f`.
+
+## Stage B workflow (current development branch)
+
+Stage A remains frozen on remote `project/stage-a` and tag
+`stage-a-verified-48d8096` at `48d809677b496b029415d1af2e6524c4a08714d8`.
+Its actual native results/commands remain in `STAGE_A_STATUS.md`, original hashes
+in `BUILD_OUTPUTS.json`, and separately preserved private package/manifest in
+ignored `work/baseline-stage-a-48d8096/`. No device results have been supplied.
+Use a separate branch/tree/package/SD directory for current Stage B work.
+
+Reuse the exact SDK below; no dependency upgrades or donor merges:
+
+```sh
+git switch project/stage-b
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/project" -w /project emerald-stage-a-sdk \
+  bash -lc 'tools/stage_b.sh build && tools/stage_b.sh test && tools/stage_b.sh package'
+```
+
+Equivalent commands inside that SDK (SDK paths exported by the wrapper):
+
+```sh
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-b --make -j4 --python python3
+make -C build/stage-b/3ds_port verify PYTHON=python3
+EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-b" python3 -m unittest builder.tests.test_expansion_enhancements -v
+EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-b" python3 -m unittest discover -s builder/tests -v
+python3 tools/release_audit.py --repo . --strict
+make -C build/stage-b/3ds_port release pak PYTHON=python3
+python3 tools/private_smoke_package.py --stage B
+```
+
+The new `verify-custom-run` gate compiles production codec/menu/save adapters,
+new-save initialization, Continue/save guards and sector/checksum/recovery
+code on the host with ASan/UBSan. It is automatically included in `make verify`
+only when the patched expansion run-config header exists. Standalone command:
+`python3 3ds_port/tests/custom_run_test.py --tree build/stage-b`.
+These are host tests, distinct from the native ARM build and device testing.
+
+Native outputs are under `build/stage-b/3ds_port/`: `emerald3ds.3dsx`,
+`emerald3ds.smdh`, engine-only `dist/Emerald3DS.3dsx`, and matching private
+`build/emerald3ds.pak`. The audited embedded SD ZIP and manifest go only to
+`work/stage-b-private/`, named `Emerald3DS-Custom-StageB-private.zip` and
+`manifest.json`. Packaging checks the actual embedded ABI/index and all pack
+entry CRCs, checks for the Stage B runtime path and absence of original/Stage A
+paths, runs native-build validation plus host tests, and never overwrites the
+Stage A ZIP. Do not upload content-bearing outputs to CI or GitHub.
+
+Expansion runtime state is `/3ds/emerald3ds-custom-stage-b/`; original-engine
+builds retain `/3ds/emerald3ds-custom/`. The embedded Stage B build needs no
+separate data pack. Existing generic builder/install/dev-data defaults still
+refer to the Stage A namespace: do not use them to install Stage B. Use its
+private ZIP as directed in DEVICE_TESTS.md. Public engine-only packaging remains
+subject to the existing release audit and is not a validated player-data recipe.
+
+For source reproduction, regenerate the engine patch before bootstrapping:
+
+```sh
+python3 tools/regenerate_expansion_patch.py --tree build/stage-b
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-b-clean
+python3 3ds_port/tests/custom_run_test.py --tree work/stage-b-clean
+```
+
+The patch tool retains all existing patch paths, including new map scripts and
+mapjson sources that broad exclusion globs would lose. For future new engine
+files pass each path with `--add`; canonical platform overlays/generated assets
+must never enter that patch. Reverse-apply and fresh-bootstrap checks are
+required. A fresh source/test bootstrap is not claimed as a second native build.
+The full native build here was itself started from a fresh Stage B tree.
 
 ## SDK setup
 

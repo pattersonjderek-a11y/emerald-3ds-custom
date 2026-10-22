@@ -5,8 +5,11 @@
 Read `PROJECT_BLUEPRINT.md` and `docs/STATUS.md` before new work. Stage A
 adds no randomizer/difficulty systems. `docs/BUILD.md` records the frozen SDK
 and `tools/stage_a.sh build|test|versions` workflow. All runtime state belongs
-under `/3ds/emerald3ds-custom/` via `3ds_paths.h`; never migrate legacy saves.
-Run `verify-storage-isolation` after storage changes. Content-bearing builds,
+under `3ds_paths.h`; Stage A/original-engine uses `/3ds/emerald3ds-custom/`,
+Stage B expansion uses `/3ds/emerald3ds-custom-stage-b/`. Never migrate legacy saves.
+Use `tools/stage_b.sh build|test|package` for current development, with the
+same frozen SDK and separate `build/stage-b` tree. Preserve the Stage A tree,
+private ZIP and remote checkpoint. Run `verify-storage-isolation` after storage changes. Content-bearing builds,
 packs, and private test ZIPs stay in ignored `build/` or `work/`, never CI uploads.
 
 Working notes for agents building/testing this port. See
@@ -53,6 +56,20 @@ shared header, delete the affected `build/root/src/*.o`. Under `-j8` the
 asset-table step occasionally writes 0 entries (a race with the on-demand
 asset generation); if `romfs/assets/asset_map.txt` is tiny, re-run `make`
 (or `-j1`) rather than deploying that build.
+
+## Current Stage B patch workflow
+
+Read `docs/SAVE_FORMAT.md` before changing save allocation. Flags `0x20–0x2C`
+remain reserved by existing systems; no new run flags/variables. Unsupported
+rules must fail closed in both UI and codec. Hardware results remain pending.
+
+Use `python3 tools/regenerate_expansion_patch.py --tree build/stage-b`.
+For new engine files add `--add include/new_file.h src/new_file.c` explicitly.
+It retains all existing patch paths (including new map scripts/mapjson sources),
+stages the selected source files and checks reverse application. Then bootstrap
+`work/stage-b-clean`, compare engine sources and run production run tests there.
+Do not run the older broad exclusion command below blindly: it excludes some
+existing source additions. The historical instructions remain for context.
 
 ## Regenerating the expansion patch
 

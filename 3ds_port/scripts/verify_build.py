@@ -51,6 +51,9 @@ def main():
         # The expansion provides these as a static inline and a macro, so no
         # such symbols are emitted; check the real functions behind them.
         required = ['CtrGame_Init', 'CpuSet', 'DmaSet', 'Random32', 'AllocZeroed_', 'CtrInput_Update']
+    if args.full and args.expansion and (root.parent / 'include/custom_run_config.h').is_file():
+        required += ['CustomRunMenu_Setup', 'CustomRunMenu_View', 'CustomRun_Read',
+                     'CustomRun_CommitNewSave', 'CR_Decode', 'CR_MenuInput', 'CR_MenuLines']
     if args.full and args.expansion:
         required += ['VisibleWild_Update', 'VisibleWild_StepOnto', 'VisibleWild_CameraShift', 'VisibleWild_IsSprite']
     if args.full:

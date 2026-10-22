@@ -1,5 +1,6 @@
 """Execute the real expansion adapters with host-side game state fixtures."""
 from pathlib import Path
+import os
 import re
 import shutil
 import subprocess
@@ -7,7 +8,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-GAME = ROOT / 'build/expansion/src'
+GAME = Path(os.environ.get('EMERALD3DS_EXPANSION_TREE', str(ROOT / 'build/expansion'))) / 'src'
 CC = shutil.which('cc')
 
 

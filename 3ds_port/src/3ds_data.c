@@ -144,7 +144,7 @@ static bool OpenPak(void)
                  "Run the builder that came with this\n"
                  "release with your own Pokemon Emerald\n"
                  "ROM and install the data pack to:\n\n"
-                 "  /3ds/emerald3ds-custom/emerald3ds.pak");
+                 "  " CTR_SD_DIR "emerald3ds.pak");
         return false;
     }
     setvbuf(sPak, NULL, _IOFBF, 64 * 1024);
@@ -156,7 +156,7 @@ static bool OpenPak(void)
         break;
     case CTR_PAK_BAD_MAGIC:
         SetError("This is not a game data pack.",
-                 "/3ds/emerald3ds-custom/emerald3ds.pak is not a\n"
+                 CTR_SD_DIR "emerald3ds.pak is not a\n"
                  "data pack. Run the builder again.");
         goto fail;
     case CTR_PAK_BAD_SCHEMA:

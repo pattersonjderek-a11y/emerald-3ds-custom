@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -25,14 +26,17 @@ def sha(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--tree', type=Path, default=ROOT / 'build/expansion')
+    ap.add_argument('--stage', choices=('A', 'B'), default='A')
+    ap.add_argument('--tree', type=Path)
     args = ap.parse_args()
-    tree = args.tree.resolve()
+    tree = (args.tree or ROOT / ('build/stage-b' if args.stage == 'B' else 'build/expansion')).resolve()
+    namespace = 'emerald3ds-custom-stage-b' if args.stage == 'B' else 'emerald3ds-custom'
     port = tree / '3ds_port'
     # Re-run the gating audits. No package is written if any check fails.
     subprocess.run(['make', '-C', str(port), 'verify', 'PYTHON=python3'], check=True)
     subprocess.run([sys.executable, '-m', 'unittest',
-                    'builder.tests.test_expansion_enhancements', '-v'], cwd=ROOT, check=True)
+                    'builder.tests.test_expansion_enhancements', '-v'], cwd=ROOT,
+                   env={**os.environ, 'EMERALD3DS_EXPANSION_TREE': str(tree)}, check=True)
     subprocess.run([sys.executable, 'tools/release_audit.py', '--repo', '.', '--strict'],
                    cwd=ROOT, check=True)
     romfs = port / 'romfs'
@@ -45,7 +49,9 @@ def main():
     app = port / 'emerald3ds.3dsx'
     blob = app.read_bytes()
     assert blob[:4] == b'3DSX'
-    assert b'sdmc:/3ds/emerald3ds-custom/' in blob
+    assert f'sdmc:/3ds/{namespace}/'.encode() in blob
+    if args.stage == 'B':
+        assert b'sdmc:/3ds/emerald3ds-custom/' not in blob
     assert b'sdmc:/3ds/emerald3ds/' not in blob
     assert b'sdmc:/3ds/pokeemerald/' not in blob
     assert struct.pack('<I', abi) in blob, 'ABI missing from embedded application'
@@ -59,10 +65,10 @@ def main():
             count = reader.verify()
             assert count == len(items)
         pack_info = {'bytes': pack.stat().st_size, 'sha256': sha(pack), 'entries': count}
-    files = {'3ds/emerald3ds-custom/Emerald3DS.3dsx': app,
-             '3ds/emerald3ds-custom/Emerald3DS.smdh': port / 'emerald3ds.smdh'}
+    files = {f'3ds/{namespace}/Emerald3DS.3dsx': app,
+             f'3ds/{namespace}/Emerald3DS.smdh': port / 'emerald3ds.smdh'}
     report = {
-        'private_content_bearing': True,
+        'private_content_bearing': True, 'stage': args.stage, 'namespace': namespace,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_diff_sha256': hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         'engine_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=tree, text=True).strip(),
@@ -81,16 +87,16 @@ def main():
         'native_verified': True, 'emulator_tested': False, 'hardware_tested': False,
         'limitations': 'Generated asset inventory is not a complete Gen 1-9/follower coverage audit.',
     }
-    out = ROOT / 'work/private-smoke'
+    out = ROOT / ('work/stage-b-private' if args.stage == 'B' else 'work/private-smoke')
     out.mkdir(parents=True, exist_ok=True)
     manifest = json.dumps(report, indent=2) + '\n'
     (out / 'manifest.json').write_text(manifest)
-    zip_path = out / 'Emerald3DS-Custom-StageA-private.zip'
+    zip_path = out / f'Emerald3DS-Custom-Stage{args.stage}-private.zip'
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as archive:
         for name, path in files.items():
             archive.write(path, name)
-        archive.writestr('3ds/emerald3ds-custom/debug.txt', '')
-        archive.writestr('STAGE_A_MANIFEST.json', manifest)
+        archive.writestr(f'3ds/{namespace}/debug.txt', '')
+        archive.writestr(f'STAGE_{args.stage}_MANIFEST.json', manifest)
         archive.write(ROOT / 'docs/TOOLCHAIN_PACKAGES.txt', 'TOOLCHAIN_PACKAGES.txt')
         archive.write(ROOT / 'docs/DEVICE_TESTS.md', 'READ_ME_FIRST.md')
     print(manifest)

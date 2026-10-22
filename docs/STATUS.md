@@ -1,119 +1,107 @@
-# Stage A status
+# Stage B status
 
-Work started 21 October 2026 (America/Los_Angeles), on clean `work` at
-`a30828a`, with candidate baseline `8ebb7355742ce43bbb10528044f9a175fc990a64`
-as its parent. Work continues on local branch `project/stage-a`. The
-root `PROJECT_BLUEPRINT.md` is the current specification. No donor merges,
-engine dependency upgrades, randomizer, difficulty, or save-layout changes.
+Stage A is complete in source, host regression checks and native compilation;
+physical-console acceptance remains **PENDING**. Its full findings and exact
+commands are preserved in [STAGE_A_STATUS.md](STAGE_A_STATUS.md), with immutable
+artifact hashes in [BUILD_OUTPUTS.json](BUILD_OUTPUTS.json).
 
-Engineering complete; physical-console acceptance is pending. Implementation
-revision: `c73ea2a28e7050be1f31dfd63fa478fe4cc9e5ae`. Subsequent documentation
-records the final artifact evidence. No changes were pushed remotely.
+Before Stage B, verified every recorded Stage A artifact size/SHA-256 and ZIP
+CRC, copied the private package and manifest to ignored
+`work/baseline-stage-a-48d8096/`, and pushed branch `project/stage-a` and tag
+`stage-a-verified-48d8096` at `48d809677b496b029415d1af2e6524c4a08714d8`.
+GitHub accepted both; no write blocker. Original upstream history is preserved.
+No console results were supplied. Stage B is separate on `project/stage-b`,
+using `build/stage-b` and its own SD namespace. Stage A build trees/package
+are not used as Stage B output destinations.
 
-## Completed implementation
+## Implemented
 
-- Frozen the existing official CI SDK image by digest; added
-  `tools/stage_a.Dockerfile` with observed host-package pins and
-  `tools/stage_a.sh build|test|versions|package`. Built the documented SDK image.
-- Repaired two fresh-build prerequisite failures in canonical
-  `3ds_port/full.mk`: generated makefile directory ordering and the intro
-  graphics prerequisite. Preserved rendering and existing expansion systems.
-- Centralized custom storage in `3ds_paths.h`, redirected mutable paths,
-  packs, loose-data markers, logs and diagnostic/scenario paths; removed
-  automatic legacy-save migration. Launcher title identifies the custom app.
-- Updated installer/uploader paths and added production filesystem/save
-  isolation checks to `make verify`. Settings and clock tests retain their
-  production-code coverage. No engine-side edits or patch regeneration needed.
-- Created the private smoke ZIP with ABI/data CRC, asset-table, application
-  path and hash checks. Hardened source auditing to stop on Git index errors
-  instead of scanning ignored private builds. No public publication or SD-card write was performed.
-- Recorded build setup, source provenance, installation audit and pending
-  hardware checklist in `BUILD.md`, `SOURCES.md`, `DEVICE_TESTS.md`.
-  Historical development/installation instructions are retained with a custom
-  build pointer. Extended existing `AGENTS.md` without replacing its gotchas.
+- Audited flags, variables, native save structures, serializer and checksums.
+  Reserved 52 unused bytes at SaveBlock1 offset `0x988`; no new flags/variables,
+  no size/offset changes, no sidecar. See [SAVE_FORMAT.md](SAVE_FORMAT.md).
+- Added versioned, little-endian, CRC-protected run configuration, bound to
+  the initialized trainer ID and containing an independent run ID, seed,
+  mode/options/difficulty, algorithm version and content-rules identifier.
+- Added native new-game setup before Birch's introduction: mode, difficulty,
+  locked customization preview, automatic/manual numeric seed, summary and
+  confirmation. Only Standard/Normal can be confirmed; future rules are
+  visibly unavailable and rejected by serialization too.
+- Draft choices remain in temporary RAM. The native new-game initializer
+  consumes confirmed choices exactly once after its destructive resets and
+  trainer-ID initialization. Cancellation cannot commit or write a save.
+- Continue reads existing rules without generating a seed. A read-only
+  Run Settings page opens on physical START in the normal dual-screen field,
+  or from RUN SETTINGS in the classic pause menu.
+  Corrupt/unsupported records block Continue and all ordinary/full-link save
+  entry points before side effects, preserving the record for recovery.
+- Expansion runtime paths and launcher metadata identify Stage B separately.
+  Existing original-engine builds retain their Stage A path. Graphical options,
+  clock behavior, expansion content and renderer remain inherited.
+- Engine implementation, including six new files, is in the canonical expansion
+  patch. Added safe patch regeneration, Stage B wrapper and private packaging
+  support; enhancement regression fixtures can explicitly select the new tree.
 
-## Checks and evidence
+## Verification
 
-Private full logs and package manifests live under ignored `work/`.
+Production host fixtures pass ASan/UBSan: round trips; seed boundaries; all
+416 single-bit record corruptions per edge seed; unsupported schemas,
+algorithms/content/rules/bindings; unchanged outputs on rejection; explicit
+legacy records; no-op prevention; setup navigation/locked choices/manual entry;
+new-game reset and cancellation; the complete production NewGameInitData;
+actual save-sector serialization, checksum, loading and older-slot recovery;
+actual Continue, ordinary save and full-link save guards.
 
-| Evidence | Command / result |
-| --- | --- |
-| Source inspected | Blueprint, all applicable AGENTS instructions, upstream.lock, development/feature docs and CI read; pins unchanged |
-| First host bootstrap | Failed at `png.h`: host lacked libpng headers; moved build to official SDK container |
-| Container tools | Initial host-generated binaries required newer GLIBC/GLIBCXX; fixed with `make -C build/expansion clean-tools` in container |
-| Fresh make ordering | Reproduced `open: build/port_art.mk: No such file or directory` and missing intro `.4bpp` rule; canonical fixes applied |
-| Expansion adapters | `python3 -m unittest builder.tests.test_expansion_enhancements -v`: 9 passed |
-| Builder suite | `python3 -m unittest discover -s builder/tests -v`: 95 tests, 2 existing skips (private follower copy and configured Spanish source-tree fixture) |
-| Storage isolation | `python3 3ds_port/tests/storage_isolation_test.py`: passed production initialization/write/reload and legacy sentinels |
-| Python compilation | `python3 -m compileall -q builder tools 3ds_port/scripts 3ds_port/tests`: passed |
-| Source publication audit | `python3 tools/release_audit.py --repo . --strict`: passed on the final owner-run workflow; deliberate untrusted-owner check refuses immediately |
-| Fresh expansion source | `python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/fresh-expansion`: passed; canonical files match; reverse patch check passed in both expansion trees |
-| Native expansion | `tools/stage_a.sh build` passed; `make verify` passed with 38 required symbols, no strong undefined symbols, all 17,536 indexed assets and 1,451 pointer rows verified |
-| Original engine | `python3 tools/bootstrap.py --dir build/upstream --make -j2 --python python3` and `make -C build/upstream/3ds_port verify PYTHON=python3`: passed; 34 required symbols, 6,424 indexed assets, 1,339 pointer rows |
-| Original production integrations | `encounter_tables_test.py --tree build/upstream` and `berry_clock_test.py --tree build/upstream`: passed |
-| Release and matching data | `make -C build/expansion/3ds_port release pak PYTHON=python3`: passed; engine-only ZIP strict audit passed; every pack CRC verified |
-| Private packaging | `python3 tools/private_smoke_package.py` in SDK as repository owner: passed; ZIP CRC and embedded application hash verified |
-| Emulator | Not run; Azahar/Citra not installed |
-| Physical 3DS XL | PENDING Derek; console variant not yet supplied |
-| Campaign | Not exercised |
+Native compilation passed in the frozen Stage A SDK. Initial command:
+`python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-b --make -j4 --python python3`.
+A missing `main_menu.h` declaration for CB2_InitMainMenu was diagnosed and
+fixed in the engine patch; resumed with
+`make -C build/stage-b/3ds_port -j4 PYTHON=python3` (exit 0). The subsequent
+START-adapter integration was rebuilt with that same native make command.
+`make -C build/stage-b/3ds_port verify PYTHON=python3` passed the existing
+clock/settings/input/graphics/voxel/expansion regressions and new production
+configuration tests, plus ARM11 hard-float/link audit with **45 required
+symbols**, no strong undefined symbols, 17,536 indexed assets and 1,451 pointer
+rows. Final packaging repeats this gate after the START integration fix.
 
-## Outputs and reproduction evidence
+Additional commands/results:
 
-All paths below are relative to the repository root. Full sizes and SHA-256
-hashes are recorded in [BUILD_OUTPUTS.json](BUILD_OUTPUTS.json).
+- `python3 3ds_port/tests/custom_run_test.py --tree build/stage-b`: all six
+  production harnesses passed ASan/UBSan, including START access and storage
+  canaries preserving every byte outside the reservation.
+- `EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-b" python3 -m unittest builder.tests.test_expansion_enhancements -v`:
+  9 passed against this Stage B tree.
+- Same tree selection with `python3 -m unittest discover -s builder/tests -v`:
+  95 tests, two existing skips (private follower copy and Spanish source fixture).
+- `python3 3ds_port/tests/storage_isolation_test.py`: both original-engine and
+  expansion namespaces passed production save/filesystem sentinel tests.
+- `python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-b-clean`:
+  fresh pinned source reproduction; all 269 patched files match the build tree.
+  Production run tests also passed on this fresh tree. This is a source/host
+  reproduction, not a second full native compilation.
+- ARM ELF debugger confirmed sizes 15,536 / 3,884 / 1 and record/flags/vars
+  offsets 0x988 / 0x1270 / 0x139C, identical to Stage A.
+- Python compilation and owner-run strict source publication audit passed.
 
-| Artifact | Path | Bytes |
-| --- | --- | ---: |
-| Private embedded application | `build/expansion/3ds_port/emerald3ds.3dsx` | 54,892,140 |
-| Launcher metadata | `build/expansion/3ds_port/emerald3ds.smdh` | 14,016 |
-| Engine-only application | `build/expansion/3ds_port/dist/Emerald3DS.3dsx` | 9,390,548 |
-| Matching private data pack | `build/expansion/3ds_port/build/emerald3ds.pak` | 44,764,000 |
-| Private SD-card ZIP | `work/private-smoke/Emerald3DS-Custom-StageA-private.zip` | 20,496,266 |
-| Machine manifest | `work/private-smoke/manifest.json` | |
-| Original-engine development app | `build/upstream/3ds_port/emerald3ds.3dsx` | 36,835,744 |
+Private logs: `work/stage-b-native.log`, `work/stage-b-native-start-access.log`,
+`work/stage-b-verify.log`, `work/stage-b-host-run.log`,
+`work/stage-b-fresh-tests.log`, `work/stage-b-builder.log`,
+`work/stage-b-adapters.log`, `work/stage-b-isolation.log`,
+`work/stage-b-save-layout-after.txt`, `work/stage-b-source-audit.log`.
+SDK versions are unchanged, recorded again in `work/stage-b-versions.txt`.
+Inherited asset-generation probes report absent unlinked alternate-form/FRLG
+art; the complete linked asset index passes. Full species/follower coverage
+is still a later audit, not claimed by this stage.
 
-The package carries the embedded application, metadata, an empty debug marker,
-instructions and manifest. It contains no separate pack, saves, settings or
-firmware. ZIP SHA-256:
-`3508a4bc015e07815523db1442ad9ff46ffcfeeded972ba5e15e98f3d8ca505b`.
-Staged game data: 17,513 files / 43,971,025 bytes, ABI `8efc02d7`.
-The 698 linked sprite-animation tables and 1,818 animation pointers passed
-validation; Mega progression, Kanto ferry, evolution, Pokédex lifetime, berry
-sprites, line wrapping and compressed health-bar fixtures passed.
+Native/private outputs: `build/stage-b/3ds_port/emerald3ds.3dsx` and `.smdh`;
+engine-only `build/stage-b/3ds_port/dist/Emerald3DS.3dsx` and `.smdh`;
+matching private `build/stage-b/3ds_port/build/emerald3ds.pak`.
+Final private ZIP/manifest and artifact metadata are prepared after this
+implementation checkpoint under `work/stage-b-private/`.
 
-Final logs: `work/native-build-final.log`, `work/verify-expansion-final.log`,
-`work/vanilla-build.log`, `work/verify-vanilla.log`,
-`work/vanilla-production-clock-encounters.log`, `work/release-pack-final.log`,
-`work/engine-release-audit-final.log`, `work/private-package.log`.
-A transient wrapper run exited 127 after it was edited during execution;
-the finalized wrapper was rerun successfully. The original root-run source
-audit scanned the wrong scope after Git ownership rejection; the corrected
-auditor and owner-run complete workflow pass. Neither issue is a remaining blocker.
+## Acceptance and next task
 
-A separate fresh expansion bootstrap applied the unchanged patch from the
-locked commit, passed reverse-apply validation, and matched all 288 canonical
-platform/tool/builder files. This was a source reproduction check; the full
-native expansion build used `build/expansion`. The original-engine native
-build independently exercised the new Makefile rules from a fresh tree.
-
-## Remaining acceptance
-
-Native expansion and original-engine compilation and full `make verify` passed.
-The finalized owner-run `tools/stage_a.sh test` passed, including 9 adapter
-tests, 95 builder tests (2 existing skips), and the strict source audit.
-Engine-only release audit passed; all 17,513 pack entries passed CRC checks
-and matched engine ABI `8efc02d7`. Generation attempted absent alternate-form
-paths, but reported no missing linked asset symbols. This is not a full species
-audit. Sanitizer-enabled production fixtures passed with their existing ASan/UBSan
-settings; no new sanitizer suppression or disabled check was needed.
-
-Physical acceptance remains with Derek using `DEVICE_TESTS.md`. The custom
-CIA forwarder identity and the final expansion player-ROM recipe are not
-validated; use Homebrew Launcher and the private embedded build. Local
-wireless remains outside this expansion milestone. An all-species/form/follower
-inventory is later Stage E work.
-
-Next task after build evidence: Derek's isolated console smoke test. Resolve
-any baseline failures before active new gameplay changes; Stage B follows with
-save-namespace/flag audit and saved run-configuration design, without reusing
-flags 0x20–0x2C. No new run rules are present in Stage A.
+No emulator, physical console or campaign result is claimed. All device
+results remain PENDING in [DEVICE_TESTS.md](DEVICE_TESTS.md). Confirm setup,
+cancel/Continue/save/restart and UI return paths on the 3DS XL before expanding
+rule behavior. After Stage B acceptance, Stage C implements seeded starters,
+wild tables and trainer parties; Hard/Custom battle rules remain Stage D.

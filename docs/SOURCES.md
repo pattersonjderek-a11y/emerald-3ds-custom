@@ -35,3 +35,14 @@ Stage A implementation is committed locally as
 hardware-pending records are subsequent documentation only. The SDK/package
 manifest and output hashes are in `TOOLCHAIN_PACKAGES.txt` and
 `BUILD_OUTPUTS.json`; content-bearing artifacts remain outside source control.
+
+Stage B builds on the preserved Stage A checkpoint `48d8096`, now synced to
+remote branch `project/stage-a` and tag `stage-a-verified-48d8096`. All engine
+and SDK pins remain unchanged. The run-record codec, setup state machine,
+native UI/save adapters, synthetic host fixtures and workflow additions are
+new project code written for this stage; no donor files or algorithms were
+imported. Engine additions and modifications are captured in the existing
+canonical expansion patch (including six new engine files). Existing notices,
+credits, generated asset pipeline and source-ownership rules remain applicable.
+Schema/content-rules provenance is documented in SAVE_FORMAT.md. Private
+Stage B output remains under ignored build/work paths, never source history.

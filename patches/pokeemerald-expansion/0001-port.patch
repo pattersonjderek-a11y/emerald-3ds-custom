@@ -2294,6 +2294,9 @@ index f04e022b..e896dcb7 100644
 -	.4byte AI_Nothing           @ CONTEST_AI_DUMMY_23
 -	.4byte AI_Nothing           @ CONTEST_AI_DUMMY_24
 -	.4byte AI_Nothing           @ CONTEST_AI_DUMMY_25
+-
+-
+-@ Unused. Encourages improving condition on the 1st appeal, or startling mons if the users turn is later
 +	.int AI_CheckBadMove      /* CONTEST_AI_CHECK_BAD_MOVE*/
 +	.int AI_CheckCombo        /* CONTEST_AI_CHECK_COMBO*/
 +	.int AI_CheckBoring       /* CONTEST_AI_CHECK_BORING*/
@@ -2326,9 +2329,8 @@ index f04e022b..e896dcb7 100644
 +	.int AI_Nothing           /* CONTEST_AI_DUMMY_23*/
 +	.int AI_Nothing           /* CONTEST_AI_DUMMY_24*/
 +	.int AI_Nothing           /* CONTEST_AI_DUMMY_25*/
- 
- 
--@ Unused. Encourages improving condition on the 1st appeal, or startling mons if the users turn is later
++
++
 +/* Unused. Encourages improving condition on the 1st appeal, or startling mons if the users turn is later*/
  AI_CheckTiming:
  	if_appeal_num_not_eq 0, AI_CheckTiming_SkipCondition
@@ -7256,6 +7258,96 @@ index 36e27d78..d41f03c6 100644
  
  #define MAP_GROUP(map) (map >> 8)
  #define MAP_NUM(map) (map & 0xFF)
+diff --git c/include/custom_run.h w/include/custom_run.h
+new file mode 100644
+index 00000000..fcfc7b80
+--- /dev/null
++++ w/include/custom_run.h
+@@ -0,0 +1,13 @@
++#ifndef CUSTOM_RUN_H
++#define CUSTOM_RUN_H
++#include "custom_run_config.h"
++#include "main.h"
++#ifdef PORT_BRIDGE
++bool CustomRun_HasConfirmedDraft(void);
++bool CustomRun_CommitNewSave(void);
++bool CustomRun_CanPlay(void);
++enum CRStatus CustomRun_Read(struct CRConfig *out);
++void CustomRunMenu_Setup(MainCallback accepted, MainCallback cancelled);
++void CustomRunMenu_View(MainCallback returnTo);
++#endif
++#endif
+diff --git c/include/custom_run_config.h w/include/custom_run_config.h
+new file mode 100644
+index 00000000..35883b47
+--- /dev/null
++++ w/include/custom_run_config.h
+@@ -0,0 +1,42 @@
++#ifndef CUSTOM_RUN_CONFIG_H
++#define CUSTOM_RUN_CONFIG_H
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdint.h>
++
++#define CR_RECORD_SIZE 52
++#define CR_SCHEMA 1
++#define CR_ALGORITHM 0 /* fixed campaign; no randomizer algorithm active */
++#define CR_CONTENT_RULES 0x00010001u
++#define CR_GENERATIONS 0x01FFu
++#define CR_RANDOM_STARTERS (1u << 0)
++#define CR_RANDOM_WILD (1u << 1)
++#define CR_RANDOM_TRAINERS (1u << 2)
++#define CR_RANDOM_ABILITIES (1u << 3)
++#define CR_RANDOM_FIELD_ITEMS (1u << 4)
++#define CR_RANDOM_HELD_ITEMS (1u << 5)
++
++enum CRMode { CR_STANDARD, CR_RANDOMIZED };
++enum CRDifficulty { CR_NORMAL, CR_HARD, CR_CUSTOM };
++enum CRStatus { CR_OK, CR_LEGACY, CR_CORRUPT, CR_VERSION, CR_CONTENT, CR_RULES, CR_BINDING };
++struct CRConfig {
++    uint32_t seed, randomOptions, difficultyOptions, contentRules, runId;
++    uint16_t algorithm, generations;
++    uint8_t mode, difficulty, capMode, aiPolicy;
++    uint32_t balanceFlags;
++};
++struct CRDraft {
++    struct CRConfig config;
++    bool editing, confirmed, manualSeed;
++};
++uint32_t CR_Crc32(const uint8_t *bytes, size_t size);
++enum CRStatus CR_Validate(const struct CRConfig *config);
++enum CRStatus CR_Decode(const uint8_t bytes[CR_RECORD_SIZE], uint32_t trainerId, struct CRConfig *out);
++bool CR_Encode(uint8_t bytes[CR_RECORD_SIZE], uint32_t trainerId, const struct CRConfig *config);
++void CR_Begin(struct CRDraft *draft, uint32_t seed, uint32_t runId);
++void CR_Cancel(struct CRDraft *draft);
++bool CR_Confirm(struct CRDraft *draft);
++bool CR_Commit(struct CRDraft *draft, uint8_t bytes[CR_RECORD_SIZE], uint32_t trainerId);
++bool CR_ParseSeed(const char *decimal, uint32_t *seed);
++const char *CR_StatusText(enum CRStatus status);
++#endif
+diff --git c/include/custom_run_menu_model.h w/include/custom_run_menu_model.h
+new file mode 100644
+index 00000000..2e67c099
+--- /dev/null
++++ w/include/custom_run_menu_model.h
+@@ -0,0 +1,17 @@
++#ifndef CUSTOM_RUN_MENU_MODEL_H
++#define CUSTOM_RUN_MENU_MODEL_H
++#include "custom_run_config.h"
++enum CRPage { CR_PAGE_MODE, CR_PAGE_DIFFICULTY, CR_PAGE_CUSTOM, CR_PAGE_SEED, CR_PAGE_DIGITS, CR_PAGE_SUMMARY };
++enum CRKeys { CR_UP=1, CR_DOWN=2, CR_LEFT=4, CR_RIGHT=8, CR_A=16, CR_B=32 };
++enum CROutcome { CR_STAY, CR_CANCELLED, CR_ACCEPTED };
++struct CRMenu {
++    struct CRDraft draft;
++    enum CRPage page;
++    unsigned selected, digit;
++    char digits[11];
++    bool notice;
++};
++void CR_MenuBegin(struct CRMenu *menu, uint32_t seed, uint32_t runId);
++enum CROutcome CR_MenuInput(struct CRMenu *menu, unsigned keys, uint32_t newSeed);
++void CR_MenuLines(const struct CRMenu *menu, char lines[12][36]);
++#endif
 diff --git c/include/dodrio_berry_picking.h w/include/dodrio_berry_picking.h
 index ec62e519..a93fb27c 100644
 --- c/include/dodrio_berry_picking.h
@@ -7883,7 +7975,7 @@ index 65b65187..20322aac 100644
  {
      u16 priority:2;
 diff --git c/include/global.h w/include/global.h
-index 6e29f721..76ff5c58 100644
+index 6e29f721..00ce21a5 100644
 --- c/include/global.h
 +++ w/include/global.h
 @@ -1,6 +1,7 @@
@@ -7989,7 +8081,19 @@ index 6e29f721..76ff5c58 100644
  
  #define LINK_B_RECORDS_COUNT 5
  
-@@ -1228,4 +1254,29 @@ extern bool32 gCountAllocs;
+@@ -1118,7 +1144,11 @@ struct SaveBlock1
+     /*0x560*/ struct Bag bag;
+     /*0x848*/ struct Pokeblock pokeblocks[POKEBLOCKS_COUNT];
+ #if FREE_EXTRA_SEEN_FLAGS_SAVEBLOCK1 == FALSE
++    #ifdef PORT_BRIDGE
++              u8 customRunConfig[0x34]; // Reserved run record: docs/SAVE_FORMAT.md
++#else
+     /*0x988*/ u8 filler1[0x34]; // Previously Dex Flags, feel free to remove.
++#endif
+ #endif //FREE_EXTRA_SEEN_FLAGS_SAVEBLOCK1
+     /*0x9BC*/ u16 berryBlenderRecords[3];
+     /*0x9C2*/ u8 unused_9C2[2];
+@@ -1228,4 +1258,29 @@ extern bool32 gCountAllocs;
  extern s32 gSpriteAllocs;
  #endif // TESTING
  
@@ -12313,6 +12417,397 @@ index 28e8b87a..86b2de3b 100644
  
          for (i = 0; i < MON_PIC_SIZE; i++)
          {
+diff --git c/src/custom_run.c w/src/custom_run.c
+new file mode 100644
+index 00000000..218b5e2f
+--- /dev/null
++++ w/src/custom_run.c
+@@ -0,0 +1,163 @@
++#include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_run.h"
++#include "custom_run_menu_model.h"
++#include "config/save.h"
++#include "bg.h"
++#include "gpu_regs.h"
++#include "palette.h"
++#include "random.h"
++#include "scanline_effect.h"
++#include "task.h"
++#include "sprite.h"
++#include "text.h"
++#include "text_window.h"
++#include "window.h"
++#include "constants/characters.h"
++#include "constants/rgb.h"
++#include <stdio.h>
++#include <string.h>
++
++STATIC_ASSERT(FREE_EXTRA_SEEN_FLAGS_SAVEBLOCK1 == FALSE, CustomRunReservationRequired);
++STATIC_ASSERT(sizeof(gSaveBlock1Ptr->customRunConfig) == CR_RECORD_SIZE, CustomRunRecordFits);
++STATIC_ASSERT(offsetof(struct SaveBlock1, customRunConfig) == 0x988, CustomRunOffsetUnchanged);
++STATIC_ASSERT(sizeof(struct SaveBlock1) == 15536, CustomRunSaveBlock1Unchanged);
++STATIC_ASSERT(sizeof(struct SaveBlock2) == 3884, CustomRunSaveBlock2Unchanged);
++
++static struct CRMenu sMenu;
++static bool sReadOnly;
++static MainCallback sAccept, sReturn;
++static const struct BgTemplate sBg = { .bg=0, .charBaseIndex=0, .mapBaseIndex=31, .priority=0 };
++static const struct WindowTemplate sWindows[] = {
++    { .bg=0, .tilemapLeft=0, .tilemapTop=0, .width=30, .height=20, .paletteNum=0, .baseBlock=1 },
++    DUMMY_WIN_TEMPLATE
++};
++static const u16 sPalette[16] = { RGB_WHITE, RGB_BLACK, RGB(18,18,18) };
++static const u8 sColors[3] = {0,1,2};
++static uint32_t TrainerId(void)
++{
++    const u8 *p=gSaveBlock2Ptr->playerTrainerId;
++    return p[0] | ((uint32_t)p[1]<<8) | ((uint32_t)p[2]<<16) | ((uint32_t)p[3]<<24);
++}
++enum CRStatus CustomRun_Read(struct CRConfig *out)
++{
++    return CR_Decode(gSaveBlock1Ptr->customRunConfig,TrainerId(),out);
++}
++bool CustomRun_CanPlay(void)
++{
++    enum CRStatus s=CustomRun_Read(NULL);
++    return s==CR_OK || s==CR_LEGACY;
++}
++bool CustomRun_HasConfirmedDraft(void) { return sMenu.draft.confirmed; }
++bool CustomRun_CommitNewSave(void)
++{
++    return CR_Commit(&sMenu.draft,gSaveBlock1Ptr->customRunConfig,TrainerId());
++}
++/* Dynamic ASCII labels are encoded here once, through the native font. */
++static void EncodeText(u8 *out, const char *in)
++{
++    while(*in) {
++        unsigned char c=*in++;
++        if(c>='a' && c<='z') c-=32;
++        if(c>='A' && c<='Z') *out++=CHAR_A+c-'A';
++        else if(c>='0' && c<='9') *out++=CHAR_0+c-'0';
++        else switch(c) {
++        case ' ': *out++=CHAR_SPACE; break;
++        case ':': *out++=CHAR_COLON; break;
++        case '-': *out++=CHAR_HYPHEN; break;
++        case '/': *out++=CHAR_SLASH; break;
++        case '>': *out++=CHAR_GREATER_THAN; break;
++        case '.': *out++=CHAR_PERIOD; break;
++        default: *out++=CHAR_QUESTION_MARK; break;
++        }
++    }
++    *out=EOS;
++}
++static void Draw(void)
++{
++    char lines[12][36];
++    unsigned row;
++    if(sReadOnly) {
++        struct CRConfig c;
++        enum CRStatus status=CustomRun_Read(&c);
++        memset(lines,0,sizeof(lines));
++        strcpy(lines[0],"RUN SETTINGS - READ ONLY");
++        snprintf(lines[1],36,"%s",CR_StatusText(status));
++        if(status==CR_OK || status==CR_LEGACY) {
++            strcpy(lines[3],"STANDARD / NORMAL");
++            if(status==CR_OK) {
++                snprintf(lines[4],36,"SEED: %lu",(unsigned long)c.seed);
++                snprintf(lines[5],36,"RUN ID: %08lX",(unsigned long)c.runId);
++                snprintf(lines[9],36,"RULES %08lX / ALG %u",(unsigned long)c.contentRules,c.algorithm);
++            } else strcpy(lines[4],"SEED: NOT RECORDED");
++            strcpy(lines[6],"ALL RANDOMIZATION OFF");
++            strcpy(lines[7],"NATIVE DIFFICULTY UNCHANGED");
++            strcpy(lines[8],"GRAPHICAL OPTIONS ARE SEPARATE");
++        } else {
++            strcpy(lines[3],"CONTINUE AND SAVE BLOCKED");
++            strcpy(lines[5],"RUN RECORD KEPT - NO RESET");
++            strcpy(lines[7],"USE MATCHING BUILD OR BACKUP");
++        }
++        strcpy(lines[11],"B RETURN");
++    } else CR_MenuLines(&sMenu,lines);
++    FillWindowPixelBuffer(0,PIXEL_FILL(0));
++    for(row=0;row<12;++row) {
++        u8 text[36]; EncodeText(text,lines[row]);
++        AddTextPrinterParameterized4(0,FONT_SMALL,8,4+row*12,0,0,sColors,TEXT_SKIP_DRAW,text);
++    }
++    PutWindowTilemap(0); CopyWindowToVram(0,COPYWIN_FULL);
++}
++static void Close(MainCallback callback)
++{
++    SetVBlankCallback(NULL); FreeAllWindowBuffers(); SetMainCallback2(callback);
++}
++static void Input(u8 taskId)
++{
++    unsigned keys=0;
++    enum CROutcome outcome;
++    uint32_t seed=0;
++    (void)taskId;
++    if(gPaletteFade.active) return;
++    if(sReadOnly) { if(JOY_NEW(B_BUTTON|A_BUTTON)) Close(sReturn); return; }
++    if(JOY_NEW(DPAD_UP)) keys|=CR_UP;
++    if(JOY_NEW(DPAD_DOWN)) keys|=CR_DOWN;
++    if(JOY_NEW(DPAD_LEFT)) keys|=CR_LEFT;
++    if(JOY_NEW(DPAD_RIGHT)) keys|=CR_RIGHT;
++    if(JOY_NEW(A_BUTTON)) keys|=CR_A;
++    if(JOY_NEW(B_BUTTON)) keys|=CR_B;
++    if(!keys) return;
++    if((keys&CR_A) && sMenu.page==CR_PAGE_SEED && sMenu.selected==0) seed=Random32();
++    outcome=CR_MenuInput(&sMenu,keys,seed);
++    if(outcome==CR_CANCELLED) { Close(sReturn); return; }
++    if(outcome==CR_ACCEPTED) { Close(sAccept); return; }
++    Draw();
++}
++static void Main(void) { RunTasks(); UpdatePaletteFade(); }
++static void VBlank(void) { LoadOam(); ProcessSpriteCopyRequests(); TransferPlttBuffer(); }
++static void Init(void)
++{
++    SetVBlankCallback(NULL);
++    SetGpuReg(REG_OFFSET_DISPCNT,0);
++    DmaClearLarge16(3,(void *)VRAM,VRAM_SIZE,0x1000);
++    DmaClear32(3,(void *)OAM,OAM_SIZE); DmaClear16(3,(void *)PLTT,PLTT_SIZE);
++    ResetPaletteFade(); ScanlineEffect_Stop(); ResetTasks(); ResetSpriteData(); FreeAllSpritePalettes();
++    ResetBgsAndClearDma3BusyFlags(0); InitBgsFromTemplates(0,&sBg,1);
++    ChangeBgX(0,0,BG_COORD_SET); ChangeBgY(0,0,BG_COORD_SET);
++    InitWindows(sWindows); DeactivateAllTextPrinters();
++    SetGpuReg(REG_OFFSET_WIN0H,0); SetGpuReg(REG_OFFSET_WIN0V,0);
++    SetGpuReg(REG_OFFSET_WININ,0); SetGpuReg(REG_OFFSET_WINOUT,0);
++    SetGpuReg(REG_OFFSET_BLDCNT,0); SetGpuReg(REG_OFFSET_BLDALPHA,0); SetGpuReg(REG_OFFSET_BLDY,0);
++    LoadPalette(sPalette,0,sizeof(sPalette)); Draw(); ShowBg(0);
++    SetGpuReg(REG_OFFSET_DISPCNT,DISPCNT_BG0_ON);
++    CreateTask(Input,0); SetVBlankCallback(VBlank); SetMainCallback2(Main);
++}
++void CustomRunMenu_Setup(MainCallback accepted, MainCallback cancelled)
++{
++    CR_MenuBegin(&sMenu,Random32(),Random32());
++    sReadOnly=false; sAccept=accepted; sReturn=cancelled; SetMainCallback2(Init);
++}
++void CustomRunMenu_View(MainCallback returnTo)
++{
++    sReadOnly=true; sReturn=returnTo; SetMainCallback2(Init);
++}
++#endif
+diff --git c/src/custom_run_config.c w/src/custom_run_config.c
+new file mode 100644
+index 00000000..bd403fb0
+--- /dev/null
++++ w/src/custom_run_config.c
+@@ -0,0 +1,110 @@
++/* Versioned, explicitly little-endian data in SaveBlock1's reserved 52 bytes.
++ * No sidecar, event flag, variable, global options file or native RNG access. */
++#include "custom_run_config.h"
++#include <string.h>
++#define CR_MAGIC 0x43523345u /* E3RC */
++static uint16_t Read16(const uint8_t *p) { return (uint16_t)(p[0] | ((uint16_t)p[1] << 8)); }
++static uint32_t Read32(const uint8_t *p) { return Read16(p) | ((uint32_t)Read16(p + 2) << 16); }
++static void Write16(uint8_t *p, uint16_t n) { p[0] = n; p[1] = n >> 8; }
++static void Write32(uint8_t *p, uint32_t n) { Write16(p, n); Write16(p + 2, n >> 16); }
++uint32_t CR_Crc32(const uint8_t *p, size_t size)
++{
++    uint32_t crc = 0xFFFFFFFFu;
++    while (size--) {
++        unsigned bit;
++        crc ^= *p++;
++        for (bit = 0; bit < 8; ++bit)
++            crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
++    }
++    return ~crc;
++}
++enum CRStatus CR_Validate(const struct CRConfig *c)
++{
++    if (c->algorithm != CR_ALGORITHM) return CR_VERSION;
++    if (c->contentRules != CR_CONTENT_RULES) return CR_CONTENT;
++    /* Until stages C/D/E exist, no serialized run can claim their rules. */
++    if (c->mode != CR_STANDARD || c->difficulty != CR_NORMAL || c->randomOptions
++        || c->difficultyOptions || c->capMode || c->aiPolicy || c->balanceFlags
++        || c->generations != CR_GENERATIONS) return CR_RULES;
++    return CR_OK;
++}
++enum CRStatus CR_Decode(const uint8_t b[CR_RECORD_SIZE], uint32_t trainerId, struct CRConfig *out)
++{
++    struct CRConfig c;
++    unsigned i;
++    bool zero = true, erased = true;
++    for (i = 0; i < CR_RECORD_SIZE; ++i) { zero &= b[i] == 0; erased &= b[i] == 255; }
++    /* Explicit legacy state, never a generated seed or a rewritten record. */
++    if (zero || erased) return CR_LEGACY;
++    if (Read32(b) != CR_MAGIC || Read32(b + 48) != CR_Crc32(b, 48)) return CR_CORRUPT;
++    if (Read16(b + 4) != CR_SCHEMA || Read16(b + 6) != CR_RECORD_SIZE) return CR_VERSION;
++    if (Read32(b + 28) != trainerId) return CR_BINDING;
++    if (Read32(b + 44)) return CR_VERSION;
++    memset(&c, 0, sizeof(c));
++    c.seed = Read32(b + 8); c.randomOptions = Read32(b + 12);
++    c.difficultyOptions = Read32(b + 16); c.contentRules = Read32(b + 20);
++    c.runId = Read32(b + 24); c.algorithm = Read16(b + 32); c.generations = Read16(b + 34);
++    c.mode = b[36]; c.difficulty = b[37]; c.capMode = b[38]; c.aiPolicy = b[39];
++    c.balanceFlags = Read32(b + 40);
++    if (CR_Validate(&c) != CR_OK) return CR_Validate(&c);
++    if (out) *out = c; /* Rejected records never change the caller's active rules. */
++    return CR_OK;
++}
++bool CR_Encode(uint8_t out[CR_RECORD_SIZE], uint32_t trainerId, const struct CRConfig *c)
++{
++    uint8_t b[CR_RECORD_SIZE];
++    if (CR_Validate(c) != CR_OK) return false;
++    memset(b, 0, sizeof(b));
++    Write32(b, CR_MAGIC); Write16(b + 4, CR_SCHEMA); Write16(b + 6, CR_RECORD_SIZE);
++    Write32(b + 8, c->seed); Write32(b + 12, c->randomOptions);
++    Write32(b + 16, c->difficultyOptions); Write32(b + 20, c->contentRules);
++    Write32(b + 24, c->runId); Write32(b + 28, trainerId);
++    Write16(b + 32, c->algorithm); Write16(b + 34, c->generations);
++    b[36] = c->mode; b[37] = c->difficulty; b[38] = c->capMode; b[39] = c->aiPolicy;
++    Write32(b + 40, c->balanceFlags); Write32(b + 48, CR_Crc32(b, 48));
++    memcpy(out, b, sizeof(b));
++    return true;
++}
++void CR_Begin(struct CRDraft *d, uint32_t seed, uint32_t runId)
++{
++    memset(d, 0, sizeof(*d));
++    d->config.seed = seed; d->config.runId = runId;
++    d->config.contentRules = CR_CONTENT_RULES; d->config.generations = CR_GENERATIONS;
++    d->config.algorithm = CR_ALGORITHM; d->editing = true;
++}
++void CR_Cancel(struct CRDraft *d) { memset(d, 0, sizeof(*d)); }
++bool CR_Confirm(struct CRDraft *d)
++{
++    if (!d->editing || CR_Validate(&d->config) != CR_OK) return false;
++    d->confirmed = true; d->editing = false; return true;
++}
++bool CR_Commit(struct CRDraft *d, uint8_t bytes[CR_RECORD_SIZE], uint32_t trainerId)
++{
++    if (!d->confirmed || !CR_Encode(bytes, trainerId, &d->config)) return false;
++    CR_Cancel(d); /* consumed exactly once, after NewGameInitData */
++    return true;
++}
++bool CR_ParseSeed(const char *text, uint32_t *seed)
++{
++    uint32_t n = 0;
++    unsigned i;
++    if (!text || !*text) return false;
++    for (i = 0; text[i]; ++i) {
++        uint32_t digit = (unsigned char)text[i] - '0';
++        if (i >= 10 || digit > 9 || n > (UINT32_MAX - digit) / 10u) return false;
++        n = n * 10u + digit;
++    }
++    *seed = n; return true;
++}
++const char *CR_StatusText(enum CRStatus s)
++{
++    switch (s) {
++    case CR_OK: return "RECORDED FIXED RUN";
++    case CR_LEGACY: return "LEGACY FIXED RUN - NO SEED";
++    case CR_VERSION: return "UNSUPPORTED RUN VERSION";
++    case CR_CONTENT: return "DIFFERENT CONTENT RULES";
++    case CR_RULES: return "RUN RULES UNAVAILABLE";
++    case CR_BINDING: return "RUN BELONGS TO ANOTHER SAVE";
++    default: return "CORRUPT RUN RECORD";
++    }
++}
+diff --git c/src/custom_run_menu_model.c w/src/custom_run_menu_model.c
+new file mode 100644
+index 00000000..28f262d1
+--- /dev/null
++++ w/src/custom_run_menu_model.c
+@@ -0,0 +1,100 @@
++#include "custom_run_menu_model.h"
++#include <stdio.h>
++#include <string.h>
++void CR_MenuBegin(struct CRMenu *m, uint32_t seed, uint32_t runId)
++{
++    memset(m, 0, sizeof(*m)); CR_Begin(&m->draft, seed, runId);
++}
++static void Page(struct CRMenu *m, enum CRPage p) { m->page=p; m->selected=0; m->notice=false; }
++enum CROutcome CR_MenuInput(struct CRMenu *m, unsigned keys, uint32_t newSeed)
++{
++    static const unsigned counts[] = {2,3,10,3,1,2};
++    if (m->draft.confirmed || !m->draft.editing) return CR_STAY;
++    if (m->page == CR_PAGE_DIGITS) {
++        if (keys & CR_B) { Page(m,CR_PAGE_SEED); return CR_STAY; }
++        if (keys & CR_LEFT) m->digit=(m->digit+9)%10;
++        if (keys & CR_RIGHT) m->digit=(m->digit+1)%10;
++        if (keys & CR_UP) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+1)%10;
++        if (keys & CR_DOWN) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+9)%10;
++        if (keys & CR_A) {
++            uint32_t seed;
++            if (CR_ParseSeed(m->digits,&seed)) { m->draft.config.seed=seed; m->draft.manualSeed=true; Page(m,CR_PAGE_SEED); }
++            else m->notice=true;
++        }
++        return CR_STAY;
++    }
++    if (keys & CR_B) {
++        if (m->page == CR_PAGE_MODE) { CR_Cancel(&m->draft); return CR_CANCELLED; }
++        Page(m,m->page==CR_PAGE_DIFFICULTY ? CR_PAGE_MODE : m->page==CR_PAGE_CUSTOM ? CR_PAGE_DIFFICULTY : m->page==CR_PAGE_SEED ? CR_PAGE_DIFFICULTY : CR_PAGE_SEED);
++        return CR_STAY;
++    }
++    if (keys & CR_UP) m->selected=(m->selected+counts[m->page]-1)%counts[m->page];
++    if (keys & CR_DOWN) m->selected=(m->selected+1)%counts[m->page];
++    if (!(keys & CR_A)) return CR_STAY;
++    switch (m->page) {
++    case CR_PAGE_MODE:
++        if (m->selected==0) Page(m,CR_PAGE_DIFFICULTY); else m->notice=true;
++        break;
++    case CR_PAGE_DIFFICULTY:
++        if (m->selected==0) Page(m,CR_PAGE_SEED);
++        else if (m->selected==2) Page(m,CR_PAGE_CUSTOM);
++        else m->notice=true;
++        break;
++    case CR_PAGE_CUSTOM:
++        /* A preview of future controls; none can alter active run rules. */
++        if (m->selected==9) Page(m,CR_PAGE_DIFFICULTY); else m->notice=true;
++        break;
++    case CR_PAGE_SEED:
++        if (m->selected==0) { m->draft.config.seed=newSeed; m->draft.manualSeed=false; }
++        else if (m->selected==1) { snprintf(m->digits,sizeof(m->digits),"%010lu",(unsigned long)m->draft.config.seed); m->digit=0; Page(m,CR_PAGE_DIGITS); }
++        else Page(m,CR_PAGE_SUMMARY);
++        break;
++    case CR_PAGE_SUMMARY:
++        if (m->selected==1) Page(m,CR_PAGE_SEED);
++        else if (CR_Confirm(&m->draft)) return CR_ACCEPTED;
++        break;
++    default: break;
++    }
++    return CR_STAY;
++}
++void CR_MenuLines(const struct CRMenu *m, char l[12][36])
++{
++    unsigned i;
++    memset(l,0,12*36);
++    switch (m->page) {
++    case CR_PAGE_MODE:
++        strcpy(l[0],"NEW GAME - MODE"); strcpy(l[2],"STANDARD - FIXED CAMPAIGN");
++        strcpy(l[3],"RANDOMIZED - UNAVAILABLE"); strcpy(l[6],"RANDOMIZER ARRIVES IN STAGE C"); break;
++    case CR_PAGE_DIFFICULTY:
++        strcpy(l[0],"NEW GAME - DIFFICULTY"); strcpy(l[2],"NORMAL");
++        strcpy(l[3],"HARD - UNAVAILABLE"); strcpy(l[4],"CUSTOM - LOCKED RULES PREVIEW");
++        strcpy(l[7],"HARD RULES ARRIVE IN STAGE D"); break;
++    case CR_PAGE_CUSTOM: {
++        static const char *const rows[]={"STARTERS - OFF / LOCKED","WILD - OFF / LOCKED","TRAINERS - OFF / LOCKED","ABILITIES - OFF / LOCKED","FIELD ITEMS - OFF / LOCKED","HELD ITEMS - OFF / LOCKED","GENERATIONS 1-9 - LOCKED","BALANCE / CAPS / AI - LOCKED","CUSTOM DIFFICULTY - UNAVAILABLE","BACK - KEEP NORMAL"};
++        strcpy(l[0],"CUSTOMIZATION - PREVIEW ONLY");
++        for(i=0;i<10;++i) strcpy(l[i+1],rows[i]);
++        break; }
++    case CR_PAGE_SEED:
++        strcpy(l[0],"NEW GAME - RUN SEED"); strcpy(l[2],"GENERATE AUTOMATIC SEED"); strcpy(l[3],"ENTER MANUAL SEED"); strcpy(l[4],"REVIEW AND CONFIRM");
++        snprintf(l[6],36,"SEED: %lu",(unsigned long)m->draft.config.seed);
++        strcpy(l[7],"SEED IS RECORDED FOR THIS RUN"); strcpy(l[8],"RANDOMIZATION REMAINS OFF"); break;
++    case CR_PAGE_DIGITS:
++        strcpy(l[0],"MANUAL SEED - DECIMAL"); strcpy(l[2],m->digits);
++        for(i=0;i<10;++i) l[3][i]=i==m->digit ? '>' : ' ';
++        l[3][10]=0;
++        strcpy(l[5],"LEFT/RIGHT SELECT A DIGIT"); strcpy(l[6],"UP/DOWN CHANGE THE DIGIT");
++        strcpy(l[7],"A ACCEPT - B DISCARD EDIT"); strcpy(l[8],"RANGE 0 TO 4294967295");
++        if(m->notice) strcpy(l[10],"SEED EXCEEDS 4294967295");
++        return;
++    case CR_PAGE_SUMMARY:
++        strcpy(l[0],"CONFIRM NEW RUN"); strcpy(l[2],"START THIS FIXED RUN"); strcpy(l[3],"BACK TO SEED");
++        strcpy(l[5],"STANDARD / NORMAL"); snprintf(l[6],36,"SEED: %lu",(unsigned long)m->draft.config.seed);
++        strcpy(l[7],"ALL RANDOMIZATION OFF"); strcpy(l[8],"NATIVE DIFFICULTY UNCHANGED");
++        strcpy(l[9],"OLD SAVE STAYS UNTIL YOU SAVE"); break;
++    }
++    if(m->page!=CR_PAGE_DIGITS) {
++        unsigned row=m->selected+(m->page==CR_PAGE_CUSTOM?1:2);
++        size_t len=strlen(l[row]); memmove(l[row]+2,l[row],len+1); l[row][0]='>'; l[row][1]=' ';
++        if(m->page!=CR_PAGE_CUSTOM) strcpy(l[11],m->notice?"UNAVAILABLE - CHOICE NOT CHANGED":"A SELECT - B BACK / CANCEL");
++    }
++}
 diff --git c/src/data/items.h w/src/data/items.h
 index c51a5acf..08ffbee9 100644
 --- c/src/data/items.h
@@ -14451,11 +14946,15 @@ index 96223eb2..6bac077b 100644
      cameraOffset->copyBGToVRAM = TRUE;
  }
  
+-static void RedrawMapSliceNorth(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)
 +#if defined(PLATFORM_3DS)
 +// Draws the deferred vertical slice once the camera has travelled half a
 +// metatile into the step, or right away if it stops before getting there.
 +static void DrawPendingVerticalSlice(int movementSpeedY)
-+{
+ {
+-    u8 i;
+-    u8 temp;
+-    u32 r7;
 +    if (!sPendingVerticalSlice)
 +        return;
 +    sPendingVerticalPixels -= movementSpeedY < 0 ? -movementSpeedY : movementSpeedY;
@@ -14469,13 +14968,6 @@ index 96223eb2..6bac077b 100644
 +    sPendingVerticalSlice = 0;
 +}
 +#endif
-+
- static void RedrawMapSliceNorth(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)
- {
--    u8 i;
--    u8 temp;
--    u32 r7;
-+    int i;
  
 -    temp = cameraOffset->yTileOffset + 28;
 -    if (temp >= 32)
@@ -14488,6 +14980,10 @@ index 96223eb2..6bac077b 100644
 -            temp -= 32;
 -        DrawMetatileAt(mapLayout, r7 + temp, gSaveBlock1Ptr->pos.x + i / 2, gSaveBlock1Ptr->pos.y + 14);
 -    }
++static void RedrawMapSliceNorth(struct FieldCameraOffset *cameraOffset, const struct MapLayout *mapLayout)
++{
++    int i;
++
 +    for (i = FIELD_CAMERA_VIEW_LEFT; i < FIELD_CAMERA_VIEW_RIGHT; i += 2)
 +        DrawMetatileAtTilemapPos(mapLayout,
 +                                 cameraOffset->xTileOffset + i,
@@ -14501,8 +14997,7 @@ index 96223eb2..6bac077b 100644
 -    u8 i;
 -    u8 temp;
 -    u32 r7 = cameraOffset->yTileOffset * 32;
-+    int i;
- 
+-
 -    for (i = 0; i < 32; i += 2)
 -    {
 -        temp = cameraOffset->xTileOffset + i;
@@ -14510,6 +15005,8 @@ index 96223eb2..6bac077b 100644
 -            temp -= 32;
 -        DrawMetatileAt(mapLayout, r7 + temp, gSaveBlock1Ptr->pos.x + i / 2, gSaveBlock1Ptr->pos.y);
 -    }
++    int i;
++
 +    for (i = FIELD_CAMERA_VIEW_LEFT; i < FIELD_CAMERA_VIEW_RIGHT; i += 2)
 +        DrawMetatileAtTilemapPos(mapLayout,
 +                                 cameraOffset->xTileOffset + i,
@@ -18048,10 +18545,18 @@ index 7ec4e57b..ea18ba3e 100644
  
  void SetTrainerHillVBlankCounter(u32 *counter)
 diff --git c/src/main_menu.c w/src/main_menu.c
-index 7fc7e417..16cc895f 100644
+index 7fc7e417..2c54d50b 100644
 --- c/src/main_menu.c
 +++ w/src/main_menu.c
-@@ -12,6 +12,7 @@
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_run.h"
++#endif
+ #include "trainer_pokemon_sprites.h"
+ #include "bg.h"
+ #include "constants/rgb.h"
+@@ -12,6 +15,7 @@
  #include "graphics.h"
  #include "international_string_util.h"
  #include "link.h"
@@ -18059,7 +18564,7 @@ index 7fc7e417..16cc895f 100644
  #include "main.h"
  #include "main_menu.h"
  #include "menu.h"
-@@ -40,6 +41,16 @@
+@@ -40,6 +44,16 @@
  #include "title_screen.h"
  #include "window.h"
  #include "mystery_gift_menu.h"
@@ -18076,7 +18581,7 @@ index 7fc7e417..16cc895f 100644
  
  /*
   * Main menu state machine
-@@ -176,6 +187,129 @@ static EWRAM_DATA u16 sCurrItemAndOptionMenuCheck = 0;
+@@ -176,6 +190,129 @@ static EWRAM_DATA u16 sCurrItemAndOptionMenuCheck = 0;
  
  static u8 sBirchSpeechMainTaskId;
  
@@ -18206,7 +18711,17 @@ index 7fc7e417..16cc895f 100644
  // Static ROM declarations
  
  static u32 InitMainMenu(bool8);
-@@ -238,7 +372,7 @@ static void SpriteCB_MovePlayerDownWhileShrinking(struct Sprite *);
+@@ -192,6 +329,9 @@ static void Task_HandleMainMenuInput(u8);
+ static void Task_HandleMainMenuAPressed(u8);
+ static void Task_HandleMainMenuBPressed(u8);
+ static void Task_NewGameBirchSpeech_Init(u8);
++#ifdef PORT_BRIDGE
++static void CB2_CustomRunIntro(void);
++#endif
+ static void Task_DisplayMainMenuInvalidActionError(u8);
+ static void AddBirchSpeechObjects(u8);
+ static void Task_NewGameBirchSpeech_WaitToShowBirch(u8);
+@@ -238,7 +378,7 @@ static void SpriteCB_MovePlayerDownWhileShrinking(struct Sprite *);
  static void Task_NewGameBirchSpeech_WaitForPlayerShrink(u8);
  static void Task_NewGameBirchSpeech_FadePlayerToWhite(u8);
  static void Task_NewGameBirchSpeech_Cleanup(u8);
@@ -18215,7 +18730,7 @@ index 7fc7e417..16cc895f 100644
  static void Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(u8);
  static void MainMenu_FormatSavegamePlayer(void);
  static void MainMenu_FormatSavegamePokedex(void);
-@@ -429,6 +563,8 @@ static const u16 sMainMenuTextPal[] = INCGFX_U16("graphics/interface/main_menu_t
+@@ -429,6 +569,8 @@ static const u16 sMainMenuTextPal[] = INCGFX_U16("graphics/interface/main_menu_t
  static const u8 sTextColor_Headers[] = {TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_2, TEXT_DYNAMIC_COLOR_3};
  static const u8 sTextColor_MenuInfo[] = {TEXT_DYNAMIC_COLOR_1, TEXT_COLOR_WHITE, TEXT_DYNAMIC_COLOR_3};
  
@@ -18224,7 +18739,7 @@ index 7fc7e417..16cc895f 100644
  static const struct BgTemplate sMainMenuBgTemplates[] = {
      {
          .bg = 0,
-@@ -551,10 +687,35 @@ enum
+@@ -551,10 +693,35 @@ enum
  
  static void CB2_MainMenu(void)
  {
@@ -18260,7 +18775,7 @@ index 7fc7e417..16cc895f 100644
  }
  
  static void VBlankCB_MainMenu(void)
-@@ -950,7 +1111,13 @@ static bool8 HandleMainMenuInput(u8 taskId)
+@@ -950,7 +1117,13 @@ static bool8 HandleMainMenuInput(u8 taskId)
  static void Task_HandleMainMenuInput(u8 taskId)
  {
      if (HandleMainMenuInput(taskId))
@@ -18274,7 +18789,7 @@ index 7fc7e417..16cc895f 100644
  }
  
  static void Task_HandleMainMenuAPressed(u8 taskId)
-@@ -1073,6 +1240,10 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
+@@ -1073,10 +1246,20 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
          }
          ChangeBgY(0, 0, BG_COORD_SET);
          ChangeBgY(1, 0, BG_COORD_SET);
@@ -18285,7 +18800,17 @@ index 7fc7e417..16cc895f 100644
          switch (action)
          {
          case ACTION_NEW_GAME:
-@@ -1091,7 +1262,20 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
+         default:
++#ifdef PORT_BRIDGE
++            DestroyTask(taskId);
++            FreeAllWindowBuffers();
++            CustomRunMenu_Setup(CB2_CustomRunIntro, CB2_InitMainMenu);
++            break;
++#endif
+             if (IS_FRLG)
+             {
+                 DestroyTask(taskId);
+@@ -1091,7 +1274,20 @@ static void Task_HandleMainMenuAPressed(u8 taskId)
  
              gPlttBufferUnfaded[0] = RGB_BLACK;
              gPlttBufferFaded[0] = RGB_BLACK;
@@ -18306,7 +18831,26 @@ index 7fc7e417..16cc895f 100644
              break;
          case ACTION_CONTINUE:
              gPlttBufferUnfaded[0] = RGB_BLACK;
-@@ -1310,18 +1494,23 @@ static void Task_NewGameBirchSpeech_Init(u8 taskId)
+@@ -1294,6 +1490,18 @@ static void HighlightSelectedMainMenuItem(enum PartyMenuType menuType, u8 select
+ #define tBrendanSpriteId data[10]
+ #define tMaySpriteId data[11]
+ 
++#ifdef PORT_BRIDGE
++static void CB2_CustomRunIntro(void)
++{
++    InitMainMenu(TRUE);
++    ResetTasks();
++    sCurrItemAndOptionMenuCheck = 0;
++    gPlttBufferUnfaded[0] = RGB_BLACK;
++    gPlttBufferFaded[0] = RGB_BLACK;
++    CreateTask(Task_NewGameBirchSpeech_Init, 0);
++}
++#endif
++
+ static void Task_NewGameBirchSpeech_Init(u8 taskId)
+ {
+     SetGpuReg(REG_OFFSET_DISPCNT, 0);
+@@ -1310,18 +1518,23 @@ static void Task_NewGameBirchSpeech_Init(u8 taskId)
      DecompressDataWithHeaderVram(sBirchSpeechShadowGfx, (void *)VRAM);
      DecompressDataWithHeaderVram(sBirchSpeechBgMap, (void *)(BG_SCREEN_ADDR(7)));
      LoadPalette(sBirchSpeechBgPals, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
@@ -18334,7 +18878,7 @@ index 7fc7e417..16cc895f 100644
      PlayBGM(MUS_ROUTE122);
      ShowBg(0);
      ShowBg(1);
-@@ -1331,35 +1520,54 @@ static void Task_NewGameBirchSpeech_WaitToShowBirch(u8 taskId)
+@@ -1331,35 +1544,54 @@ static void Task_NewGameBirchSpeech_WaitToShowBirch(u8 taskId)
  {
      u8 spriteId;
  
@@ -18397,7 +18941,7 @@ index 7fc7e417..16cc895f 100644
              InitWindows(sNewGameBirchSpeechTextWindows);
              LoadMainMenuWindowFrameTiles(0, 0xF3);
              LoadMessageBoxGfx(0, BIRCH_DLG_BASE_TILE_NUM, BG_PLTT_ID(15));
-@@ -1378,6 +1586,7 @@ static void Task_NewGameBirchSpeech_ThisIsAPokemon(u8 taskId)
+@@ -1378,6 +1610,7 @@ static void Task_NewGameBirchSpeech_ThisIsAPokemon(u8 taskId)
  {
      if (!gPaletteFade.active && !RunTextPrintersAndIsPrinter0Active())
      {
@@ -18405,7 +18949,7 @@ index 7fc7e417..16cc895f 100644
          gTasks[taskId].func = Task_NewGameBirchSpeech_MainSpeech;
          StringExpandPlaceholders(gStringVar4, gText_ThisIsAPokemon);
          AddTextPrinterWithCallbackForMessage(TRUE, NewGameBirchSpeech_WaitForThisIsPokemonText);
-@@ -1399,7 +1608,9 @@ static void Task_NewGameBirchSpeech_MainSpeech(u8 taskId)
+@@ -1399,7 +1632,9 @@ static void Task_NewGameBirchSpeech_MainSpeech(u8 taskId)
  
  static void Task_NewGameBirchSpeechSub_InitPokeBall(u8 taskId)
  {
@@ -18416,7 +18960,7 @@ index 7fc7e417..16cc895f 100644
  
      gSprites[spriteId].x = 100;
      gSprites[spriteId].y = 75;
-@@ -1408,13 +1619,13 @@ static void Task_NewGameBirchSpeechSub_InitPokeBall(u8 taskId)
+@@ -1408,13 +1643,13 @@ static void Task_NewGameBirchSpeechSub_InitPokeBall(u8 taskId)
  
      CreatePokeballSpriteToReleaseMon(spriteId, gSprites[spriteId].oam.paletteNum, 112, 58, 0, 0, 32, PALETTES_BG, SPECIES_LOTAD);
      gTasks[taskId].func = Task_NewGameBirchSpeechSub_WaitForLotad;
@@ -18432,7 +18976,7 @@ index 7fc7e417..16cc895f 100644
  
      switch (tState)
      {
-@@ -1424,17 +1635,17 @@ static void Task_NewGameBirchSpeechSub_WaitForLotad(u8 taskId)
+@@ -1424,17 +1659,17 @@ static void Task_NewGameBirchSpeechSub_WaitForLotad(u8 taskId)
          sprite->oam.affineMode = ST_OAM_AFFINE_OFF;
          break;
      case 1:
@@ -18455,7 +18999,7 @@ index 7fc7e417..16cc895f 100644
  }
  
  #undef tState
-@@ -1454,49 +1665,49 @@ static void Task_NewGameBirchSpeech_StartBirchLotadPlatformFade(u8 taskId)
+@@ -1454,49 +1689,49 @@ static void Task_NewGameBirchSpeech_StartBirchLotadPlatformFade(u8 taskId)
  {
      if (!RunTextPrintersAndIsPrinter0Active())
      {
@@ -18520,7 +19064,7 @@ index 7fc7e417..16cc895f 100644
              NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId, 2);
              NewGameBirchSpeech_StartFadePlatformOut(taskId, 1);
              gTasks[taskId].func = Task_NewGameBirchSpeech_WaitForPlayerFadeIn;
-@@ -1506,9 +1717,9 @@ static void Task_NewGameBirchSpeech_StartPlayerFadeIn(u8 taskId)
+@@ -1506,9 +1741,9 @@ static void Task_NewGameBirchSpeech_StartPlayerFadeIn(u8 taskId)
  
  static void Task_NewGameBirchSpeech_WaitForPlayerFadeIn(u8 taskId)
  {
@@ -18532,7 +19076,7 @@ index 7fc7e417..16cc895f 100644
          gTasks[taskId].func = Task_NewGameBirchSpeech_BoyOrGirl;
      }
  }
-@@ -1553,10 +1764,10 @@ static void Task_NewGameBirchSpeech_ChooseGender(u8 taskId)
+@@ -1553,10 +1788,10 @@ static void Task_NewGameBirchSpeech_ChooseGender(u8 taskId)
          break;
      }
      gender2 = Menu_GetCursorPos();
@@ -18546,7 +19090,7 @@ index 7fc7e417..16cc895f 100644
          NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId, 0);
          gTasks[taskId].func = Task_NewGameBirchSpeech_SlideOutOldGenderSprite;
      }
-@@ -1564,22 +1775,22 @@ static void Task_NewGameBirchSpeech_ChooseGender(u8 taskId)
+@@ -1564,22 +1799,22 @@ static void Task_NewGameBirchSpeech_ChooseGender(u8 taskId)
  
  static void Task_NewGameBirchSpeech_SlideOutOldGenderSprite(u8 taskId)
  {
@@ -18575,7 +19119,7 @@ index 7fc7e417..16cc895f 100644
          gSprites[spriteId].oam.objMode = ST_OAM_OBJ_BLEND;
          NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId, 0);
          gTasks[taskId].func = Task_NewGameBirchSpeech_SlideInNewGenderSprite;
-@@ -1588,7 +1799,7 @@ static void Task_NewGameBirchSpeech_SlideOutOldGenderSprite(u8 taskId)
+@@ -1588,7 +1823,7 @@ static void Task_NewGameBirchSpeech_SlideOutOldGenderSprite(u8 taskId)
  
  static void Task_NewGameBirchSpeech_SlideInNewGenderSprite(u8 taskId)
  {
@@ -18584,7 +19128,7 @@ index 7fc7e417..16cc895f 100644
  
      if (gSprites[spriteId].x > 180)
      {
-@@ -1597,7 +1808,7 @@ static void Task_NewGameBirchSpeech_SlideInNewGenderSprite(u8 taskId)
+@@ -1597,7 +1832,7 @@ static void Task_NewGameBirchSpeech_SlideInNewGenderSprite(u8 taskId)
      else
      {
          gSprites[spriteId].x = 180;
@@ -18593,7 +19137,7 @@ index 7fc7e417..16cc895f 100644
          {
              gSprites[spriteId].oam.objMode = ST_OAM_OBJ_NORMAL;
              gTasks[taskId].func = Task_NewGameBirchSpeech_ChooseGender;
-@@ -1633,7 +1844,7 @@ static void Task_NewGameBirchSpeech_StartNamingScreen(u8 taskId)
+@@ -1633,7 +1868,7 @@ static void Task_NewGameBirchSpeech_StartNamingScreen(u8 taskId)
      if (!gPaletteFade.active)
      {
          FreeAllWindowBuffers();
@@ -18602,7 +19146,7 @@ index 7fc7e417..16cc895f 100644
          NewGameBirchSpeech_SetDefaultPlayerName(Random() % NUM_PRESET_NAMES);
          DestroyTask(taskId);
          DoNamingScreen(NAMING_SCREEN_PLAYER, gSaveBlock2Ptr->playerName, gSaveBlock2Ptr->playerGender, 0, 0, CB2_NewGameBirchSpeech_ReturnFromNamingScreen);
-@@ -1663,7 +1874,7 @@ static void Task_NewGameBirchSpeech_ProcessNameYesNoMenu(u8 taskId)
+@@ -1663,7 +1898,7 @@ static void Task_NewGameBirchSpeech_ProcessNameYesNoMenu(u8 taskId)
      {
      case 0:
          PlaySE(SE_SELECT);
@@ -18611,7 +19155,7 @@ index 7fc7e417..16cc895f 100644
          NewGameBirchSpeech_StartFadeOutTarget1InTarget2(taskId, 2);
          NewGameBirchSpeech_StartFadePlatformIn(taskId, 1);
          gTasks[taskId].func = Task_NewGameBirchSpeech_SlidePlatformAway2;
-@@ -1677,10 +1888,10 @@ static void Task_NewGameBirchSpeech_ProcessNameYesNoMenu(u8 taskId)
+@@ -1677,10 +1912,10 @@ static void Task_NewGameBirchSpeech_ProcessNameYesNoMenu(u8 taskId)
  
  static void Task_NewGameBirchSpeech_SlidePlatformAway2(u8 taskId)
  {
@@ -18625,7 +19169,7 @@ index 7fc7e417..16cc895f 100644
      }
      else
      {
-@@ -1692,16 +1903,16 @@ static void Task_NewGameBirchSpeech_ReshowBirchLotad(u8 taskId)
+@@ -1692,16 +1927,16 @@ static void Task_NewGameBirchSpeech_ReshowBirchLotad(u8 taskId)
  {
      u8 spriteId;
  
@@ -18647,7 +19191,7 @@ index 7fc7e417..16cc895f 100644
          gSprites[spriteId].x = 100;
          gSprites[spriteId].y = 75;
          gSprites[spriteId].invisible = FALSE;
-@@ -1717,17 +1928,17 @@ static void Task_NewGameBirchSpeech_ReshowBirchLotad(u8 taskId)
+@@ -1717,17 +1952,17 @@ static void Task_NewGameBirchSpeech_ReshowBirchLotad(u8 taskId)
  
  static void Task_NewGameBirchSpeech_WaitForSpriteFadeInAndTextPrinter(u8 taskId)
  {
@@ -18671,7 +19215,7 @@ index 7fc7e417..16cc895f 100644
              gTasks[taskId].func = Task_NewGameBirchSpeech_AreYouReady;
          }
      }
-@@ -1737,24 +1948,24 @@ static void Task_NewGameBirchSpeech_AreYouReady(u8 taskId)
+@@ -1737,24 +1972,24 @@ static void Task_NewGameBirchSpeech_AreYouReady(u8 taskId)
  {
      u8 spriteId;
  
@@ -18704,7 +19248,7 @@ index 7fc7e417..16cc895f 100644
          NewGameBirchSpeech_StartFadeInTarget1OutTarget2(taskId, 2);
          NewGameBirchSpeech_StartFadePlatformOut(taskId, 1);
          StringExpandPlaceholders(gStringVar4, gText_Birch_AreYouReady);
-@@ -1767,12 +1978,12 @@ static void Task_NewGameBirchSpeech_ShrinkPlayer(u8 taskId)
+@@ -1767,12 +2002,12 @@ static void Task_NewGameBirchSpeech_ShrinkPlayer(u8 taskId)
  {
      u8 spriteId;
  
@@ -18720,7 +19264,7 @@ index 7fc7e417..16cc895f 100644
              gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
              gSprites[spriteId].affineAnims = sSpriteAffineAnimTable_PlayerShrink;
              InitSpriteAffineAnim(&gSprites[spriteId]);
-@@ -1787,7 +1998,15 @@ static void Task_NewGameBirchSpeech_ShrinkPlayer(u8 taskId)
+@@ -1787,7 +2022,15 @@ static void Task_NewGameBirchSpeech_ShrinkPlayer(u8 taskId)
  
  static void Task_NewGameBirchSpeech_WaitForPlayerShrink(u8 taskId)
  {
@@ -18737,7 +19281,7 @@ index 7fc7e417..16cc895f 100644
  
      if (gSprites[spriteId].affineAnimEnded)
          gTasks[taskId].func = Task_NewGameBirchSpeech_FadePlayerToWhite;
-@@ -1797,23 +2016,53 @@ static void Task_NewGameBirchSpeech_FadePlayerToWhite(u8 taskId)
+@@ -1797,23 +2040,53 @@ static void Task_NewGameBirchSpeech_FadePlayerToWhite(u8 taskId)
  {
      u8 spriteId;
  
@@ -18793,7 +19337,7 @@ index 7fc7e417..16cc895f 100644
          SetMainCallback2(CB2_NewGame);
          DestroyTask(taskId);
      }
-@@ -1846,11 +2095,11 @@ static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
+@@ -1846,11 +2119,11 @@ static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
      DecompressDataWithHeaderVram(sBirchSpeechShadowGfx, (u8 *)VRAM);
      DecompressDataWithHeaderVram(sBirchSpeechBgMap, (u8 *)(BG_SCREEN_ADDR(7)));
      LoadPalette(sBirchSpeechBgPals, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
@@ -18808,7 +19352,7 @@ index 7fc7e417..16cc895f 100644
      ScanlineEffect_Stop();
      ResetSpriteData();
      FreeAllSpritePalettes();
-@@ -1858,18 +2107,18 @@ static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
+@@ -1858,18 +2131,18 @@ static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
      AddBirchSpeechObjects(taskId);
      if (gSaveBlock2Ptr->playerGender != MALE)
      {
@@ -18832,7 +19376,7 @@ index 7fc7e417..16cc895f 100644
      SetGpuReg(REG_OFFSET_BG1HOFS, -60);
      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
      SetGpuReg(REG_OFFSET_WIN0H, 0);
-@@ -1891,10 +2140,6 @@ static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
+@@ -1891,10 +2164,6 @@ static void CB2_NewGameBirchSpeech_ReturnFromNamingScreen(void)
      CopyWindowToVram(0, COPYWIN_FULL);
  }
  
@@ -18843,7 +19387,7 @@ index 7fc7e417..16cc895f 100644
  static void SpriteCB_MovePlayerDownWhileShrinking(struct Sprite *sprite)
  {
      u32 y;
-@@ -1920,22 +2165,24 @@ static void AddBirchSpeechObjects(u8 taskId)
+@@ -1920,22 +2189,24 @@ static void AddBirchSpeechObjects(u8 taskId)
      gSprites[birchSpriteId].callback = SpriteCB_Null;
      gSprites[birchSpriteId].oam.priority = 0;
      gSprites[birchSpriteId].invisible = TRUE;
@@ -18872,7 +19416,7 @@ index 7fc7e417..16cc895f 100644
  }
  
  #undef tPlayerSpriteId
-@@ -1958,7 +2205,7 @@ static void Task_NewGameBirchSpeech_FadeOutTarget1InTarget2(u8 taskId)
+@@ -1958,7 +2229,7 @@ static void Task_NewGameBirchSpeech_FadeOutTarget1InTarget2(u8 taskId)
  
      if (gTasks[taskId].tAlphaCoeff1 == 0)
      {
@@ -18881,7 +19425,7 @@ index 7fc7e417..16cc895f 100644
          DestroyTask(taskId);
      }
      else if (gTasks[taskId].tDelayTimer)
-@@ -1982,7 +2229,7 @@ static void NewGameBirchSpeech_StartFadeOutTarget1InTarget2(u8 taskId, u8 delay)
+@@ -1982,7 +2253,7 @@ static void NewGameBirchSpeech_StartFadeOutTarget1InTarget2(u8 taskId, u8 delay)
      SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_OBJ);
      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));
      SetGpuReg(REG_OFFSET_BLDY, 0);
@@ -18890,7 +19434,7 @@ index 7fc7e417..16cc895f 100644
      taskId2 = CreateTask(Task_NewGameBirchSpeech_FadeOutTarget1InTarget2, 0);
      gTasks[taskId2].tMainTask = taskId;
      gTasks[taskId2].tAlphaCoeff1 = 16;
-@@ -1995,9 +2242,18 @@ static void Task_NewGameBirchSpeech_FadeInTarget1OutTarget2(u8 taskId)
+@@ -1995,9 +2266,18 @@ static void Task_NewGameBirchSpeech_FadeInTarget1OutTarget2(u8 taskId)
  {
      int alphaCoeff2;
  
@@ -18910,7 +19454,7 @@ index 7fc7e417..16cc895f 100644
          DestroyTask(taskId);
      }
      else if (gTasks[taskId].tDelayTimer)
-@@ -2021,13 +2277,19 @@ static void NewGameBirchSpeech_StartFadeInTarget1OutTarget2(u8 taskId, u8 delay)
+@@ -2021,13 +2301,19 @@ static void NewGameBirchSpeech_StartFadeInTarget1OutTarget2(u8 taskId, u8 delay)
      SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_OBJ);
      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));
      SetGpuReg(REG_OFFSET_BLDY, 0);
@@ -18931,7 +19475,7 @@ index 7fc7e417..16cc895f 100644
  }
  
  #undef tMainTask
-@@ -2062,7 +2324,7 @@ static void Task_NewGameBirchSpeech_FadePlatformIn(u8 taskId)
+@@ -2062,7 +2348,7 @@ static void Task_NewGameBirchSpeech_FadePlatformIn(u8 taskId)
      {
          gTasks[taskId].tDelayTimer = gTasks[taskId].tDelay;
          gTasks[taskId].tPalIndex++;
@@ -18940,7 +19484,7 @@ index 7fc7e417..16cc895f 100644
      }
  }
  
-@@ -2096,7 +2358,7 @@ static void Task_NewGameBirchSpeech_FadePlatformOut(u8 taskId)
+@@ -2096,7 +2382,7 @@ static void Task_NewGameBirchSpeech_FadePlatformOut(u8 taskId)
      {
          gTasks[taskId].tDelayTimer = gTasks[taskId].tDelay;
          gTasks[taskId].tPalIndex--;
@@ -18949,7 +19493,7 @@ index 7fc7e417..16cc895f 100644
      }
  }
  
-@@ -2287,6 +2549,7 @@ static void NewGameBirchSpeech_WaitForThisIsPokemonText(struct TextPrinterTempla
+@@ -2287,6 +2573,7 @@ static void NewGameBirchSpeech_WaitForThisIsPokemonText(struct TextPrinterTempla
      if (*(printer->currentChar - 2) == EXT_CTRL_CODE_PAUSE && !sStartedPokeBallTask)
      {
          sStartedPokeBallTask = TRUE;
@@ -19519,7 +20063,7 @@ index e2317c36..130147b8 100644
 +#else
      RequestDma3Copy(&sMonMarkings_Gfx[markings * 0x80], dest, 0x80, 0x10);
 +#endif
- }
++}
 +
 +#ifdef PLATFORM_3DS
 +// The open markings menu, for the 3DS bottom screen: its cursor, and its top
@@ -19549,7 +20093,7 @@ index e2317c36..130147b8 100644
 +        return TRUE;
 +    sMenu->cursorPos = cursor;
 +    return ChooseMonMarking();
-+}
+ }
 +#endif
 diff --git c/src/money.c w/src/money.c
 index 15bdbedd..33bc2595 100644
@@ -20518,10 +21062,18 @@ index 43369ba7..25e9a586 100644
          FREE_AND_SET_NULL(sNamingScreen);
      }
 diff --git c/src/new_game.c w/src/new_game.c
-index 89a2bf4c..4f39f218 100644
+index 89a2bf4c..41e4fec3 100644
 --- c/src/new_game.c
 +++ w/src/new_game.c
-@@ -88,12 +88,23 @@ void CopyTrainerId(u8 *dst, u8 *src)
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_run.h"
++#endif
+ #include "clock.h"
+ #include "new_game.h"
+ #include "random.h"
+@@ -88,12 +91,23 @@ void CopyTrainerId(u8 *dst, u8 *src)
  {
      s32 i;
      for (i = 0; i < TRAINER_ID_LENGTH; i++)
@@ -20545,12 +21097,26 @@ index 89a2bf4c..4f39f218 100644
      SetTrainerId(trainerId, gSaveBlock2Ptr->playerTrainerId);
  }
  
+@@ -234,6 +248,9 @@ void NewGameInitData(void)
+     ResetItemFlags();
+     ResetDexNav();
+     ClearFollowerNPCData();
++#ifdef PORT_BRIDGE
++    CustomRun_CommitNewSave();
++#endif
+ }
+ 
+ static void ResetMiniGamesRecords(void)
 diff --git c/src/overworld.c w/src/overworld.c
-index 4d01b45e..de532a13 100644
+index 4d01b45e..78de22ac 100644
 --- c/src/overworld.c
 +++ w/src/overworld.c
-@@ -1,4 +1,8 @@
+@@ -1,4 +1,12 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_run.h"
++#include "main_menu.h"
++#endif
 +#ifdef PLATFORM_3DS
 +#include "3ds_extras.h"
 +#include "3ds_daynight.h"
@@ -20558,7 +21124,7 @@ index 4d01b45e..de532a13 100644
  #include "overworld.h"
  #include "battle_pyramid.h"
  #include "battle_setup.h"
-@@ -36,6 +40,7 @@
+@@ -36,6 +44,7 @@
  #include "link.h"
  #include "link_rfu.h"
  #include "load_save.h"
@@ -20566,7 +21132,7 @@ index 4d01b45e..de532a13 100644
  #include "main.h"
  #include "malloc.h"
  #include "m4a.h"
-@@ -85,6 +90,10 @@
+@@ -85,6 +94,10 @@
  #include "constants/trainer_hill.h"
  #include "constants/weather.h"
  
@@ -20577,7 +21143,7 @@ index 4d01b45e..de532a13 100644
  STATIC_ASSERT((B_FLAG_FOLLOWERS_DISABLED == 0 || OW_FOLLOWERS_ENABLED), FollowersFlagAssignedWithoutEnablingThem);
  
  struct CableClubPlayer
-@@ -312,8 +321,13 @@ static const struct BgTemplate sOverworldBgTemplates[] =
+@@ -312,8 +325,13 @@ static const struct BgTemplate sOverworldBgTemplates[] =
      {
          .bg = 1,
          .charBaseIndex = 0,
@@ -20591,7 +21157,7 @@ index 4d01b45e..de532a13 100644
          .paletteMode = 0,
          .priority = 1,
          .baseTile = 0
-@@ -321,8 +335,13 @@ static const struct BgTemplate sOverworldBgTemplates[] =
+@@ -321,8 +339,13 @@ static const struct BgTemplate sOverworldBgTemplates[] =
      {
          .bg = 2,
          .charBaseIndex = 0,
@@ -20605,7 +21171,7 @@ index 4d01b45e..de532a13 100644
          .paletteMode = 0,
          .priority = 2,
          .baseTile = 0
-@@ -330,8 +349,13 @@ static const struct BgTemplate sOverworldBgTemplates[] =
+@@ -330,8 +353,13 @@ static const struct BgTemplate sOverworldBgTemplates[] =
      {
          .bg = 3,
          .charBaseIndex = 0,
@@ -20619,7 +21185,7 @@ index 4d01b45e..de532a13 100644
          .paletteMode = 0,
          .priority = 3,
          .baseTile = 0
-@@ -569,8 +593,14 @@ void LoadSaveblockObjEventScripts(void)
+@@ -569,8 +597,14 @@ void LoadSaveblockObjEventScripts(void)
      struct ObjectEventTemplate *savObjTemplates = gSaveBlock1Ptr->objectEventTemplates;
      s32 i;
  
@@ -20636,7 +21202,7 @@ index 4d01b45e..de532a13 100644
  }
  
  static struct ObjectEventTemplate *GetObjectEventTemplate(u8 localId)
-@@ -613,7 +643,21 @@ static void InitMapView(void)
+@@ -613,7 +647,21 @@ static void InitMapView(void)
  
  const struct MapLayout *GetMapLayout(u16 mapLayoutId)
  {
@@ -20658,7 +21224,7 @@ index 4d01b45e..de532a13 100644
  }
  
  void ApplyCurrentWarp(void)
-@@ -657,7 +701,11 @@ static bool32 IsDummyWarp(struct WarpData *warp)
+@@ -657,7 +705,11 @@ static bool32 IsDummyWarp(struct WarpData *warp)
  
  struct MapHeader const *const Overworld_GetMapHeaderByGroupAndId(u16 mapGroup, u16 mapNum)
  {
@@ -20670,7 +21236,7 @@ index 4d01b45e..de532a13 100644
  }
  
  struct MapHeader const *const GetDestinationWarpMapHeader(void)
-@@ -669,8 +717,22 @@ static void LoadCurrentMapData(void)
+@@ -669,8 +721,22 @@ static void LoadCurrentMapData(void)
  {
      sLastMapSectionId = gMapHeader.regionMapSectionId;
      gMapHeader = *Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum);
@@ -20693,7 +21259,7 @@ index 4d01b45e..de532a13 100644
  }
  
  static void LoadSaveblockMapHeader(void)
-@@ -700,6 +762,14 @@ static void SetPlayerCoordsFromWarp(void)
+@@ -700,6 +766,14 @@ static void SetPlayerCoordsFromWarp(void)
          gSaveBlock1Ptr->pos.x = gMapHeader.mapLayout->width / 2;
          gSaveBlock1Ptr->pos.y = gMapHeader.mapLayout->height / 2;
      }
@@ -20708,7 +21274,7 @@ index 4d01b45e..de532a13 100644
  }
  
  void WarpIntoMap(void)
-@@ -828,10 +898,13 @@ void SetContinueGameWarpToDynamicWarp(int unused)
+@@ -828,10 +902,13 @@ void SetContinueGameWarpToDynamicWarp(int unused)
  
  const struct MapConnection *GetMapConnection(u8 dir)
  {
@@ -20723,7 +21289,7 @@ index 4d01b45e..de532a13 100644
      if (connection == NULL)
          return NULL;
  
-@@ -1015,8 +1088,26 @@ static struct InitialPlayerAvatarState *GetInitialPlayerAvatarState(void)
+@@ -1015,8 +1092,26 @@ static struct InitialPlayerAvatarState *GetInitialPlayerAvatarState(void)
      enum MapType mapType = GetCurrentMapType();
      u16 metatileBehavior = GetCenterScreenMetatileBehavior();
      u8 transitionFlags = GetAdjustedInitialTransitionFlags(&sInitialPlayerAvatarState, metatileBehavior, mapType);
@@ -20750,7 +21316,7 @@ index 4d01b45e..de532a13 100644
      sInitialPlayerAvatarState = playerStruct;
      return &sInitialPlayerAvatarState;
  }
-@@ -1087,6 +1178,13 @@ static enum Direction GetAdjustedInitialDirection(struct InitialPlayerAvatarStat
+@@ -1087,6 +1182,13 @@ static enum Direction GetAdjustedInitialDirection(struct InitialPlayerAvatarStat
  
  static u16 GetCenterScreenMetatileBehavior(void)
  {
@@ -20764,7 +21330,7 @@ index 4d01b45e..de532a13 100644
      return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr->pos.x + MAP_OFFSET, gSaveBlock1Ptr->pos.y + MAP_OFFSET);
  }
  
-@@ -1603,9 +1701,15 @@ static void InitOverworldBgs(void)
+@@ -1603,9 +1705,15 @@ static void InitOverworldBgs(void)
      SetBgAttribute(1, BG_ATTR_MOSAIC, 1);
      SetBgAttribute(2, BG_ATTR_MOSAIC, 1);
      SetBgAttribute(3, BG_ATTR_MOSAIC, 1);
@@ -20780,7 +21346,7 @@ index 4d01b45e..de532a13 100644
      SetBgTilemapBuffer(1, gOverworldTilemapBuffer_Bg1);
      SetBgTilemapBuffer(2, gOverworldTilemapBuffer_Bg2);
      SetBgTilemapBuffer(3, gOverworldTilemapBuffer_Bg3);
-@@ -1677,10 +1781,27 @@ static void DoCB1_Overworld(u16 newKeys, u16 heldKeys)
+@@ -1677,10 +1785,27 @@ static void DoCB1_Overworld(u16 newKeys, u16 heldKeys)
          ObjectEventSetHeldMovement(&gObjectEvents[GetFollowerNPCObjectId()], GetFaceDirectionAnimNum(gObjectEvents[GetFollowerNPCObjectId()].facingDirection));
  }
  
@@ -20808,7 +21374,7 @@ index 4d01b45e..de532a13 100644
  }
  
  #define TINT_NIGHT Q_8_8(0.456) | Q_8_8(0.456) << 8 | Q_8_8(0.615) << 16
-@@ -1704,6 +1825,16 @@ void UpdateTimeOfDay(bool32 updateBlend)
+@@ -1704,6 +1829,16 @@ void UpdateTimeOfDay(bool32 updateBlend)
      RtcCalcLocalTime();
      hours = sHoursOverride ? sHoursOverride : gLocalTime.hours;
      minutes = sHoursOverride ? 0 : gLocalTime.minutes;
@@ -20825,7 +21391,7 @@ index 4d01b45e..de532a13 100644
  
      if (IsBetweenHours(hours, MORNING_HOUR_BEGIN, MORNING_HOUR_MIDDLE)) // night->morning
      {
-@@ -1777,6 +1908,11 @@ void UpdateTimeOfDay(bool32 updateBlend)
+@@ -1777,6 +1912,11 @@ void UpdateTimeOfDay(bool32 updateBlend)
  // Whether a map type is naturally lit/outside
  bool32 MapHasNaturalLight(enum MapType mapType)
  {
@@ -20837,7 +21403,7 @@ index 4d01b45e..de532a13 100644
      return (OW_ENABLE_DNS
           && (mapType == MAP_TYPE_TOWN
            || mapType == MAP_TYPE_CITY
-@@ -1886,6 +2022,10 @@ void CB2_OverworldBasic(void)
+@@ -1886,6 +2026,10 @@ void CB2_OverworldBasic(void)
  void CB2_Overworld(void)
  {
      bool32 fading = (gPaletteFade.active != 0);
@@ -20848,10 +21414,17 @@ index 4d01b45e..de532a13 100644
      if (fading)
          SetVBlankCallback(NULL);
      OverworldBasic();
-@@ -1930,6 +2070,13 @@ static bool8 RunFieldCallback(void)
+@@ -1930,10 +2074,31 @@ static bool8 RunFieldCallback(void)
  
  void CB2_NewGame(void)
  {
++#ifdef PORT_BRIDGE
++    if (!CustomRun_HasConfirmedDraft())
++    {
++        CustomRunMenu_Setup(CB2_NewGame, CB2_InitMainMenu);
++        return;
++    }
++#endif
 +#ifdef PORT_BRIDGE
 +    Port_SetBirchDebugEx(0x0100,
 +                        gSaveBlock1Ptr->location.mapGroup | (gSaveBlock1Ptr->location.mapNum << 8),
@@ -20862,7 +21435,32 @@ index 4d01b45e..de532a13 100644
      FieldClearVBlankHBlankCallbacks();
      StopMapMusic();
      ResetSafariZoneFlag_();
-@@ -2135,12 +2282,24 @@ void CB2_ContinueSavedGame(void)
+     NewGameInitData();
++#ifdef PORT_BRIDGE
++    if (CustomRun_Read(NULL) != CR_OK)
++    {
++        CustomRunMenu_View(CB2_InitMainMenu);
++        return;
++    }
++#endif
+     ResetInitialPlayerAvatarState();
+     PlayTimeCounter_Start();
+     ScriptContext_Init();
+@@ -2115,6 +2280,13 @@ static void FieldCB_FadeTryShowMapPopup(void)
+ void CB2_ContinueSavedGame(void)
+ {
+     u8 trainerHillMapId;
++#ifdef PORT_BRIDGE
++    if (!CustomRun_CanPlay())
++    {
++        CustomRunMenu_View(CB2_InitMainMenu);
++        return;
++    }
++#endif
+ 
+     FieldClearVBlankHBlankCallbacks();
+     StopMapMusic();
+@@ -2135,12 +2307,24 @@ void CB2_ContinueSavedGame(void)
      UnfreezeObjectEvents();
      DoTimeBasedEvents();
      UpdateMiscOverworldStates();
@@ -20887,7 +21485,7 @@ index 4d01b45e..de532a13 100644
  
      PlayTimeCounter_Start();
      ScriptContext_Init();
-@@ -2300,6 +2459,13 @@ static bool32 LoadMapInStepsLink(u8 *state)
+@@ -2300,6 +2484,13 @@ static bool32 LoadMapInStepsLink(u8 *state)
  
  static bool32 LoadMapInStepsLocal(u8 *state, bool32 a2)
  {
@@ -20901,7 +21499,7 @@ index 4d01b45e..de532a13 100644
      switch (*state)
      {
      case 0:
-@@ -2495,6 +2661,11 @@ static void ResetMirageTowerAndSaveBlockPtrs(void)
+@@ -2495,6 +2686,11 @@ static void ResetMirageTowerAndSaveBlockPtrs(void)
  {
      ClearMirageTowerPulseBlend();
      MoveSaveBlocks_ResetHeap();
@@ -20913,7 +21511,7 @@ index 4d01b45e..de532a13 100644
  }
  
  static void ResetScreenForMapLoad(void)
-@@ -2616,19 +2787,64 @@ static void InitObjectEventsLocal(void)
+@@ -2616,19 +2812,64 @@ static void InitObjectEventsLocal(void)
  {
      u16 x, y;
      struct InitialPlayerAvatarState *player;
@@ -20978,7 +21576,7 @@ index 4d01b45e..de532a13 100644
  }
  
  static void InitObjectEventsReturnToField(void)
-@@ -2640,8 +2856,18 @@ static void InitObjectEventsReturnToField(void)
+@@ -2640,8 +2881,18 @@ static void InitObjectEventsReturnToField(void)
  
  static void SetCameraToTrackPlayer(void)
  {
@@ -29902,11 +30500,14 @@ index 0d013601..167f578a 100644
      dest = ConvertIntToHexStringN(dest, year, STR_CONV_MODE_LEADING_ZEROS, 4);
      *dest++ = CHAR_HYPHEN;
 diff --git c/src/save.c w/src/save.c
-index 055b0729..671cfd40 100644
+index 055b0729..43f7e641 100644
 --- c/src/save.c
 +++ w/src/save.c
-@@ -1,4 +1,10 @@
+@@ -1,4 +1,13 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_run.h"
++#endif
 +#ifdef PLATFORM_3DS
 +#include "clock.h"
 +#include "3ds_clock_store.h"
@@ -29916,7 +30517,7 @@ index 055b0729..671cfd40 100644
  #include "agb_flash.h"
  #include "gba/flash_internal.h"
  #include "fieldmap.h"
-@@ -9,6 +15,7 @@
+@@ -9,6 +18,7 @@
  #include "overworld.h"
  #include "hall_of_fame.h"
  #include "pokemon_storage_system.h"
@@ -29924,7 +30525,7 @@ index 055b0729..671cfd40 100644
  #include "trainer_hill.h"
  #include "link.h"
  #include "constants/game_stat.h"
-@@ -90,7 +97,7 @@ COMMON_DATA u32 gSaveCounter = 0;
+@@ -90,7 +100,7 @@ COMMON_DATA u32 gSaveCounter = 0;
  COMMON_DATA struct SaveSector *gReadWriteSector = NULL; // Pointer to a buffer for reading/writing a sector
  COMMON_DATA u16 gIncrementalSectorId = 0;
  COMMON_DATA u16 gSaveFileStatus = 0;
@@ -29933,7 +30534,7 @@ index 055b0729..671cfd40 100644
  COMMON_DATA struct SaveSectorLocation gRamSaveSectorLocations[NUM_SECTORS_PER_SLOT] = {0};
  COMMON_DATA u16 gSaveAttemptStatus = 0;
  
-@@ -343,6 +350,14 @@ static u8 HandleReplaceSector(u16 sectorId, const struct SaveSectorLocation *loc
+@@ -343,6 +353,14 @@ static u8 HandleReplaceSector(u16 sectorId, const struct SaveSectorLocation *loc
  
      gReadWriteSector->checksum = CalculateChecksum(data, size);
  
@@ -29948,7 +30549,7 @@ index 055b0729..671cfd40 100644
      // Erase old save data
      EraseFlashSector(sector);
  
-@@ -393,6 +408,7 @@ static u8 HandleReplaceSector(u16 sectorId, const struct SaveSectorLocation *loc
+@@ -393,6 +411,7 @@ static u8 HandleReplaceSector(u16 sectorId, const struct SaveSectorLocation *loc
              return SAVE_STATUS_OK;
          }
      }
@@ -29956,7 +30557,7 @@ index 055b0729..671cfd40 100644
  }
  
  static u8 WriteSectorSignatureByte_NoOffset(u16 sectorId, const struct SaveSectorLocation *locations)
-@@ -480,7 +496,8 @@ static u8 TryLoadSaveSlot(u16 sectorId, struct SaveSectorLocation *locations)
+@@ -480,7 +499,8 @@ static u8 TryLoadSaveSlot(u16 sectorId, struct SaveSectorLocation *locations)
      else
      {
          status = GetSaveValidStatus(locations);
@@ -29966,7 +30567,7 @@ index 055b0729..671cfd40 100644
      }
  
      return status;
-@@ -499,6 +516,8 @@ static u8 CopySaveSlotData(u16 sectorId, struct SaveSectorLocation *locations)
+@@ -499,6 +519,8 @@ static u8 CopySaveSlotData(u16 sectorId, struct SaveSectorLocation *locations)
          ReadFlashSector(i + slotOffset, gReadWriteSector);
  
          id = gReadWriteSector->id;
@@ -29975,7 +30576,7 @@ index 055b0729..671cfd40 100644
          if (id == 0)
              gLastWrittenSector = i;
  
-@@ -535,6 +554,8 @@ static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations)
+@@ -535,6 +557,8 @@ static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations)
          if (gReadWriteSector->signature == SECTOR_SIGNATURE)
          {
              signatureValid = TRUE;
@@ -29984,7 +30585,7 @@ index 055b0729..671cfd40 100644
              checksum = CalculateChecksum(gReadWriteSector->data, locations[gReadWriteSector->id].size);
              if (gReadWriteSector->checksum == checksum)
              {
-@@ -567,6 +588,8 @@ static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations)
+@@ -567,6 +591,8 @@ static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations)
          if (gReadWriteSector->signature == SECTOR_SIGNATURE)
          {
              signatureValid = TRUE;
@@ -29993,9 +30594,14 @@ index 055b0729..671cfd40 100644
              checksum = CalculateChecksum(gReadWriteSector->data, locations[gReadWriteSector->id].size);
              if (gReadWriteSector->checksum == checksum)
              {
-@@ -715,6 +738,10 @@ u8 HandleSavingData(u8 saveType)
+@@ -714,7 +740,15 @@ u8 HandleSavingData(u8 saveType)
+ {
      u8 i;
      u32 *backupVar = gTrainerHillVBlankCounter;
++#ifdef PORT_BRIDGE
++    if (!CustomRun_CanPlay())
++        return SAVE_STATUS_ERROR;
++#endif
  
 +#ifdef PLATFORM_3DS
 +    if (CtrDayNight_Active())
@@ -30004,7 +30610,7 @@ index 055b0729..671cfd40 100644
      gTrainerHillVBlankCounter = NULL;
      UpdateSaveAddresses();
      switch (saveType)
-@@ -766,7 +793,12 @@ u8 HandleSavingData(u8 saveType)
+@@ -766,7 +800,12 @@ u8 HandleSavingData(u8 saveType)
          WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
          break;
      }
@@ -30017,8 +30623,27 @@ index 055b0729..671cfd40 100644
      return 0;
  }
  
-@@ -796,6 +828,10 @@ bool8 LinkFullSave_Init(void)
+@@ -778,7 +817,11 @@ u8 TrySavingData(u8 saveType)
+         return SAVE_STATUS_ERROR;
+     }
+ 
+-    HandleSavingData(saveType);
++    if (HandleSavingData(saveType) == SAVE_STATUS_ERROR)
++    {
++        gSaveAttemptStatus = SAVE_STATUS_ERROR;
++        return SAVE_STATUS_ERROR;
++    }
+     if (!gDamagedSaveSectors)
+     {
+         gSaveAttemptStatus = SAVE_STATUS_OK;
+@@ -794,8 +837,16 @@ u8 TrySavingData(u8 saveType)
+ 
+ bool8 LinkFullSave_Init(void)
  {
++#ifdef PORT_BRIDGE
++    if (!CustomRun_CanPlay())
++        return TRUE;
++#endif
      if (gFlashMemoryPresent != TRUE)
          return TRUE;
 +#ifdef PLATFORM_3DS
@@ -30028,7 +30653,7 @@ index 055b0729..671cfd40 100644
      UpdateSaveAddresses();
      CopyPartyAndObjectsToSave();
      RestoreSaveBackupVarsAndIncrement(gRamSaveSectorLocations);
-@@ -830,6 +866,10 @@ bool8 LinkFullSave_SetLastSectorSignature(void)
+@@ -830,6 +881,10 @@ bool8 LinkFullSave_SetLastSectorSignature(void)
      CopySectorSignatureByte(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
      if (gDamagedSaveSectors)
          DoSaveFailedScreen(SAVE_NORMAL);
@@ -30039,7 +30664,7 @@ index 055b0729..671cfd40 100644
      return FALSE;
  }
  
-@@ -838,6 +878,10 @@ bool8 WriteSaveBlock2(void)
+@@ -838,6 +893,10 @@ bool8 WriteSaveBlock2(void)
      if (gFlashMemoryPresent != TRUE)
          return TRUE;
  
@@ -30050,7 +30675,7 @@ index 055b0729..671cfd40 100644
      UpdateSaveAddresses();
      CopyPartyAndObjectsToSave();
      RestoreSaveBackupVars(gRamSaveSectorLocations);
-@@ -873,6 +917,10 @@ bool8 WriteSaveBlock1Sector(void)
+@@ -873,6 +932,10 @@ bool8 WriteSaveBlock1Sector(void)
      if (gDamagedSaveSectors)
          DoSaveFailedScreen(SAVE_LINK);
  
@@ -30061,7 +30686,7 @@ index 055b0729..671cfd40 100644
      return finished;
  }
  
-@@ -894,7 +942,10 @@ u8 LoadGameSave(u8 saveType)
+@@ -894,7 +957,10 @@ u8 LoadGameSave(u8 saveType)
          status = TryLoadSaveSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
          CopyPartyAndObjectsFromSave();
          gSaveFileStatus = status;
@@ -30814,18 +31439,16 @@ index beb87a16..5b855a1d 100644
  
      GPIO_PORT_DATA = SCK_HI;
      GPIO_PORT_DATA = SCK_HI;
--
 +#endif
-     sLocked = FALSE;
- 
-     return TRUE;
- }
- 
--static bool8 UNUSED SiiRtcSetAlarm(struct SiiRtcInfo *rtc)
++    sLocked = FALSE;
++
++    return TRUE;
++}
++
 +bool8 SiiRtcSetTime(struct SiiRtcInfo *rtc)
 +{
 +    u8 i;
-+
+ 
 +    if (sLocked == TRUE)
 +        return FALSE;
 +
@@ -30846,11 +31469,12 @@ index beb87a16..5b855a1d 100644
 +    GPIO_PORT_DATA = SCK_HI;
 +    GPIO_PORT_DATA = SCK_HI;
 +#endif
-+    sLocked = FALSE;
-+
-+    return TRUE;
-+}
-+
+     sLocked = FALSE;
+ 
+     return TRUE;
+ }
+ 
+-static bool8 UNUSED SiiRtcSetAlarm(struct SiiRtcInfo *rtc)
 +bool8 SiiRtcSetAlarm(struct SiiRtcInfo *rtc)
  {
      u8 i;
@@ -31952,37 +32576,37 @@ index 400ff93f..52c28041 100644
 +#ifdef PORT_BRIDGE
 +        u32 offset;
 +
++        if (!images[0].relativeFrames)
++        {
++            src = images[index].data;
++            size = images[index].size;
++            offset = images[index].offset;
++        }
++        else
++        {
++            src = images[0].data;
++            size = images[0].size;
++            offset = images[0].offset + size * index;
++        }
++        size = Port_GetSpriteFrameSize(src, size);
++        src = Port_ResolveSpriteFramePointer(src, size, offset);
++        if (src == NULL || size == 0)
++            return;
++#else
          if (!images[0].relativeFrames)
          {
 -            sSpriteCopyRequests[sSpriteCopyRequestCount].src = images[index].data;
 -            sSpriteCopyRequests[sSpriteCopyRequestCount].size = images[index].size;
 +            src = images[index].data;
 +            size = images[index].size;
-+            offset = images[index].offset;
          }
          else
          {
 -            sSpriteCopyRequests[sSpriteCopyRequestCount].src = images[0].data + images[0].size * index;
 -            sSpriteCopyRequests[sSpriteCopyRequestCount].size = images[0].size;
-+            src = images[0].data;
-+            size = images[0].size;
-+            offset = images[0].offset + size * index;
-         }
-+        size = Port_GetSpriteFrameSize(src, size);
-+        src = Port_ResolveSpriteFramePointer(src, size, offset);
-+        if (src == NULL || size == 0)
-+            return;
-+#else
-+        if (!images[0].relativeFrames)
-+        {
-+            src = images[index].data;
-+            size = images[index].size;
-+        }
-+        else
-+        {
 +            src = (const u8 *)images[0].data + images[0].size * index;
 +            size = images[0].size;
-+        }
+         }
 +#endif
 +        sSpriteCopyRequests[sSpriteCopyRequestCount].src = src;
 +        sSpriteCopyRequests[sSpriteCopyRequestCount].size = size;
@@ -32046,10 +32670,63 @@ index 400ff93f..52c28041 100644
  }
  
 diff --git c/src/start_menu.c w/src/start_menu.c
-index 648fa837..2bfdd8bf 100644
+index 648fa837..f890cb95 100644
 --- c/src/start_menu.c
 +++ w/src/start_menu.c
-@@ -585,8 +585,23 @@ static bool8 FieldCB_ReturnToFieldStartMenu(void)
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_run.h"
++#endif
+ #include "config/save.h"
+ #include "battle_pike.h"
+ #include "battle_pyramid.h"
+@@ -69,6 +72,9 @@ enum
+     MENU_ACTION_PYRAMID_BAG,
+     MENU_ACTION_DEBUG,
+     MENU_ACTION_DEXNAV,
++#ifdef PORT_BRIDGE
++    MENU_ACTION_RUN_SETTINGS,
++#endif
+ };
+ 
+ // Save status
+@@ -104,6 +110,10 @@ static bool8 StartMenuPokeNavCallback(void);
+ static bool8 StartMenuPlayerNameCallback(void);
+ static bool8 StartMenuSaveCallback(void);
+ static bool8 StartMenuOptionCallback(void);
++#ifdef PORT_BRIDGE
++static bool8 StartMenuRunSettingsCallback(void);
++static const u8 sText_RunSettings[] = _("RUN SETTINGS");
++#endif
+ static bool8 StartMenuExitCallback(void);
+ static bool8 StartMenuSafariZoneRetireCallback(void);
+ static bool8 StartMenuLinkModePlayerNameCallback(void);
+@@ -198,6 +208,9 @@ static const struct MenuAction sStartMenuItems[] =
+     [MENU_ACTION_PLAYER]          = {gText_MenuPlayer,  {.u8_void = StartMenuPlayerNameCallback}},
+     [MENU_ACTION_SAVE]            = {gText_MenuSave,    {.u8_void = StartMenuSaveCallback}},
+     [MENU_ACTION_OPTION]          = {gText_MenuOption,  {.u8_void = StartMenuOptionCallback}},
++#ifdef PORT_BRIDGE
++    [MENU_ACTION_RUN_SETTINGS]    = {sText_RunSettings, {.u8_void = StartMenuRunSettingsCallback}},
++#endif
+     [MENU_ACTION_EXIT]            = {gText_MenuExit,    {.u8_void = StartMenuExitCallback}},
+     [MENU_ACTION_RETIRE_SAFARI]   = {gText_MenuRetire,  {.u8_void = StartMenuSafariZoneRetireCallback}},
+     [MENU_ACTION_PLAYER_LINK]     = {gText_MenuPlayer,  {.u8_void = StartMenuLinkModePlayerNameCallback}},
+@@ -341,7 +354,12 @@ static void BuildNormalStartMenu(void)
+     AddStartMenuAction(MENU_ACTION_PLAYER);
+     AddStartMenuAction(MENU_ACTION_SAVE);
+     AddStartMenuAction(MENU_ACTION_OPTION);
+-    AddStartMenuAction(MENU_ACTION_EXIT);
++#ifdef PORT_BRIDGE
++    AddStartMenuAction(MENU_ACTION_RUN_SETTINGS);
++    // With DexNav the ninth row is RUN SETTINGS; B/START still close the menu.
++    if (sNumStartMenuActions < ARRAY_COUNT(sCurrentStartMenuActions))
++#endif
++        AddStartMenuAction(MENU_ACTION_EXIT);
+ }
+ 
+ static void BuildDebugStartMenu(void)
+@@ -585,8 +603,23 @@ static bool8 FieldCB_ReturnToFieldStartMenu(void)
      return TRUE;
  }
  
@@ -32073,7 +32750,7 @@ index 648fa837..2bfdd8bf 100644
      sInitStartMenuData[0] = 0;
      sInitStartMenuData[1] = 0;
      gFieldCallback2 = FieldCB_ReturnToFieldStartMenu;
-@@ -614,6 +629,10 @@ void Task_ShowStartMenu(u8 taskId)
+@@ -614,6 +647,10 @@ void Task_ShowStartMenu(u8 taskId)
  
  void ShowStartMenu(void)
  {
@@ -32084,7 +32761,27 @@ index 648fa837..2bfdd8bf 100644
      if (!IsOverworldLinkActive())
      {
          FreezeObjectEvents();
-@@ -1511,3 +1530,130 @@ void Script_ForceSaveGame(struct ScriptContext *ctx)
+@@ -766,6 +803,19 @@ static bool8 StartMenuSaveCallback(void)
+     return FALSE;
+ }
+ 
++#ifdef PORT_BRIDGE
++static bool8 StartMenuRunSettingsCallback(void)
++{
++    if (gPaletteFade.active)
++        return FALSE;
++    PlayRainStoppingSoundEffect();
++    RemoveExtraStartMenuWindows();
++    CleanupOverworldWindowsAndTilemaps();
++    CustomRunMenu_View(CB2_ReturnToFieldWithOpenMenu);
++    return TRUE;
++}
++#endif
++
+ static bool8 StartMenuOptionCallback(void)
+ {
+     if (!gPaletteFade.active)
+@@ -1511,3 +1561,134 @@ void Script_ForceSaveGame(struct ScriptContext *ctx)
      gMenuCallback = SaveCallback;
      sSaveDialogCallback = SaveSavingMessageCallback;
  }
@@ -32144,8 +32841,8 @@ index 648fa837..2bfdd8bf 100644
 +    if (!CtrStartMenu_IsReplaced())
 +        return FALSE;
 +    sCtrRequest = MENU_ACTION_NONE_CTR;
-+    if (action >= MENU_ACTION_EXIT)
-+        return TRUE; // START alone opens nothing: the menu is on the bottom screen
++    if (action >= MENU_ACTION_EXIT && action != MENU_ACTION_RUN_SETTINGS)
++        return TRUE; // Ordinary actions remain on the bottom screen.
 +    if (action == MENU_ACTION_POKEDEX && GetNationalPokedexCount(FLAG_GET_SEEN) == 0)
 +        return TRUE;
 +
@@ -32179,7 +32876,11 @@ index 648fa837..2bfdd8bf 100644
 +
 +    if (!CtrStartMenu_IsReplaced())
 +        return TRUE;
-+    if (action >= MENU_ACTION_EXIT
++    // The bottom screen owns ordinary menu actions. A physical START press
++    // with no queued action opens this run's read-only settings instead.
++    if (action == MENU_ACTION_NONE_CTR)
++        action = sCtrRequest = MENU_ACTION_RUN_SETTINGS;
++    if ((action >= MENU_ACTION_EXIT && action != MENU_ACTION_RUN_SETTINGS)
 +     || (action == MENU_ACTION_POKEDEX && GetNationalPokedexCount(FLAG_GET_SEEN) == 0))
 +    {
 +        sCtrRequest = MENU_ACTION_NONE_CTR;
