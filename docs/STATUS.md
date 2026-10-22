@@ -116,8 +116,31 @@ Private logs: `work/stage-c-native.log`, `work/stage-c-build-workflow.log`,
 Native outputs: `build/stage-c/3ds_port/emerald3ds.3dsx`, `.smdh`, `.elf`;
 engine-only `build/stage-c/3ds_port/dist/Emerald3DS.3dsx` and `.smdh`;
 matching private `build/stage-c/3ds_port/build/emerald3ds.pak`.
-Final package metadata is recorded after the packaging gate in
-STAGE_C_BUILD_OUTPUTS.json. Content-bearing outputs stay ignored/private.
+Implementation checkpoint `66fc31dda98873f5b9f68185f7f4d0b3d641702a` is pushed to
+GitHub `project/stage-c`; no write blocker. Package source was clean. Final
+`tools/stage_c.sh package` passed: native engine-only release + matching pack,
+full make verify (51 ARM11 hard-float symbols, no strong undefined symbols,
+17,536 indexed assets / 1,451 pointer rows), updated production fixtures,
+linked pool audit, 9 expansion adapters, strict source audit, all 17,513 pack
+CRCs and embedded ABI/namespace checks. A separate strict engine-only ZIP audit
+and private ZIP CRC/file-list inspection also passed. No ROM/save/firmware/CIA
+or separate content pack is included in the private SD ZIP.
+
+| Output | Bytes |
+| --- | ---: |
+| `build/stage-c/3ds_port/emerald3ds.3dsx` | 54,908,460 |
+| `build/stage-c/3ds_port/dist/Emerald3DS.3dsx` | 9,405,044 |
+| `build/stage-c/3ds_port/build/emerald3ds.pak` | 44,765,824 |
+| `work/stage-c-private/Emerald3DS-Custom-StageC-private.zip` | 20,511,090 |
+
+ABI `eb81d151`; 17,513 generated data files / 43,972,849 bytes.
+Private ZIP SHA-256:
+`cbc9963e5ade1110a4486840cfdcfae2c62a4ae224d176666de75304afbdd60a`.
+Manifest: `work/stage-c-private/manifest.json`. Exact artifact sizes/hashes:
+[STAGE_C_BUILD_OUTPUTS.json](STAGE_C_BUILD_OUTPUTS.json). Additional private logs:
+`work/stage-c-package.log`, `work/stage-c-engine-audit.log`,
+`work/stage-c-versions.txt`. Content-bearing outputs stay ignored/private.
+No dependency/build/source-publication blocker remains.
 
 ## Limitations and next task
 

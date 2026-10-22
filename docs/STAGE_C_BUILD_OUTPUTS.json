@@ -1,0 +1,49 @@
+{
+  "implementation_commit": "66fc31dda98873f5b9f68185f7f4d0b3d641702a",
+  "engine_commit": "dfb0f84374230f4d462191601179b742f9f077df",
+  "expansion_patch_sha256": "e29fc83a4df34cde36ac4ca422d2e62bbf43928dd78c48daf08cfa35c4d99d13",
+  "engine_abi": "eb81d151",
+  "asset_index_entries": 17536,
+  "asset_pointer_entries": 1451,
+  "game_data_files": 17513,
+  "game_data_bytes": 43972849,
+  "native_compilation_verified": true,
+  "host_tests_verified": true,
+  "fresh_source_reproduced": true,
+  "emulator_tested": false,
+  "physical_console_tested": false,
+  "artifacts": {
+    "build/stage-c/3ds_port/emerald3ds.3dsx": {
+      "bytes": 54908460,
+      "sha256": "c25006dbfab6f45ae51cb83c4cce294009d7327af3fdfb9d668bf7f32818c82c"
+    },
+    "build/stage-c/3ds_port/emerald3ds.smdh": {
+      "bytes": 14016,
+      "sha256": "9e9a066d389840ddbfb7e4f568d21386e05e783ebb4fea2db8b517e9c02781ca"
+    },
+    "build/stage-c/3ds_port/emerald3ds.elf": {
+      "bytes": 71769300,
+      "sha256": "46a6933aeda79300d2872328ef3314ca3983d7be04a24fce44aee35d21bbd893"
+    },
+    "build/stage-c/3ds_port/dist/Emerald3DS.3dsx": {
+      "bytes": 9405044,
+      "sha256": "c777564f19b6aa73cbe1f194e751b601c4d4ae4ec9fbc1804be8c92a863e63c5"
+    },
+    "build/stage-c/3ds_port/dist/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "9e9a066d389840ddbfb7e4f568d21386e05e783ebb4fea2db8b517e9c02781ca"
+    },
+    "build/stage-c/3ds_port/build/emerald3ds.pak": {
+      "bytes": 44765824,
+      "sha256": "31c044c37d11fd13034f6079c7c3d06d4afc2b18223c9ad4058536a6caeafe2f"
+    },
+    "work/stage-c-private/Emerald3DS-Custom-StageC-private.zip": {
+      "bytes": 20511090,
+      "sha256": "cbc9963e5ade1110a4486840cfdcfae2c62a4ae224d176666de75304afbdd60a"
+    },
+    "work/stage-c-engine-only.zip": {
+      "bytes": 2999807,
+      "sha256": "b6baf7846703aa63a073a73fece28e95b24885e07a949cdcd3d1d6d5bafbd103"
+    }
+  }
+}

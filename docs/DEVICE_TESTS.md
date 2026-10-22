@@ -12,6 +12,9 @@ Gen 1–9 art. Do not reuse historical upstream hardware results as new results.
 ## Stage C: core randomizer console test (all results PENDING)
 
 Use the separate Stage C package, not the unchanged Stage B Dropbox ZIP.
+Implementation: `66fc31d`; exact package/native hashes: STAGE_C_BUILD_OUTPUTS.json.
+Stage C ZIP: 20,511,090 bytes, SHA-256
+`cbc9963e5ade1110a4486840cfdcfae2c62a4ae224d176666de75304afbdd60a`.
 No console or emulator result has been supplied. Keep A/B available as controls;
 C has its own runtime directory. Record source/hash/model and each result.
 
