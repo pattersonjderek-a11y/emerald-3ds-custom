@@ -1,0 +1,38 @@
+{
+  "implementation_commit": "c73ea2a28e7050be1f31dfd63fa478fe4cc9e5ae",
+  "engine_commit": "dfb0f84374230f4d462191601179b742f9f077df",
+  "engine_abi": "8efc02d7",
+  "asset_index_entries": 17536,
+  "asset_pointer_entries": 1451,
+  "game_data_files": 17513,
+  "game_data_bytes": 43971025,
+  "native_and_host_verified": true,
+  "emulator_tested": false,
+  "physical_console_tested": false,
+  "artifacts": {
+    "build/expansion/3ds_port/emerald3ds.3dsx": {
+      "bytes": 54892140,
+      "sha256": "474cf30025a39048a607bbf9afae4b118ddc03171e2eed11b38293560e5841cb"
+    },
+    "build/expansion/3ds_port/emerald3ds.smdh": {
+      "bytes": 14016,
+      "sha256": "71df8dbcb6b3abb63d603f051443a35f67d8bce8988cb2c4824c5d590eeed1b8"
+    },
+    "build/expansion/3ds_port/dist/Emerald3DS.3dsx": {
+      "bytes": 9390548,
+      "sha256": "de6d3d553074e78b5007a85427bb54dcc6c14c2ccab0e2664987a46de263b41e"
+    },
+    "build/expansion/3ds_port/dist/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "71df8dbcb6b3abb63d603f051443a35f67d8bce8988cb2c4824c5d590eeed1b8"
+    },
+    "build/expansion/3ds_port/build/emerald3ds.pak": {
+      "bytes": 44764000,
+      "sha256": "3b4fdd9ac4a426d21096e4d76db5313d6bec1c0fa6d0316ff7535ffcf534f76e"
+    },
+    "work/private-smoke/Emerald3DS-Custom-StageA-private.zip": {
+      "bytes": 20496266,
+      "sha256": "3508a4bc015e07815523db1442ad9ff46ffcfeeded972ba5e15e98f3d8ca505b"
+    }
+  }
+}

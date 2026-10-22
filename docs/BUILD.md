@@ -126,3 +126,7 @@ container without trust for the owner checkout previously fell back to scanning
 ignored build trees and reported 140,571 unrelated findings. The owner-run
 command passes; the deliberate untrusted-owner check now fails immediately
 with an actionable message. Run the documented container as your host UID.
+
+Actual outputs and checksums are in [BUILD_OUTPUTS.json](BUILD_OUTPUTS.json).
+Hashes identify this run; embedded build paths and link IDs can change hashes
+on a rebuild. Pair each engine with data from that same audited build.

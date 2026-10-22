@@ -1,5 +1,9 @@
 # Emerald 3DS Custom device tests
 
+Stage A package implementation: `c73ea2a28e7050be1f31dfd63fa478fe4cc9e5ae`;
+manifest and artifact hashes: `BUILD_OUTPUTS.json`. Native builds and host
+checks passed; the private ZIP is ready for this checklist.
+
 All physical-console results for this Stage A build are **PENDING**.
 No emulator was run. Successful source inspection, host tests and native
 compilation do not establish boot, frame rate, campaign stability or complete

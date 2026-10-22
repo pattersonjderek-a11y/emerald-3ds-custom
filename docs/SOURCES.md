@@ -29,3 +29,9 @@ exact paths, authors, terms and modifications here before integration.
 The source-ROM SHA-1 in `upstream.lock` is an input identifier, not a ROM
 included in this repository. Public source and engine-only packages and
 private content-bearing build outputs are separate products.
+
+Stage A implementation is committed locally as
+`c73ea2a28e7050be1f31dfd63fa478fe4cc9e5ae`. Final artifact metadata and
+hardware-pending records are subsequent documentation only. The SDK/package
+manifest and output hashes are in `TOOLCHAIN_PACKAGES.txt` and
+`BUILD_OUTPUTS.json`; content-bearing artifacts remain outside source control.
