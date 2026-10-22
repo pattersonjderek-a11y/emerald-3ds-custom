@@ -1,0 +1,57 @@
+{
+  "source_commit": "4562a90a75e5320332d95793a97332e73348c4b6",
+  "engine_commit": "dfb0f84374230f4d462191601179b742f9f077df",
+  "expansion_patch_sha256": "f20fdb8072afb3697ebee680e420c3f6996facce1c1daa569863972086300c5b",
+  "engine_abi": "0c430bf9",
+  "game_data_files": 17513,
+  "game_data_bytes": 43972881,
+  "asset_index_entries": 17536,
+  "asset_pointer_entries": 1451,
+  "variant": "Stage C visual fixes",
+  "namespace": "emerald3ds-custom-stage-c",
+  "native_compilation_verified": true,
+  "host_tests_verified": true,
+  "fresh_source_reproduced": true,
+  "entire_randomizer_pool_unchanged": true,
+  "emulator_tested": false,
+  "physical_console_tested": false,
+  "baseline_device_report": {
+    "model": "Original Nintendo 3DS XL",
+    "source": "Derek in this conversation",
+    "scope": "General Stage C play working; voxel boundary, Torchic follower and scenic wild battle failures reported. No fix-build result."
+  },
+  "artifacts": {
+    "build/stage-c-visuals/3ds_port/emerald3ds.3dsx": {
+      "bytes": 54908844,
+      "sha256": "17a7954e33546ecb5ac60e4fae4cc600ea81c34b0737fd737599b8af08a49cd6"
+    },
+    "build/stage-c-visuals/3ds_port/emerald3ds.smdh": {
+      "bytes": 14016,
+      "sha256": "9e9a066d389840ddbfb7e4f568d21386e05e783ebb4fea2db8b517e9c02781ca"
+    },
+    "build/stage-c-visuals/3ds_port/emerald3ds.elf": {
+      "bytes": 71781644,
+      "sha256": "132e9826c6936423312dd323ae1756d881f3f99afab1626bdf235403b0e0352a"
+    },
+    "build/stage-c-visuals/3ds_port/dist/Emerald3DS.3dsx": {
+      "bytes": 9405396,
+      "sha256": "9f8b385173aa5abfba7b8f4924103db1ee42e6f20a00873506175ea2329971ba"
+    },
+    "build/stage-c-visuals/3ds_port/dist/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "9e9a066d389840ddbfb7e4f568d21386e05e783ebb4fea2db8b517e9c02781ca"
+    },
+    "build/stage-c-visuals/3ds_port/build/emerald3ds.pak": {
+      "bytes": 44765856,
+      "sha256": "2ee020b331ae8aa5d3404ae8c2903d705d0338cdbb3377f53f703fe2d73115b9"
+    },
+    "work/stage-c-visuals-private/Emerald3DS-Custom-StageC-VisualFixes-private.zip": {
+      "bytes": 20512883,
+      "sha256": "a4e936f23d49b63029c5b85dd721170f3fcbc2096fe006e817ea186976265e17"
+    },
+    "work/visual-engine-only.zip": {
+      "bytes": 2999802,
+      "sha256": "86aac0e030da126be569fc8fb24a9d4db08807cba61b8a86a385027b1438791b"
+    }
+  }
+}

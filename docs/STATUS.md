@@ -76,7 +76,28 @@ Actual commands/results in the unchanged frozen SDK, container
 Private logs: `work/visual-native-build.log`, `work/visual-test-workflow.log`,
 `work/visual-regressions.log`, `work/visual-fresh-bootstrap.log`,
 `work/visual-fresh-tests.log`, and the three `work/visual-*-before.log` failures.
-Final private package audit/hash metadata follows the packaging gate.
+Implementation `4562a90a75e5320332d95793a97332e73348c4b6` is committed and pushed
+to GitHub `fix/stage-c-visuals`; no write blocker. Final
+`tools/stage_c_visuals.sh package` passed: native release/pack, full make verify
+including new visual and existing production fixtures, linked pool audit,
+9 expansion adapters, source audit, all 17,513 matching pack-entry CRCs and
+embedded ABI/namespace checks. Package source was clean. The private ZIP's
+CRC/file list and separate engine-only ZIP strict audit also passed.
+
+| Output | Bytes |
+| --- | ---: |
+| `build/stage-c-visuals/3ds_port/emerald3ds.3dsx` | 54,908,844 |
+| `build/stage-c-visuals/3ds_port/dist/Emerald3DS.3dsx` | 9,405,396 |
+| `build/stage-c-visuals/3ds_port/build/emerald3ds.pak` | 44,765,856 |
+| `work/stage-c-visuals-private/Emerald3DS-Custom-StageC-VisualFixes-private.zip` | 20,512,883 |
+
+ABI `0c430bf9`; 17,513 matching data entries / 43,972,881 bytes. ZIP SHA-256:
+`a4e936f23d49b63029c5b85dd721170f3fcbc2096fe006e817ea186976265e17`.
+Manifest: `work/stage-c-visuals-private/manifest.json`; exact outputs/hashes:
+[STAGE_C_VISUAL_FIXES_OUTPUTS.json](STAGE_C_VISUAL_FIXES_OUTPUTS.json).
+Additional private logs: `work/visual-package.log`, `work/visual-engine-audit.log`.
+No build/dependency/source-publication blocker remains. Device acceptance of
+these fixes, update/Continue and original XL performance remains pending.
 
 Use `tools/stage_c_visuals.sh build|test|package`; it uses the frozen SDK and
 separate `build/stage-c-visuals` tree. Original C wrapper refuses the fix patch.

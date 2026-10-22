@@ -23,7 +23,9 @@ save/reload, boss, double-battle, frame-rate or campaign pass. The table below
 records these actual visual failures; all fix-build results remain PENDING.
 
 This is a compatible C visual upgrade, with a separate package named
-`Emerald3DS-Custom-StageC-VisualFixes-private.zip`. It keeps C's existing runtime
+`Emerald3DS-Custom-StageC-VisualFixes-private.zip` (implementation `4562a90`).
+ZIP SHA-256: `a4e936f23d49b63029c5b85dd721170f3fcbc2096fe006e817ea186976265e17`.
+Exact artifact metadata: STAGE_C_VISUAL_FIXES_OUTPUTS.json. It keeps C's existing runtime
 and save directory so the current run can continue. Keep the original C ZIP
 and a complete backup of the existing C directory for rollback.
 
