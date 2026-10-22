@@ -1,6 +1,10 @@
 # Emerald 3DS Custom device tests
 
-Stage A package implementation: `c73ea2a28e7050be1f31dfd63fa478fe4cc9e5ae`;
+Current follow-up: **Stage C VisualFixes**. Follow the first checklist below
+to update the existing C app after backup; baseline A/B/C instructions are
+preserved afterward for their original packages.
+
+Historical Stage A package implementation: `c73ea2a28e7050be1f31dfd63fa478fe4cc9e5ae`;
 manifest and artifact hashes: `BUILD_OUTPUTS.json`. Native builds and host
 checks passed; the private ZIP is ready for this checklist.
 
@@ -8,6 +12,70 @@ All physical-console results for this Stage A build are **PENDING**.
 No emulator was run. Successful source inspection, host tests and native
 compilation do not establish boot, frame rate, campaign stability or complete
 Gen 1–9 art. Do not reuse historical upstream hardware results as new results.
+
+## Visual fixes after Stage C (retest PENDING)
+
+Baseline report from Derek: original 3DS XL, Stage C generally tested/working;
+Torchic follower in Littleroot flickers/is invisible and sometimes appears as
+an incorrectly colored Poochyena; voxel borders black; early-route wild battles
+use stock scenery despite scenic ON. Do not convert this report into a full
+save/reload, boss, double-battle, frame-rate or campaign pass. The table below
+records these actual visual failures; all fix-build results remain PENDING.
+
+This is a compatible C visual upgrade, with a separate package named
+`Emerald3DS-Custom-StageC-VisualFixes-private.zip`. It keeps C's existing runtime
+and save directory so the current run can continue. Keep the original C ZIP
+and a complete backup of the existing C directory for rollback.
+
+1. On the laptop, back up the whole `3ds/emerald3ds-custom-stage-c` directory.
+   Extract the VisualFixes ZIP, then copy its `Emerald3DS.3dsx` and matching
+   `.smdh` into that existing C directory. Keep saves, settings, clocks and logs.
+   Do not delete/recreate the directory or start a new game merely to apply
+   this fix. Keep A/B/original installations unchanged. Use the embedded app;
+   do not retain another build's loose-data marker or external data pack.
+2. Launch C and Continue. Confirm existing player/location/party and START Run
+   Settings (seed/options/rules) are unchanged. Keep VOXEL ON for boundary and
+   scenic tests; enable the voxel-battle/scenic option too. The separate
+   BATTLE SCENE option controls move animations, not map scenery. Confirm the
+   scenic option stays ON after a restart. Original XL uses existing performance
+   defaults; no forced stereoscopic setting is needed.
+3. In Littleroot, walk to each outer edge in voxel view and turn the camera as
+   available. Expect the repeating native trees/ground beyond the map, including
+   corners. Cross to Route 101 and back: no black strips, phase jumps or trees
+   replacing a connected map. Compare with 2D's boundary pattern.
+4. Put Torchic first and enable FOLLOWER. Test male/female and shiny only if
+   already available; do not change an existing Pokémon just for this test.
+   Check idle/walking/turning in 2D and voxel modes, follower OFF/ON, entering/
+   exiting a house, map connection, bag/menu return, battle return and save/
+   restart. Expect the Torchic sprite and correct color, without Poochyena
+   flashes or intermittent disappearance. Native restrictions while hidden,
+   surfing/biking or other scripted states still apply. Later species with
+   missing native artwork may retain documented fallbacks; report the species.
+5. Trigger several ordinary wild encounters on early routes, at visibly different
+   places (grass near a tree, open grass, beside a building if possible). Expect
+   scenery from that map/location, not a permanent stock battle backdrop.
+   A short loading fallback may appear while a new view is built; it must
+   progress. Test after boot/Continue, an options/menu return, map connection,
+   and a second battle. Moves that temporarily replace the background must
+   return to map scenery. End the battle and verify the field/follower returns.
+6. If practical, test an early trainer battle and later a double/partner battle,
+   plus a different town/indoor map. Record unsupported contexts separately.
+   Watch frame pacing on the original XL; host tests do not measure it.
+7. After a failure, exit and copy `port.log`, `port-prev.log`, crash dumps if any,
+   the manifest, seed/options and exact steps privately before relaunch rotates
+   logs. Rollback restores the original C app/metadata and its matching backup;
+   never use another stage's save as a workaround.
+
+| Check | Baseline user result | VisualFixes result |
+| --- | --- | --- |
+| Boot/basic play | Reported working | PENDING |
+| Original XL hardware model | Confirmed | Same console requested |
+| Littleroot/route voxel boundaries | FAIL: black edges | PENDING |
+| Torchic follower identity/color/visibility | FAIL: flicker/invisible/wrong appearance | PENDING in both 2D and voxel |
+| Early-route scenic wild battles | FAIL: stock background | PENDING |
+| Scenic setting persists across restart | Unreported | PENDING |
+| Existing C save/rules retained by update | Not yet upgraded | PENDING |
+| Map/menu/battle returns, trainer/double, performance | Unreported | PENDING |
 
 ## Stage C: core randomizer console test (all results PENDING)
 

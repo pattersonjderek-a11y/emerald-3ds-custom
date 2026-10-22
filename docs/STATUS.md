@@ -1,163 +1,100 @@
-# Stage C status
+# Stage C visual regression follow-up
 
-Stage C is implemented on `project/stage-c`, based on Stage B `ba750f8`.
-The pinned engine and frozen Stage A SDK are unchanged. Native compilation
-and production host fixtures pass; exact evidence is recorded below. **No emulator, physical-console or campaign result is claimed.**
-All device acceptance remains PENDING.
+Work is on `fix/stage-c-visuals`, based on `aa0a291` / implementation `66fc31d`.
+Stage D is paused until these regressions are retested. No randomizer/difficulty
+rule, save-layout, engine pin or SDK upgrade is part of this fix.
+Prior complete C engineering results are preserved in [STAGE_C_STATUS.md](STAGE_C_STATUS.md).
 
-## Preserved baseline
+## Actual device report
 
-Stage A source/checkpoint/tag, compiled tree and private ZIP remain intact;
-see [STAGE_A_STATUS.md](STAGE_A_STATUS.md) and [BUILD_OUTPUTS.json](BUILD_OUTPUTS.json).
-Stage B source, native results and hashes are preserved in
-[STAGE_B_STATUS.md](STAGE_B_STATUS.md) and
-[STAGE_B_BUILD_OUTPUTS.json](STAGE_B_BUILD_OUTPUTS.json).
-Its ZIP was rehashed and copied separately to
-`work/baseline-stage-b-ba750f8/Emerald3DS-Custom-StageB-private.zip` before C.
-The original B package is also privately uploaded to Dropbox at
-`/Emerald3DS-Custom-StageB-private.zip`; no shared link was created.
-Stage C uses its own `build/stage-c`, private package and
-`/3ds/emerald3ds-custom-stage-c/` runtime directory. No save import occurs.
+Derek reports Stage C is tested and working in general, with three visual
+failures on an **original 3DS XL**: black map boundaries in voxel mode; a
+flickering/invisible follower that sometimes resembles a golden Poochyena
+instead of Torchic in Littleroot; stock-background wild battles on the early
+routes despite scenic battles being enabled. This is a user-reported baseline
+smoke result, not complete randomizer/campaign acceptance. The exact 2D follower
+behavior, performance and full save/boss/double checklist remain unreported.
+No emulator was exercised by Codex. Fix-build hardware results are PENDING.
 
-## Implemented
+## Diagnosed and implemented
 
-- Saved-seed algorithm 1, content rules `0x00020001`; independent numeric
-  starter, wild, trainer and trainer-generation keys. No pointer addresses,
-  frame time, trainer ID seed substitution or global battle RNG dependency.
-- Randomized/Normal now works. Starters, wild and trainers default ON and can
-  be toggled independently; at least one stays ON. Generation 1–9 filters,
-  optional no-legendaries and similar-strength restrictions are implemented.
-  Abilities/field items/held-item randomization and Hard/Custom difficulty stay
-  visibly locked and are rejected by the codec.
-- Three distinct, usable level-5 starters share the real name/sprite/cry/gift
-  resolver. Wild tables are stable per map/time/method/slot, retaining native
-  slot probabilities, encounter rates and levels. Overworld identity is
-  resolved before display and retained into battle. DexNav, Pokédex area and
-  match-call table readers use the same mapping.
-- Campaign trainers, bosses and rematches use the actual party factory after
-  native template selection. Preserve levels, size, IV/EV intent; regenerate
-  legal level-up moves and native ability/gender. Handle incompatible signature
-  items and retain Mega/Primal compatibility where the selected pool permits.
-  Local party/pool seeds are stable. Rival starter family follows the chosen
-  replacement, including ordinary eligible level evolution and starters-only
-  randomization. Partner/facility/link/recorded/special logic is protected.
-- Pool validation checks actual indexed front/back/icon/normal/shiny assets,
-  enabled data, native ability, level-up attack and stable forms. Invalid,
-  battle-only and unsupported alternate forms are excluded. Standard returns
-  original tables/templates. Exact exclusions/fallbacks are in [RULES.md](RULES.md).
-- Existing 52-byte save allocation, schema 1 and native checksums remain
-  unchanged. Continue/save reject invalid/unsupported records or an unusable
-  selected pool; cancellation and new-save initialization retain Stage B's
-  transaction behavior. No new flag/variable conflicts or sidecar.
-- All engine changes, including four new C/header files, are captured in the
-  canonical expansion patch. Canonical test/build/package tools remain at the
-  repository root. A/B wrappers refuse rebuilding those baselines from C's patch.
+- Hoenn border dimensions are implicitly 2x2; expansion layout bytes are zero
+  unless the layout is FRLG. The camera adapter treated zeros as no border,
+  compared zero bytes when deciding shared phase, and skipped its tile checks.
+  Use effective dimensions for sampling, drawable checks and phase sharing,
+  retaining native negative-coordinate phase and explicit FRLG dimensions.
+  The canonical voxel atlas now visits every entry of rectangular FRLG borders.
+- Torchic's real six-frame SMOL sheet and normal/shiny palettes are present.
+  Native `IsCompressedData` read the linked zero-filled INCGFX stub instead of
+  its actual header, taking the raw single-frame path. Resolve it before
+  detecting compression. The actual OBJ sheet loader now clears the reserved
+  transparent frame so reused tiles cannot flash a previous Pokémon under
+  Torchic's palette. Add null/allocation-failure handling to the template loader.
+  No follower art was imported or substituted; full later-generation/follower
+  coverage remains Stage E.
+- Scenic battle preparation must keep building the map view while the normal
+  compositor temporarily draws the fallback. Previously the post-submit build
+  slices required an already drawable battle, so a pending view could never
+  progress. Schedule work when preparation ran, independently of draw success;
+  preserve native intro, move-background and forced-blank fallbacks. Existing
+  map-based scene/camera selection remains in use, without a renderer rewrite.
 
-## Verification record
+## Evidence and preservation
 
-Commands were run inside `emerald-stage-a`, as UID/GID 1000, using the frozen
-SDK described in BUILD.md (Python 3.11.2 / host GCC 12.2 / devkitARM r68).
-Host-only standalone/fresh fixtures also passed with host Python 3.12/GCC 14.2.
+New ASan/UBSan fixtures execute production camera/voxel-border functions,
+compression detection/template/sheet allocation and blank-frame writes, plus
+scenic preparation and post-submit dispatch. All three pass on corrected
+sources. Each corresponding preserved C test fails at a runtime assertion
+before the fix (logs `work/visual-{border,follower,battle}-before.log`). These
+are controlled host memory/GPU boundaries, not console rendering tests.
+`make verify` now includes `verify-expansion-visuals` for expansion builds.
 
-- `tools/stage_c.sh build`: PASS. Expands to
-  `python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-c --make -j4 --python python3`.
-  Full native compilation began from a separate fresh C tree, then incremental
-  rebuilds incorporated fixes. First compile rejected a read-only header member;
-  corrected the cloneable encounter-header qualifier without changing layout.
-- `tools/stage_c.sh test`: PASS: `make -C build/stage-c/3ds_port verify PYTHON=python3`,
-  9 expansion adapters, 95 builder tests (2 existing skips), strict source audit.
-  Host fixtures exercise real core/menu/save adapters and production starter gift,
-  map lookup and campaign party factory. Pokémon construction and synthetic
-  engine tables are fixture boundaries; actual console battles were not executed.
-- ASan/UBSan: 10,000 core seeds, fixed golden keys, bounded selection, distinctness,
-  generation/legend/level filters, empty pools and finite BST fallback; native
-  cache/reload/global-RNG independence, Standard pointer/template identity,
-  wild methods/TOD/levels/rates, starter gift and legal attacks, native trainer
-  party size/doubles/IV intent, compatible Mega item and protected contexts.
-  Additional production tests cover rival level evolution/pool exclusion,
-  trainers-only rival continuity and `CR_POOL` failure without output mutation.
-- Updated production run tests preserve B round trips, bit-corruption/version/
-  rules/binding rejection, complete NewGameInitData, cancellation/reset,
-  actual save-sector/checksum/older-slot recovery and Continue/save guards.
-  Randomized records and category/generation/balance UI now round-trip too.
-- Linked ARM species/asset audit: **1,072 eligible species/forms**, with per-generation
-  counts 147 / 99 / 133 / 107 / 156 / 71 / 104 / 131 / 124. Excluded 489 unsupported
-  forms and 10 entries without a usable level-up attack. Each generation has at
-  least three nonlegendary level-5 choices. Gen 9 starters and Ogerpon/Terapagos/
-  Pecharunt pass. Summary: [STAGE_C_POOL_AUDIT.json](STAGE_C_POOL_AUDIT.json).
-  This is data inspection, not ARM execution or a complete follower/cry audit.
-- The linked-pool audit exposed an overly strict palette-size assumption;
-  valid indexed Sprigatito/Quaxly palettes are shorter than 32 bytes. Corrected
-  the runtime filter and audit together. Map metadata scans now read original
-  header identities without generating unrelated tables; production lookup
-  fixtures verify no randomizer-cache work occurs during that scan.
-- Host seed preview using actual C core + linked pool: seed 42, Gen 9 only,
-  balance OFF → Toedscruel / Tatsugiri Curly / Meowscarada. Seed 43 → Pawmot /
-  Iron Moth / Wo-Chien. Compare on hardware using DEVICE_TESTS.md.
-- `python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-c-clean`:
-  277 engine patch files and 300 canonical overlay/lock files match; reverse
-  application passes. Both production run/randomizer suites pass there too.
-  This is fresh source/host reproduction, not a second full native build.
-- The versions wrapper exposed an inherited `head`/`pipefail` SIGPIPE (exit 141);
-  changed first-line display to consume complete tool output, then reran it.
-- Python byte compilation and shell syntax checks pass. Actual native static
-  assertions keep SaveBlock1/2/3 sizes and reservation/flags/vars offsets unchanged.
-  Production filesystem sentinels protect original, A and B namespaces.
-- All 14 recorded A/B artifact sizes/hashes and both preserved baseline ZIPs
-  were rechecked after C compilation and remain unchanged.
+Engine changes are captured in the canonical expansion patch; platform/voxel
+changes and tests remain in canonical root files.
 
-Private logs: `work/stage-c-native.log`, `work/stage-c-build-workflow.log`,
-`work/stage-c-verify.log`, `work/stage-c-test-workflow.log`,
-`work/stage-c-random-tests.log`, `work/stage-c-run-tests.log`,
-`work/stage-c-fresh-bootstrap.log`, `work/stage-c-fresh-random-tests.log`,
-`work/stage-c-fresh-run-tests.log`. Full linked pool metadata:
-`build/stage-c/3ds_port/build/randomizer-pool.json` and `.csv`.
+Actual commands/results in the unchanged frozen SDK, container
+`emerald-visual-fixes` (UID/GID 1000):
 
-Native outputs: `build/stage-c/3ds_port/emerald3ds.3dsx`, `.smdh`, `.elf`;
-engine-only `build/stage-c/3ds_port/dist/Emerald3DS.3dsx` and `.smdh`;
-matching private `build/stage-c/3ds_port/build/emerald3ds.pak`.
-Implementation checkpoint `66fc31dda98873f5b9f68185f7f4d0b3d641702a` is pushed to
-GitHub `project/stage-c`; no write blocker. Package source was clean. Final
-`tools/stage_c.sh package` passed: native engine-only release + matching pack,
-full make verify (51 ARM11 hard-float symbols, no strong undefined symbols,
-17,536 indexed assets / 1,451 pointer rows), updated production fixtures,
-linked pool audit, 9 expansion adapters, strict source audit, all 17,513 pack
-CRCs and embedded ABI/namespace checks. A separate strict engine-only ZIP audit
-and private ZIP CRC/file-list inspection also passed. No ROM/save/firmware/CIA
-or separate content pack is included in the private SD ZIP.
+- `tools/stage_c_visuals.sh build`: PASS; actual native ARM11 compilation and
+  3DSX output, starting from a separate copy of C's cached generated build tree.
+- `tools/stage_c_visuals.sh test`: PASS; full `make verify`, 9 expansion adapters,
+  95 builder tests (2 existing skips), strict source publication audit.
+  Native audit: 51 required symbols, ARM11 hard-float, no strong undefined
+  symbols, all 17,536 assets and 1,451 pointer rows verified. The make gate
+  includes the new visual fixtures and existing production run/randomizer/
+  save/recovery, graphics/voxel/clock/storage regressions.
+- Fresh pinned-source worktree + documented bootstrap: PASS. All 277 engine
+  patch files and 305 canonical overlay/lock files match, reverse apply passes,
+  and visual/run/randomizer production host fixtures pass there. This is
+  fresh source/host reproduction, not a second full native compilation.
+- The **entire** audited linked randomizer pool equals C's baseline JSON:
+  same 1,072 entries, generation/legend flags, BSTs, usable levels and graphics
+  paths. No option/algorithm/content-rules change or intended seed reroll.
+- Python byte compilation and shell syntax checks pass. All recorded A/B/C
+  artifact sizes/hashes were rechecked and remain unchanged.
 
-| Output | Bytes |
-| --- | ---: |
-| `build/stage-c/3ds_port/emerald3ds.3dsx` | 54,908,460 |
-| `build/stage-c/3ds_port/dist/Emerald3DS.3dsx` | 9,405,044 |
-| `build/stage-c/3ds_port/build/emerald3ds.pak` | 44,765,824 |
-| `work/stage-c-private/Emerald3DS-Custom-StageC-private.zip` | 20,511,090 |
+Private logs: `work/visual-native-build.log`, `work/visual-test-workflow.log`,
+`work/visual-regressions.log`, `work/visual-fresh-bootstrap.log`,
+`work/visual-fresh-tests.log`, and the three `work/visual-*-before.log` failures.
+Final private package audit/hash metadata follows the packaging gate.
 
-ABI `eb81d151`; 17,513 generated data files / 43,972,849 bytes.
-Private ZIP SHA-256:
-`cbc9963e5ade1110a4486840cfdcfae2c62a4ae224d176666de75304afbdd60a`.
-Manifest: `work/stage-c-private/manifest.json`. Exact artifact sizes/hashes:
-[STAGE_C_BUILD_OUTPUTS.json](STAGE_C_BUILD_OUTPUTS.json). Additional private logs:
-`work/stage-c-package.log`, `work/stage-c-engine-audit.log`,
-`work/stage-c-versions.txt`. Content-bearing outputs stay ignored/private.
-No dependency/build/source-publication blocker remains.
+Use `tools/stage_c_visuals.sh build|test|package`; it uses the frozen SDK and
+separate `build/stage-c-visuals` tree. Original C wrapper refuses the fix patch.
+Baseline C tree/ZIP and its Dropbox file remain unchanged. A separate copy of
+that ZIP/manifest is preserved in `work/baseline-stage-c-aa0a291/`.
 
-## Limitations and next task
+The upgrade intentionally retains `/3ds/emerald3ds-custom-stage-c/`, schema 1,
+52-byte record, algorithm 1 and rules `00020001`. Existing C saves/settings
+stay in that same directory; back it up, then replace only the matching app
+and metadata. No automatic migration, new settings or reroll is introduced.
+Matching engine/data hashes, pool equality and baseline preservation are checked
+before packaging. A/B/original namespaces remain protected.
 
-Native compilation is distinct from running on an ARM11. No boot, UI display,
-SD/FAT recovery, double-battle playthrough, frame rate or campaign stability is
-claimed from host fixtures. [DEVICE_TESTS.md](DEVICE_TESTS.md) contains the
-pending console checks. Gen 1–9 eligibility is not a complete species/follower
-asset certification, nor a guarantee every species is catchable in every seed.
+## Retest / next task
 
-Special scripted encounters, gifts/eggs, roamers/outbreaks/Feebas, partner and
-facility battles remain inherited/protected; the fixed campaign roster and
-full art/follower inventory remain later stages. Public player-data recipe,
-generic installer namespace and CIA forwarder are still unvalidated. Do not
-use another build's data pack or migrate its save into Stage C.
-
-Next: Derek tests Stage C's starter identity, seed/reload, visible wild identity,
-rival and representative boss/double battles while retaining the A/B backups.
-Stage D implements independent Normal/Hard/Custom difficulty composition; Stage E
-handles optional abilities/items and full follower coverage. No actual difficulty
-battle changes or optional item/ability randomization were added in Stage C.
+Retest Littleroot borders, Torchic in both 2D/voxel, hide/show and map/menu/battle
+returns, and scenic wild battles at different early-route locations on the
+original XL. Keep the unmodified C package for rollback. Detailed instructions:
+[DEVICE_TESTS.md](DEVICE_TESTS.md). Do not label these visuals fixed on hardware
+until Derek supplies results. After these fixes pass console acceptance,
+Stage D can add independent difficulty rules.

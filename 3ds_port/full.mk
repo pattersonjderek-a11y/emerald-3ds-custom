@@ -774,6 +774,11 @@ verify-pokedex-capture:
 	"$(PYTHON)" -B tests/pokedex_capture_test.py --tree "$(ROOT)" --cc "$(HOSTCC)" --sanitize
 
 ifneq ($(PORT_EXPANSION_DEF),)
+.PHONY: verify-expansion-visuals
+verify: verify-expansion-visuals
+verify-expansion-visuals:
+	"$(PYTHON)" -B tests/visual_regressions_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+
 .PHONY: verify-expansion-sprites
 verify: verify-expansion-sprites verify-mega-progression verify-kanto-ferry verify-pokedex-lifetime verify-berry-sprite verify-line-break verify-compressed-sheet
 .PHONY: verify-compressed-sheet

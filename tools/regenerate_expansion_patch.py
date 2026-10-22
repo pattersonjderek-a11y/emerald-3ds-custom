@@ -18,7 +18,7 @@ PATCH = ROOT / 'patches/pokeemerald-expansion/0001-port.patch'
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--tree', type=Path, default=ROOT / 'build/stage-c')
+    parser.add_argument('--tree', type=Path, default=ROOT / 'build/stage-c-visuals')
     parser.add_argument('--add', nargs='*', default=[])
     args = parser.parse_args()
     tree = args.tree.resolve()

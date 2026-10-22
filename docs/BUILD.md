@@ -8,7 +8,67 @@ above candidate baseline `8ebb7355742ce43bbb10528044f9a175fc990a64`.
 `dfb0f84374230f4d462191601179b742f9f077df`, original engine
 `76463dac15cad36aca5e2b3f6366abf9e53f814f`.
 
-## Stage C workflow (current development branch)
+## Stage C visual fixes (current fix branch)
+
+On `fix/stage-c-visuals`, use `tools/stage_c_visuals.sh build|test|package|versions`
+in the same frozen SDK. This uses separate `build/stage-c-visuals` and
+`work/stage-c-visuals-private` destinations. The original A/B/C trees, packages
+and remote branches are preserved; baseline C is `aa0a291` and its ZIP/manifest
+also reside in `work/baseline-stage-c-aa0a291/`. The original C wrapper refuses
+this fix patch; check out `project/stage-c` to rebuild the baseline.
+
+Commands actually used in this environment (container uses UID/GID 1000):
+
+```sh
+docker --host=unix:///var/run/docker.sock exec emerald-visual-fixes \
+  bash -lc 'tools/stage_c_visuals.sh build'
+docker --host=unix:///var/run/docker.sock exec emerald-visual-fixes \
+  bash -lc 'tools/stage_c_visuals.sh test'
+docker --host=unix:///var/run/docker.sock exec emerald-visual-fixes \
+  bash -lc 'tools/stage_c_visuals.sh package'
+```
+
+The container mounts this repository at `/project`, uses `emerald-stage-a-sdk`,
+and has the existing CA trust mount/settings for network fetches. Its default
+working directory is `/project`. The starting engine build tree was copied
+from C to retain expensive generated assets; changed sources are recompiled.
+Fresh source/host patch reproduction is separately checked below; no claim of
+an independent second full native compile is made.
+
+Standalone new production regression check:
+`python3 3ds_port/tests/visual_regressions_test.py --tree build/stage-c-visuals`.
+Use `--case border|follower|battle` and `--port-source build/stage-c/3ds_port`
+with `--tree build/stage-c` to reproduce the original assertion failures.
+The test runs host ASan/UBSan with synthetic memory/GPU boundaries; it does not
+render on hardware. `make verify` includes it as `verify-expansion-visuals`.
+
+Engine patch workflow:
+
+```sh
+python3 tools/regenerate_expansion_patch.py --tree build/stage-c-visuals
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-c-visuals-clean
+python3 3ds_port/tests/visual_regressions_test.py --tree work/stage-c-visuals-clean
+```
+
+On this disk-limited workspace the clean tree can first be made as a detached
+Git worktree from the already fetched pinned engine, sharing Git objects; the
+normal bootstrap still resets/applies the complete canonical patch and copies
+overlays. No engine pin is changed. Preserve the source ownership/patch rules.
+
+Native outputs are `build/stage-c-visuals/3ds_port/emerald3ds.3dsx`, `.smdh`,
+`.elf`, engine-only `dist/Emerald3DS.3dsx` / `.smdh`, matching private
+`build/emerald3ds.pak`. Private package:
+`work/stage-c-visuals-private/Emerald3DS-Custom-StageC-VisualFixes-private.zip`.
+Packaging runs `private_smoke_package.py --stage C --variant visual-fixes
+--tree build/stage-c-visuals`, retaining C's namespace but writing a new ZIP.
+Do not upload content-bearing outputs to source control or public CI.
+
+This fix intentionally keeps `/3ds/emerald3ds-custom-stage-c/`, save layout,
+algorithm/content rules and settings. Back up the existing C directory and
+replace the embedded app/metadata only; no save import or reroll. See
+DEVICE_TESTS.md for actual baseline device reports and pending fix acceptance.
+
+## Stage C workflow (baseline project/stage-c)
 
 A/B are preserved on `project/stage-a` / `project/stage-b`, with frozen private
 packages and metadata. Stage B's final checkpoint is `ba750f8`. Use the exact

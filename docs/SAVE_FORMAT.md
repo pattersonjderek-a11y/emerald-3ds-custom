@@ -132,3 +132,14 @@ ARM structure sizes/offsets. Hardware SD/FAT power loss, boot/UI rendering and
 restart recovery remain device tests; a host slot fixture does not establish
 physical-media atomicity. Keep backups before testing and avoid intentional
 power interruption until a dedicated recovery rehearsal is authorized.
+
+## Post-C visual upgrade
+
+The visual-fix branch retains schema 1, the same 52-byte native allocation,
+algorithm 1/content rules `00020001` and the C runtime namespace. The complete
+linked randomizer pool is compared with baseline C, not merely its counts.
+No new flag, variable, setting, save field or import path is allocated. The
+existing production save/guard/recovery fixtures are rerun. Updating the
+embedded app/metadata after a complete directory backup is intended to continue
+existing C saves without rerolling; physical-console update acceptance remains
+pending. Original C package/source and Dropbox file are preserved for rollback.

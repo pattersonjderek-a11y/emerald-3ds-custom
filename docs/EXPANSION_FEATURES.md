@@ -54,3 +54,10 @@ factories/table readers, without replacing renderer, followers or QoL systems.
 See RULES.md for exact pool/exclusions and DEVICE_TESTS.md for pending acceptance.
 Hard/Custom difficulty and optional ability/item randomization remain unavailable.
 Indexed Gen 1–9 eligibility does not certify every cry/follower/form implementation.
+
+The post-C visual follow-up fixes effective Hoenn/FRLG border dimensions,
+compressed native follower sheet detection and transparent-frame reuse, and
+scenic post-submit preparation during fallback frames. This uses existing native
+follower art and the existing encounter-location battle scenery. Actual original
+XL baseline failures and pending fix retests are recorded in DEVICE_TESTS.md;
+passing host fixtures/native compilation are not a visual hardware acceptance.

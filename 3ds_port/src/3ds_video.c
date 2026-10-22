@@ -10683,6 +10683,33 @@ static void VoxelVramManage(void)
 }
 #endif
 
+#if CTR_VOXEL_ENABLED
+/* Return whether the world was updated, even while its new view is still
+ * loading. The post-submit builder must run during that flat fallback too:
+ * waiting for a drawable battle first prevents its pending geometry progressing.
+ */
+static bool PrepareBattleWorld(bool *drawable)
+{
+    *drawable = false;
+    if (sBattle && CtrSettings_Voxel() && CtrSettings_VoxelBattle() && CtrVoxel_IsAvailableForBattle())
+    {
+        bool sliding = CtrBattleIntro_Sliding() != 0, moveBg = CtrBattleBg_MoveBgShown() != 0;
+
+        if (!CtrVoxel_InBattle())
+            CtrVoxel_BeginBattle();
+        /* The intro slides the scenery in line by line: no shake there. */
+        CtrVoxel_SetBattleFrame(sliding, sliding || moveBg ? 0.0f : BattleScenerySway(0x1c),
+                                sliding || moveBg ? 0.0f : BattleScenerySway(0x1e));
+        *drawable = CtrVoxel_Update();
+        sBattleWorld = *drawable && !moveBg && (Reg(0) & 0x800) && !(Reg(0) & 128);
+        if (sBattleWorld)
+            sWorldLayers = (1u << 3) | (sliding && !VoxelBattle_IsLink() ? (1u << 1) | (1u << 2) : 0u);
+    }
+    else return false;
+    return true;
+}
+#endif
+
 void CtrVideo_Present(void)
 {
     /* The frame's entry tick: its preparation, before FrameBegin. */
@@ -10987,20 +11014,7 @@ void CtrVideo_Present(void)
     sWorldLayers = 0;
 #if CTR_VOXEL_ENABLED
     bool battleUpdated = false;
-    if (sBattle && CtrSettings_Voxel() && CtrSettings_VoxelBattle() && CtrVoxel_IsAvailableForBattle())
-    {
-        bool sliding = CtrBattleIntro_Sliding() != 0, moveBg = CtrBattleBg_MoveBgShown() != 0;
-
-        if (!CtrVoxel_InBattle())
-            CtrVoxel_BeginBattle();
-        /* The intro slides the scenery in line by line: no shake there. */
-        CtrVoxel_SetBattleFrame(sliding, sliding || moveBg ? 0.0f : BattleScenerySway(0x1c),
-                                sliding || moveBg ? 0.0f : BattleScenerySway(0x1e));
-        battleUpdated = CtrVoxel_Update();
-        sBattleWorld = battleUpdated && !moveBg && (Reg(0) & 0x800) && !(Reg(0) & 128);
-        if (sBattleWorld)
-            sWorldLayers = (1u << 3) | (sliding && !VoxelBattle_IsLink() ? (1u << 1) | (1u << 2) : 0u);
-    }
+    bool battlePrepared = PrepareBattleWorld(&battleUpdated);
 #endif
     /* The 2D field centres its text windows as the voxel overlay does. */
     sFieldUi = field && !voxel;
@@ -11241,7 +11255,7 @@ void CtrVideo_Present(void)
 #if CTR_VOXEL_ENABLED
     /* The GPU draws the frame now: the voxel world builds what comes next in
      * the time the CPU would otherwise wait for the VBlank. */
-    if (overworld || battleUpdated)
+    if (overworld || battlePrepared)
         CtrVoxel_AfterSubmit(start);
     else
         CtrVoxel_Idle();

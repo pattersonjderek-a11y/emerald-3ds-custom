@@ -918,17 +918,22 @@ void VoxelWorld_MarkUsedMetatiles(const void *primaryTileset, const void *second
         const struct MapLayout *layout = inst->layout;
         const uint16_t *border;
         bool secondary = false;
+#ifdef PORT_EXPANSION
+        unsigned borderCount = layout && layout->isFrlg ? layout->borderWidth * layout->borderHeight : 4;
+#else
+        unsigned borderCount = 4;
+#endif
 
         if (inst->primaryTileset != primaryTileset || layout == NULL || layout->border == NULL)
             continue;
         border = Port_ResolveAssetPointer(layout->border);
         if (border == NULL)
             continue;
-        for (unsigned t = 0; t < 4; ++t)
+        for (unsigned t = 0; t < borderCount; ++t)
             secondary |= (border[t] & MAPGRID_METATILE_ID_MASK) >= NUM_METATILES_IN_PRIMARY;
         if (secondary && inst->secondaryTileset != secondaryTileset)
             continue;
-        for (unsigned t = 0; t < 4; ++t)
+        for (unsigned t = 0; t < borderCount; ++t)
             used[border[t] & MAPGRID_METATILE_ID_MASK] = 2;
     }
     /* The replacement removes canopy fringes even on maps that never used

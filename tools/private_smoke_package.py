@@ -28,7 +28,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--stage', choices=('A', 'B', 'C'), default='A')
     ap.add_argument('--tree', type=Path)
+    ap.add_argument('--variant', choices=('baseline','visual-fixes'), default='baseline')
     args = ap.parse_args()
+    if args.variant != 'baseline' and args.stage != 'C':
+        ap.error('visual-fixes is a Stage C upgrade, not a new save format')
     tree = (args.tree or ROOT / {'A':'build/expansion','B':'build/stage-b','C':'build/stage-c'}[args.stage]).resolve()
     namespace = 'emerald3ds-custom' + (f'-stage-{args.stage.lower()}' if args.stage != 'A' else '')
     port = tree / '3ds_port'
@@ -73,7 +76,7 @@ def main():
     files = {f'3ds/{namespace}/Emerald3DS.3dsx': app,
              f'3ds/{namespace}/Emerald3DS.smdh': port / 'emerald3ds.smdh'}
     report = {
-        'private_content_bearing': True, 'stage': args.stage, 'namespace': namespace,
+        'private_content_bearing': True, 'stage': args.stage, 'variant': args.variant, 'namespace': namespace,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_diff_sha256': hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest(),
         'engine_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=tree, text=True).strip(),
@@ -93,10 +96,14 @@ def main():
         'limitations': 'Generated asset inventory is not a complete Gen 1-9/follower coverage audit.',
     }
     out = ROOT / (f'work/stage-{args.stage.lower()}-private' if args.stage != 'A' else 'work/private-smoke')
+    if args.variant == 'visual-fixes':
+        out = ROOT / 'work/stage-c-visuals-private'
     out.mkdir(parents=True, exist_ok=True)
     manifest = json.dumps(report, indent=2) + '\n'
     (out / 'manifest.json').write_text(manifest)
     zip_path = out / f'Emerald3DS-Custom-Stage{args.stage}-private.zip'
+    if args.variant == 'visual-fixes':
+        zip_path = out / 'Emerald3DS-Custom-StageC-VisualFixes-private.zip'
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as archive:
         for name, path in files.items():
             archive.write(path, name)

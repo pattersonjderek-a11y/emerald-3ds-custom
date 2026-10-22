@@ -14790,7 +14790,7 @@ index 264f0100..a0c77e2e 100644
      if (daycare->stepCounter < GetEggCycleLength())
          return FALSE;
 diff --git c/src/decompress.c w/src/decompress.c
-index 8030c726..590c93ec 100644
+index 8030c726..41231e10 100644
 --- c/src/decompress.c
 +++ w/src/decompress.c
 @@ -207,8 +207,18 @@ static inline u32 DoLoadCompressedSpriteSheet(const struct CompressedSpriteSheet
@@ -14814,7 +14814,24 @@ index 8030c726..590c93ec 100644
      Free(buffer);
  
      return ret;
-@@ -260,6 +270,11 @@ void HandleLoadSpecialPokePicIsEgg(bool32 isFrontPic, void *dest, enum Species s
+@@ -227,11 +237,16 @@ u32 LoadCompressedSpriteSheetByTemplate(const struct SpriteTemplate *template, s
+     struct SpriteFrameImage myImage;
+     u32 size;
+ 
++    if (template == NULL || template->images == NULL || template->images->data == NULL)
++        return TAG_NONE;
++
+     // Check for LZ77 header and read uncompressed size, or fallback if not compressed (zero size)
+     if (IsCompressedData(template->images->data))
+     {
+         size = GetDecompressedDataSize(template->images->data);
+         void *buffer = malloc_and_decompress(template->images->data, NULL);
++        if (buffer == NULL)
++            return TAG_NONE;
+         myImage.data = buffer;
+         myImage.size = size + offset;
+         myTemplate.images = &myImage;
+@@ -260,6 +275,11 @@ void HandleLoadSpecialPokePicIsEgg(bool32 isFrontPic, void *dest, enum Species s
  //  VRAM version
  void DecompressDataWithHeaderVram(const u32 *src, void *dest)
  {
@@ -14826,7 +14843,7 @@ index 8030c726..590c93ec 100644
      union CompressionHeader header;
      CpuCopy32(src, &header, 8);
      switch (header.smol.mode)
-@@ -288,6 +303,9 @@ void DecompressDataWithHeaderVram(const u32 *src, void *dest)
+@@ -288,6 +308,9 @@ void DecompressDataWithHeaderVram(const u32 *src, void *dest)
  //  WRAM version
  void DecompressDataWithHeaderWram(const u32 *src, void *dest)
  {
@@ -14836,7 +14853,7 @@ index 8030c726..590c93ec 100644
      union CompressionHeader header;
      CpuCopy32(src, &header, 8);
      switch (header.smol.mode)
-@@ -403,10 +421,24 @@ static IWRAM_DATA u32 sCurrState = 0;
+@@ -403,10 +426,24 @@ static IWRAM_DATA u32 sCurrState = 0;
  
  extern void FastUnsafeCopy32(void *, const void *, u32 size);
  
@@ -14861,7 +14878,7 @@ index 8030c726..590c93ec 100644
  }
  
  // The reason for macros and unrolling the loops stems from the following:
-@@ -513,6 +545,7 @@ LOOP_STORE:
+@@ -513,6 +550,7 @@ LOOP_STORE:
  //  Dark Egg magic
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallLOtANS(const u32 *data, u32 *ykTable, void *resultVec, void *resultVecEnd, void (*decodeFunction)(const u32 *data, u32 *ykTable, void *resultVec, void *resultVecEnd))
  {
@@ -14869,7 +14886,7 @@ index 8030c726..590c93ec 100644
      decodeFunction(data, ykTable, resultVec, resultVecEnd);
  }
  
-@@ -593,6 +626,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -593,6 +631,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeSymtANS(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd, void (*decodeFunction)(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd))
  {
@@ -14877,7 +14894,7 @@ index 8030c726..590c93ec 100644
      decodeFunction(data, ykTable, resultVec, resultVecEnd);
  }
  
-@@ -769,6 +803,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -769,6 +808,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  //  Dark Egg magic
  ARM_FUNC __attribute__((no_reorder)) static u32 SwitchToArmCallSymDeltaANS(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd, u32 (*decodeFunction)(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd))
  {
@@ -14885,7 +14902,7 @@ index 8030c726..590c93ec 100644
      return decodeFunction(data, ykTable, resultVec, resultVecEnd);
  }
  
-@@ -929,6 +964,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -929,6 +969,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  //  Dark Egg magic
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeInstructions(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest, void (*decodeFunction)(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest))
  {
@@ -14893,7 +14910,7 @@ index 8030c726..590c93ec 100644
      decodeFunction(headerLoSize, loVec, symVec, dest);
  }
  
-@@ -1077,6 +1113,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -1077,6 +1118,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeTileNumbers(u16 *tileNumbers, u32 arraySize, void (*decodeFunction)(u16 *tileNumbers, u32 arraySize))
  {
@@ -14901,7 +14918,7 @@ index 8030c726..590c93ec 100644
      decodeFunction(tileNumbers, arraySize);
  }
  
-@@ -1330,6 +1367,23 @@ static void UNUSED StitchObjectsOn8x8Canvas(s32 object_size, s32 object_count, u
+@@ -1330,6 +1372,23 @@ static void UNUSED StitchObjectsOn8x8Canvas(s32 object_size, s32 object_count, u
  
  u32 GetDecompressedDataSize(const u32 *ptr)
  {
@@ -14925,7 +14942,25 @@ index 8030c726..590c93ec 100644
      union CompressionHeader *header = (union CompressionHeader *)ptr;
      switch (header->smol.mode)
      {
-@@ -1393,6 +1447,7 @@ extern const u32 LZ77UnCompWRAMOptimized_end[];
+@@ -1344,6 +1403,17 @@ u32 GetDecompressedDataSize(const u32 *ptr)
+ 
+ bool32 IsCompressedData(const u32 *ptr)
+ {
++#ifdef PORT_BRIDGE
++    // Read the payload's header, not the zero-filled INCGFX placeholder.
++    // Compressed overworld sheets otherwise take the raw single-frame path.
++    if (Port_IsAssetStub(ptr))
++    {
++        const u32 *resolved = Port_ResolveAssetPointer(ptr);
++        if (resolved == NULL || resolved == ptr)
++            return FALSE;
++        ptr = resolved;
++    }
++#endif
+     u32 size;
+     union CompressionHeader *header = (union CompressionHeader *)ptr;
+     switch (header->smol.mode)
+@@ -1393,6 +1463,7 @@ extern const u32 LZ77UnCompWRAMOptimized_end[];
  
  ARM_FUNC static void SwitchToArmCallFastLZ77(const u32 *src, void *dest, void (*funcPtr)(const u32 *src, void *dest))
  {
@@ -16254,7 +16289,7 @@ index 9e1b1806..93e7184a 100644
      InitScrollableMultichoice();
  
 diff --git c/src/fieldmap.c w/src/fieldmap.c
-index b3451193..5385da5a 100644
+index b3451193..de3468ca 100644
 --- c/src/fieldmap.c
 +++ w/src/fieldmap.c
 @@ -6,6 +6,7 @@
@@ -16594,7 +16629,7 @@ index b3451193..5385da5a 100644
      }
  }
  
-@@ -1071,3 +1263,222 @@ bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
+@@ -1071,3 +1263,234 @@ bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
  {
      return AreCoordsInsideMap(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, x, y);
  }
@@ -16624,19 +16659,31 @@ index b3451193..5385da5a 100644
 +        && layout->secondaryTileset == gMapHeader.mapLayout->secondaryTileset;
 +}
 +
++// Hoenn layouts leave these bytes zero: their border is implicitly 2x2.
++// FRLG layouts store explicit dimensions. Match GetBorderBlockAt's formats.
++static unsigned CameraBorderWidth(const struct MapLayout *layout)
++{
++    return layout->isFrlg ? layout->borderWidth : 2;
++}
++static unsigned CameraBorderHeight(const struct MapLayout *layout)
++{
++    return layout->isFrlg ? layout->borderHeight : 2;
++}
++
 +static bool8 CameraBorderDrawable(const struct MapLayout *layout)
 +{
 +    const u16 *border;
 +    int i;
 +
-+    if (layout->border == NULL || layout->primaryTileset != gMapHeader.mapLayout->primaryTileset)
++    if (layout->border == NULL || !CameraBorderWidth(layout) || !CameraBorderHeight(layout)
++     || layout->primaryTileset != gMapHeader.mapLayout->primaryTileset)
 +        return FALSE;
 +    if (layout->secondaryTileset == gMapHeader.mapLayout->secondaryTileset)
 +        return TRUE;
 +    border = Port_ResolveAssetPointer(layout->border);
 +    if (border == NULL)
 +        return FALSE;
-+    for (i = 0; i < layout->borderWidth * layout->borderHeight; i++)
++    for (i = 0; i < CameraBorderWidth(layout) * CameraBorderHeight(layout); i++)
 +        if (UNPACK_METATILE(border[i]) >= GetNumMetatilesInPrimary(gMapHeader.mapLayout))
 +            return FALSE;
 +    return TRUE;
@@ -16751,9 +16798,9 @@ index b3451193..5385da5a 100644
 +            const u16 *other = Port_ResolveAssetPointer(sCameraMaps[k].header->mapLayout->border);
 +
 +            if (sCameraMaps[k].id < anchor && other != NULL
-+             && sCameraMaps[k].header->mapLayout->borderWidth == sCameraMaps[i].header->mapLayout->borderWidth
-+             && sCameraMaps[k].header->mapLayout->borderHeight == sCameraMaps[i].header->mapLayout->borderHeight
-+             && memcmp(border, other, sCameraMaps[i].header->mapLayout->borderWidth * sCameraMaps[i].header->mapLayout->borderHeight * sizeof(u16)) == 0)
++             && CameraBorderWidth(sCameraMaps[k].header->mapLayout) == CameraBorderWidth(sCameraMaps[i].header->mapLayout)
++             && CameraBorderHeight(sCameraMaps[k].header->mapLayout) == CameraBorderHeight(sCameraMaps[i].header->mapLayout)
++             && memcmp(border, other, CameraBorderWidth(sCameraMaps[i].header->mapLayout) * CameraBorderHeight(sCameraMaps[i].header->mapLayout) * sizeof(u16)) == 0)
 +            {
 +                anchor = sCameraMaps[k].id;
 +                sCameraMaps[i].phaseX = sCameraMaps[k].x;
@@ -16807,8 +16854,8 @@ index b3451193..5385da5a 100644
 +    x -= best->phaseX;
 +    y -= best->phaseY;
 +    {
-+        unsigned w = best->header->mapLayout->borderWidth;
-+        unsigned h = best->header->mapLayout->borderHeight;
++        unsigned w = CameraBorderWidth(best->header->mapLayout);
++        unsigned h = CameraBorderHeight(best->header->mapLayout);
 +        if (w == 0 || h == 0)
 +            return NULL;
 +        *index = ((x % (int)w + w) % w) + ((y % (int)h + h) % h) * w;
@@ -33047,7 +33094,7 @@ index 1a57e3fe..6645c543 100644
  }
  
 diff --git c/src/sprite.c w/src/sprite.c
-index 400ff93f..52c28041 100644
+index 400ff93f..fcae8a78 100644
 --- c/src/sprite.c
 +++ w/src/sprite.c
 @@ -7,6 +7,16 @@
@@ -33343,7 +33390,7 @@ index 400ff93f..52c28041 100644
  
      if (tileStart < 0)
      {
-@@ -1518,8 +1695,12 @@ static u16 LoadSpriteSheetWithOffset(const struct SpriteSheet *sheet, u32 offset
+@@ -1518,8 +1695,16 @@ static u16 LoadSpriteSheetWithOffset(const struct SpriteSheet *sheet, u32 offset
      }
      else
      {
@@ -33354,11 +33401,15 @@ index 400ff93f..52c28041 100644
 +        src = Port_ResolveAssetPointerSized(src, sheetSize);
 +#endif
 +        AllocSpriteTileRange(sheet->tag, (u16)tileStart, sheetSize / TILE_SIZE_4BPP);
++        // Compressed overworld sheets reserve a transparent frame before the
++        // animation frames. Reused OBJ tiles may still hold another Pokémon.
++        if (offset != 0)
++            CpuFill16(0, (u8 *)OBJ_VRAM0 + TILE_SIZE_4BPP * tileStart, offset);
 +        CpuSmartCopy16(src, (u8 *)OBJ_VRAM0 + TILE_SIZE_4BPP * tileStart + offset, sheetSize - offset);
          return (u16)tileStart;
      }
  }
-@@ -1695,6 +1876,9 @@ u8 LoadSpritePaletteInSlot(const struct SpritePalette *palette, u8 paletteNum)
+@@ -1695,6 +1880,9 @@ u8 LoadSpritePaletteInSlot(const struct SpritePalette *palette, u8 paletteNum)
  
  void DoLoadSpritePalette(const u16 *src, u16 paletteOffset)
  {

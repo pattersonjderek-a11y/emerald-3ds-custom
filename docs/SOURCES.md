@@ -78,3 +78,14 @@ Stage C algorithm/content-rules provenance and exclusions: RULES.md and
 SAVE_FORMAT.md. Optional difficulty/ability/item stages were not imported from
 Modern/Exalted/ahunter references. Renderer, visual effects, follower systems and
 native expanded Gen 1–9 content remain the existing integration.
+
+## Stage C visual fixes
+
+The follow-up starts at `aa0a291` on `fix/stage-c-visuals`, retaining all engine,
+SDK and asset pins. The border format is the pinned engine's existing
+Hoenn/FRLG distinction (`GetBorderBlockAt`, mapjson output); no donor import.
+Compression/blank-frame handling and scenic scheduling fixes plus their host
+fixtures are new project code applied to existing integration paths. Torchic's
+six-frame sheet and palettes were inspected in the actual linked asset index;
+no sprite/art was downloaded, replaced or added. Full follower coverage remains
+a later audit. Original C source/build/package and Dropbox file remain preserved.

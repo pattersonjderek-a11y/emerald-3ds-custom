@@ -8,8 +8,9 @@ and `tools/stage_a.sh build|test|versions` workflow. All runtime state belongs
 under `3ds_paths.h`; Stage A/original-engine uses `/3ds/emerald3ds-custom/`,
 Stage B expansion uses `/3ds/emerald3ds-custom-stage-b/`, Stage C uses
 `/3ds/emerald3ds-custom-stage-c/`. Never migrate legacy saves.
-Use `tools/stage_c.sh build|test|package` for current development, with the
-same frozen SDK and separate `build/stage-c` tree. Preserve both Stage A/B trees,
+Use `tools/stage_c_visuals.sh build|test|package` for the current follow-up,
+with the same frozen SDK and separate `build/stage-c-visuals` tree.
+The original `project/stage-c` branch uses `tools/stage_c.sh` / `build/stage-c`. Preserve both Stage A/B trees,
 private ZIPs and remote checkpoints. A/B wrappers refuse C patches; checkout
 the matching branch before rebuilding a historical stage. Run `verify-storage-isolation` after storage changes. Content-bearing builds,
 packs, and private test ZIPs stay in ignored `build/` or `work/`, never CI uploads.
@@ -17,6 +18,25 @@ packs, and private test ZIPs stay in ignored `build/` or `work/`, never CI uploa
 Working notes for agents building/testing this port. See
 `docs/DEVELOPMENT.md` for the project's own description; this file records the
 debugging gotchas that are easy to relearn the hard way.
+
+## Active visual follow-up
+
+Derek confirmed an original 3DS XL and general C play, then reported black voxel
+borders, Torchic follower flicker/wrong appearance in Littleroot and stock scenic
+wild battles. Record only those actual reports; fix hardware acceptance is pending.
+Work on `fix/stage-c-visuals` with `tools/stage_c_visuals.sh` and
+`build/stage-c-visuals`. Preserve the original C tree/ZIP/Dropbox file and use
+`work/stage-c-visuals-private` for the new package. It intentionally keeps C's
+save namespace and schema/rules so existing progress continues after backup.
+Regenerate with `--tree build/stage-c-visuals`, bootstrap
+`work/stage-c-visuals-clean`, and run `verify-expansion-visuals` plus normal checks.
+Do not use the original C wrapper on this patch; it now refuses it.
+
+Hoenn border dimensions are implicitly 2x2 while FRLG stores explicit dimensions.
+Never read the Hoenn zero bytes as no border or use a zero-size phase comparison.
+Compression probes must resolve INCGFX stubs before inspecting a header; a reserved
+transparent sprite frame must be cleared when OBJ tile ranges are reused. Scenic
+post-submit preparation must run even when the current battle view cannot draw.
 
 ## Building
 
