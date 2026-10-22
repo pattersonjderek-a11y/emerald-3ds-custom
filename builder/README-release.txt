@@ -1,3 +1,6 @@
+EMERALD 3DS CUSTOM: the final expansion ROM recipe is not validated.
+For Stage A use docs/DEVICE_TESTS.md and the private source-built package.
+
 Emerald 3DS
 ===========
 
@@ -27,20 +30,20 @@ Install
 4. Choose your SD card (it is detected when it has a "Nintendo 3DS" folder)
    or any folder.
 5. Press Install. It writes:
-       /3ds/emerald3ds/Emerald3DS.3dsx
-       /3ds/emerald3ds/Emerald3DS.smdh
-       /3ds/emerald3ds/emerald3ds.pak
+       /3ds/emerald3ds-custom/Emerald3DS.3dsx
+       /3ds/emerald3ds-custom/Emerald3DS.smdh
+       /3ds/emerald3ds-custom/emerald3ds.pak
 6. Put the card back in the console and start Emerald 3DS from the
    Homebrew Launcher.
 
-Saves are kept in /3ds/emerald3ds/emerald3ds.sav. Reinstalling or updating
+Saves are kept in /3ds/emerald3ds-custom/emerald3ds.sav. Reinstalling or updating
 never touches it.
 
 Command line
 ------------
     emerald3ds-builder-cli.exe build   --rom "Pokemon Emerald.gba" --output out
     emerald3ds-builder-cli.exe install --rom "Pokemon Emerald.gba" --sd E:\
-    emerald3ds-builder-cli.exe verify  --pak E:\3ds\emerald3ds\emerald3ds.pak
+    emerald3ds-builder-cli.exe verify  --pak E:\3ds\emerald3ds-custom\emerald3ds.pak
 
 Updating
 --------

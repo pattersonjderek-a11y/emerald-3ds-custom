@@ -1,3 +1,9 @@
+> **Emerald 3DS Custom development fork:** follow [the project blueprint](PROJECT_BLUEPRINT.md),
+> [current status](docs/STATUS.md), [build instructions](docs/BUILD.md), and
+> [private device-test instructions](docs/DEVICE_TESTS.md). The public builder
+> linked in the inherited upstream README below does not build this custom
+> expansion. Custom testing uses `/3ds/emerald3ds-custom/`.
+
 <p align="center">
   <img src="https://i.postimg.cc/XJRQB9cc/logo2.png" alt="Emerald 3DS" width="480">
 </p>

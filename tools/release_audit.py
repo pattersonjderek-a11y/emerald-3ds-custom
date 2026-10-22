@@ -181,7 +181,11 @@ def repo_files(repo: Path) -> list[tuple[str, callable]]:
                                           stderr=subprocess.DEVNULL)
             names = [n for n in out.decode("utf-8").split("\0") if n]
         except (subprocess.CalledProcessError, FileNotFoundError):
-            names = None
+            raise SystemExit(
+                "release_audit: cannot read the Git index. Run as the repository owner "
+                "or configure safe.directory for this checkout. Refusing to treat "
+                "ignored private build files as source."
+            )
     if names is None:
         names = [p.relative_to(repo).as_posix() for p in repo.rglob("*")
                  if p.is_file() and ".git" not in p.relative_to(repo).parts]

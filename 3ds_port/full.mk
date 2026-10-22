@@ -503,12 +503,21 @@ ifneq ($(wildcard $(ROOT)/tools/learnset_helpers/make_teachables.py),)
 PORT_ART_TARGETS += $(ROOT)/src/data/pokemon/teachable_learnsets.h
 endif
 .PHONY: build/graphics.stamp
-build/graphics.stamp: FORCE
-	@mkdir -p build
+build/graphics.stamp: FORCE | build/
 	$(file >build/port_art.mk,.PHONY: port-art)
 	$(file >>build/port_art.mk,port-art: $(sort $(patsubst $(ROOT)/%,%,$(PORT_ART_TARGETS))))
 	+$(MAKE) -C $(ROOT) -f Makefile -f $(abspath build/port_art.mk) port-art
 	@touch $@
+
+# GNU make expands $(file ...) before running any recipe line, including
+# mkdir. The directory must exist as a prerequisite on the first build.
+build/:
+	@mkdir -p $@
+
+# A normal prerequisite of leaves.bin must also have a rule in this make;
+# the recursive root build above owns its actual graphics conversion.
+$(ROOT)/graphics/intro/scene_1/bg.4bpp: | build/graphics.stamp
+	@test -f $@
 
 ifeq ($(VOXEL),1)
 # What every cell of every layout IS (the console reads its signposts).

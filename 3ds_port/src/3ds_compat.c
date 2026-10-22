@@ -315,25 +315,10 @@ u16 Port_FontProbe_CompareNormalLatinGlyph(u16 glyphId)
  */
 
 #define CTR_SAVE_PATH CTR_DATA_DIR "emerald3ds.sav"
-/* Where earlier builds kept the save; moved once on first start. */
-#define CTR_OLD_SAVE_PATH "sdmc:/3ds/pokeemerald/pokeemerald.sav"
 /* Bytes accepted after the 128 KiB flash: mGBA's clock footer is 16. */
 #define SAVE_TRAILER_MAX 512
 
 static bool sSaveAvailable;
-
-static void MigrateOldSave(void)
-{
-    FILE *probe = fopen(CTR_SAVE_PATH, "rb");
-
-    if (probe != NULL)
-    {
-        fclose(probe);
-        return;
-    }
-    if (rename(CTR_OLD_SAVE_PATH, CTR_SAVE_PATH) == 0)
-        CtrLog_Write(CTR_LOG_FS, "save moved from %s", CTR_OLD_SAVE_PATH);
-}
 
 void Port_SaveInit(void)
 {
@@ -346,8 +331,6 @@ void Port_SaveInit(void)
     memset(FLASH_BASE, 0xFF, sizeof(FLASH_BASE));
     sSaveAvailable = false;
 
-    if (!CtrScenario_SavePath())
-        MigrateOldSave();
     file = fopen(path, "rb");
     if (file == NULL)
     {

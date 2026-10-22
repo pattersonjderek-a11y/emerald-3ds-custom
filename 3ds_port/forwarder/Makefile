@@ -1,4 +1,4 @@
-# HOME Menu forwarder: a small CIA that starts sdmc:/3ds/emerald3ds/Emerald3DS.3dsx
+# HOME Menu forwarder: a small CIA that starts sdmc:/3ds/emerald3ds-custom/Emerald3DS.3dsx
 # through Luma3DS's hb:ldr, so updates only replace the 3DSX.
 #
 #   make -C 3ds_port/forwarder            -> dist/Emerald3DS-Forwarder.cia

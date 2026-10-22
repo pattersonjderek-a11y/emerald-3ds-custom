@@ -25,7 +25,7 @@ GPUMEM_WRAPPED := vramAlloc vramMemAlign vramAllocAt vramMemAlignAt vramRealloc 
 LDFLAGS += $(foreach f,$(GPUMEM_WRAPPED),-Wl,--wrap=$(f))
 LIBS := -lctru -lm
 TARGET := emerald3ds
-APP_TITLE := Emerald 3DS
+APP_TITLE := Emerald 3DS Custom
 # File names of the release executable (no spaces).
 APP_FILE := Emerald3DS
 APP_DESCRIPTION := Dual-screen port for Nintendo 3DS
@@ -267,6 +267,11 @@ devdata: romfs/engine/abi.bin
 
 verify: all verify-input
 	"$(PYTHON)" scripts/verify_build.py --devkitarm "$(DEVKITARM)" --stage 9 --video 1 --full 1 --expansion $(if $(wildcard $(ROOT)/include/config/caps.h),1,0)
+
+.PHONY: verify-storage-isolation
+verify: verify-storage-isolation
+verify-storage-isolation:
+	"$(PYTHON)" tests/storage_isolation_test.py
 
 .PHONY: verify-input
 verify-input: build/input_test.exe

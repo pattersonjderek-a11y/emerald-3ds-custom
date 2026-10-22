@@ -10612,7 +10612,7 @@ void CtrVideo_HoldTop(bool hold)
 
 #ifdef CTR_FRAME_DUMP
 #define CTR_DUMP_SLIDER CtrDumpSlider()
-/* Measurement builds: the 3D slider from sdmc:/3ds/emerald3ds/slider.txt. */
+/* Measurement builds: the 3D slider from sdmc:/3ds/emerald3ds-custom/slider.txt. */
 static __attribute__((unused)) float CtrDumpSlider(void)
 {
     static int read;
@@ -10620,7 +10620,7 @@ static __attribute__((unused)) float CtrDumpSlider(void)
 
     if (!read)
     {
-        FILE *file = fopen("sdmc:/3ds/emerald3ds/slider.txt", "r");
+        FILE *file = fopen(CTR_DATA_DIR "slider.txt", "r");
 
         read = 1;
         if (file) { value = 1.0f; fclose(file); }
@@ -10832,7 +10832,7 @@ void CtrVideo_Present(void)
     {
         static FILE *dump;
 
-        if (!dump) dump = fopen("sdmc:/3ds/emerald3ds/frames.raw", "wb");
+        if (!dump) dump = fopen(CTR_DATA_DIR "frames.raw", "wb");
         if (dump)
         {
             uint32_t frame = sStats.frames;

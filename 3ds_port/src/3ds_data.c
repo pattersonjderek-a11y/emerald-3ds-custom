@@ -144,7 +144,7 @@ static bool OpenPak(void)
                  "Run the builder that came with this\n"
                  "release with your own Pokemon Emerald\n"
                  "ROM and install the data pack to:\n\n"
-                 "  /3ds/emerald3ds/emerald3ds.pak");
+                 "  /3ds/emerald3ds-custom/emerald3ds.pak");
         return false;
     }
     setvbuf(sPak, NULL, _IOFBF, 64 * 1024);
@@ -156,7 +156,7 @@ static bool OpenPak(void)
         break;
     case CTR_PAK_BAD_MAGIC:
         SetError("This is not a game data pack.",
-                 "/3ds/emerald3ds/emerald3ds.pak is not a\n"
+                 "/3ds/emerald3ds-custom/emerald3ds.pak is not a\n"
                  "data pack. Run the builder again.");
         goto fail;
     case CTR_PAK_BAD_SCHEMA:
@@ -218,7 +218,7 @@ bool CtrData_Init(void)
 
     ReadEngineAbi();
     mkdir("sdmc:/3ds", 0777);
-    mkdir("sdmc:/3ds/emerald3ds", 0777);
+    mkdir(CTR_DATA_DIR, 0777);
     if (choice == 0)
     {
         if (FileExists(CTR_DATA_LOOSE_MARKER))

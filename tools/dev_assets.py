@@ -7,7 +7,7 @@
 Reads 3ds_port/romfs (the build's staging, after `make`), compares each game
 data file with what was sent last time (a hash cache in
 3ds_port/build/dev_assets.json) and uploads only the differences to
-/3ds/emerald3ds/devdata/, then writes the marker that makes the game use the
+/3ds/emerald3ds-custom/devdata/, then writes the marker that makes the game use the
 loose backend. `--all` resends everything; `--off` removes the marker so the
 game goes back to its embedded data or the data pack.
 """
@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools" / "port_common"))
 import staging  # noqa: E402
 
-REMOTE = "3ds/emerald3ds/devdata"
+REMOTE = "3ds/emerald3ds-custom/devdata"
 MARKER = ".emerald3ds-dev"
 
 

@@ -2,10 +2,10 @@
  * Measured scenarios (include/3ds_platform.h). A measurement compares two
  * builds, or two settings, on the same frames: so a session is recorded once
  * from boot - the save it started from, the settings, every frame's input -
- * and played back as often as needed. sdmc:/3ds/emerald3ds/scenario.txt:
+ * and played back as often as needed. sdmc:/3ds/emerald3ds-custom/scenario.txt:
  *
  *   mode=record | play | queue   (anything else, or no file: off)
- *   name=route104          (sdmc:/3ds/emerald3ds/scenarios/route104/)
+ *   name=route104          (sdmc:/3ds/emerald3ds-custom/scenarios/route104/)
  *   slider=1.0             (optional: the 3D slider fixed at this value)
  *   exit=0                 (play: keep running when the input ends; default 1)
  *   voxel=1 ...            (play: any setting, for this session only)
@@ -29,7 +29,7 @@
 
 #include "3ds_platform.h"
 
-#define DIR "sdmc:/3ds/emerald3ds/"
+#define DIR CTR_DATA_DIR
 #define CHECK_EVERY 600
 #define CHECKS 512
 #define INPUT_MAGIC 0x4e493345u   /* "E3IN" */

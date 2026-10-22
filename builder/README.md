@@ -1,3 +1,7 @@
+> Custom expansion testing uses [docs/BUILD.md](../docs/BUILD.md) and
+> [docs/DEVICE_TESTS.md](../docs/DEVICE_TESTS.md). The final custom player-ROM
+> recipe is not validated yet; use the private source-built package.
+
 # Emerald 3DS Builder
 
 Turns the player's own Pokémon Emerald (USA, Europe), Pokémon Esmeralda

@@ -301,7 +301,7 @@ class ManifestTests(SyntheticPayloadMixin, unittest.TestCase):
         files = build_web_payload.collect(self.synthetic["payload"])
         manifest = build_web_payload.make_manifest(files, "1.0.0", "v1.0.0", "Emerald3DS-Forwarder.cia")
         self.assertEqual(manifest["assets"]["ciaForwarder"]["releaseAsset"], "Emerald3DS-Forwarder.cia")
-        self.assertEqual(manifest["assets"]["ciaForwarder"]["target"], "sdmc:/3ds/emerald3ds/Emerald3DS.3dsx")
+        self.assertEqual(manifest["assets"]["ciaForwarder"]["target"], "sdmc:/3ds/emerald3ds-custom/Emerald3DS.3dsx")
 
 
 class WebPayloadContentsTests(SyntheticPayloadMixin, unittest.TestCase):

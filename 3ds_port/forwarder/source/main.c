@@ -1,6 +1,6 @@
 // HOME Menu forwarder for Emerald 3DS.
 //
-// Installed once as a CIA, it starts sdmc:/3ds/emerald3ds/Emerald3DS.3dsx, so
+// Installed once as a CIA, it starts sdmc:/3ds/emerald3ds-custom/Emerald3DS.3dsx, so
 // updating the game only ever replaces the 3DSX. It asks Luma3DS's hb:ldr to
 // load that file, makes its own title the one Luma loads 3DSX files through
 // (no Homebrew Launcher title has to be installed) and restarts itself, so Luma
@@ -12,7 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#define TARGET_SD_PATH "/3ds/emerald3ds/Emerald3DS.3dsx"
+#define TARGET_SD_PATH "/3ds/emerald3ds-custom/Emerald3DS.3dsx"
 #define TARGET_ARGV0   "sdmc:" TARGET_SD_PATH
 #define RESTORE_ARG    "emerald3ds-forwarder:hbldr-tid="
 #define FORWARDER_TID  0x000400000E3D5200ULL

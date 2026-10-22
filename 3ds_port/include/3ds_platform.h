@@ -7,6 +7,7 @@
 #include <time.h>
 #include "3ds_log.h"
 #include "3ds_input.h"
+#include "3ds_paths.h"
 
 int64_t CtrPlatform_WallSeconds(void);
 
@@ -73,7 +74,7 @@ void CtrProf_Close(void);
  * Measured scenarios (3ds_scenario.c): a session recorded from boot - its
  * save, its settings and every frame's input - played back as many times as
  * wanted, so that two builds or two settings are compared on the same frames.
- * sdmc:/3ds/emerald3ds/scenario.txt chooses (its keys: 3ds_scenario.c).
+ * sdmc:/3ds/emerald3ds-custom/scenario.txt chooses (its keys: 3ds_scenario.c).
  * While one plays, the save on the card is never written and the clock the
  * game reads is the recorded one, advanced a second every 60 frames.
  */

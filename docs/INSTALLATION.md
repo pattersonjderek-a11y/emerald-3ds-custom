@@ -1,5 +1,9 @@
 # Install and update Emerald 3DS
 
+Emerald 3DS Custom private builds use [DEVICE_TESTS.md](DEVICE_TESTS.md).
+The upstream installation/update process below does not create this fork's
+expansion build and uses a different installation directory.
+
 These instructions apply to the latest
 [release](https://github.com/ZallaxDev/pokeemerald-3Ds-dualscreen/releases/latest).
 Download the ZIP attached to the release, not the automatically generated

@@ -124,7 +124,7 @@ def make_manifest(files: dict[str, bytes], version: str, tag: str, cia_forwarder
             "smdh": ref("payload/Emerald3DS.smdh", "Emerald3DS.smdh"),
             "recipe": ref("payload/emerald3ds.recipe"),
             "ciaForwarder": ({"releaseAsset": cia_forwarder,
-                              "target": "sdmc:/3ds/emerald3ds/Emerald3DS.3dsx"} if cia_forwarder else None),
+                              "target": "sdmc:/3ds/emerald3ds-custom/Emerald3DS.3dsx"} if cia_forwarder else None),
         },
         "files": [{"path": p, "sha256": sha256(d), "size": len(d)} for p, d in sorted(files.items())],
     }

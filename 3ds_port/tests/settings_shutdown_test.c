@@ -17,8 +17,8 @@ static int TestRename(const char *from, const char *to);
 static unsigned renames;
 static int TestRemove(const char *path) { (void)path; return 0; }
 static int TestRename(const char *from, const char *to) {
-    assert(strcmp(from, "sdmc:/3ds/emerald3ds/settings.txt.tmp") == 0);
-    assert(strcmp(to, "sdmc:/3ds/emerald3ds/settings.txt") == 0);
+    assert(strcmp(from, CTR_DATA_DIR "settings.txt.tmp") == 0);
+    assert(strcmp(to, CTR_DATA_DIR "settings.txt") == 0);
     ++renames; return 0;
 }
 static pthread_mutex_t diskMutex = PTHREAD_MUTEX_INITIALIZER;
