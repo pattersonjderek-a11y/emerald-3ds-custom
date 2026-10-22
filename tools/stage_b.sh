@@ -2,6 +2,13 @@
 # Run inside the frozen Stage A SDK; never rebuild/overwrite the Stage A tree.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [ "${1:-build}" != versions ]; then
+  python3 - <<'STAGE_GUARD'
+from pathlib import Path
+if "+++ w/include/custom_random_core.h" in Path("patches/pokeemerald-expansion/0001-port.patch").read_text():
+    raise SystemExit("Stage B baseline is frozen. Check out project/stage-b to rebuild it; current source is Stage C.")
+STAGE_GUARD
+fi
 export DEVKITPRO="${DEVKITPRO:-/opt/devkitpro}"
 export DEVKITARM="${DEVKITARM:-$DEVKITPRO/devkitARM}"
 export PATH="$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH"

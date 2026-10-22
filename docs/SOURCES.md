@@ -22,8 +22,8 @@ content. The expansion's own follower substitutions and missing art must be
 audited before claiming every species has exact follower artwork.
 
 The blueprint lists original-port, newer-expansion, Tertu, Modern Emerald,
-Exalted Emerald and ahunter references. They were not imported, fetched for
-reuse, or treated as this task's build baseline. Later code reuse must record
+Exalted Emerald and ahunter references. During Stage A they were not imported, fetched for
+reuse, or treated as its build baseline. Later code reuse must record
 exact paths, authors, terms and modifications here before integration.
 
 The source-ROM SHA-1 in `upstream.lock` is an input identifier, not a ROM
@@ -46,3 +46,35 @@ canonical expansion patch (including six new engine files). Existing notices,
 credits, generated asset pipeline and source-ownership rules remain applicable.
 Schema/content-rules provenance is documented in SAVE_FORMAT.md. Private
 Stage B output remains under ignored build/work paths, never source history.
+
+## Stage C provenance
+
+Stage C starts from `ba750f84b9d361e730ec03e54da0d2ee1893e973` on a separate
+`project/stage-c` branch. `upstream.lock`, SDK image and inherited asset sources
+remain unchanged. No donor branch was merged and no assets were added.
+
+Inspected the pinned Tertu reference
+https://github.com/Zetraphes/pokeemerald-expansion at
+`1ad60617c8c17da5e6d380371cfa9429ce9b9a4e`, specifically `src/randomizer.c`,
+`include/randomizer.h`, `include/config/randomizer.h` and `CREDITS.md`.
+Purpose: compare runtime resolver boundaries, starter distinctness and wild/trainer
+identities against the current engine. Its older flags 0x20–0x26 and trainer-ID
+seed assumptions were not adopted. No Tertu source text or art was copied;
+the numeric core, validation, save/UI integration and native adapters are new
+project implementation against the existing pinned expansion interfaces. Public
+source visibility was not treated as a reuse license. Original credits/reuse
+terms remain with that donor; no relicensing claim is made. The inspection checkout
+and notes stay in ignored `work/donor-tertu*`, outside source/build inputs.
+
+New engine files: `include/custom_random_core.h`, `src/custom_random_core.c`,
+`include/custom_random.h`, `src/custom_random.c`, all captured in the canonical
+expansion patch. Modified native starter/wild/trainer/pool/menu adapters reuse
+this repository's existing expansion code and retain its notices. New root host
+fixtures and linked-pool/seed-preview tooling contain synthetic state or metadata,
+not copied game-content packages. Normal/shiny art, learnsets and form/item tables
+remain inherited generated inputs; the pool audit does not grant distribution rights.
+
+Stage C algorithm/content-rules provenance and exclusions: RULES.md and
+SAVE_FORMAT.md. Optional difficulty/ability/item stages were not imported from
+Modern/Exalted/ahunter references. Renderer, visual effects, follower systems and
+native expanded Gen 1–9 content remain the existing integration.

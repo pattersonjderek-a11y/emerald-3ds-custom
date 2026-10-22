@@ -1,4 +1,4 @@
-# Run configuration save format (Stage B)
+# Run configuration save format (Stages B/C)
 
 Schema 1 is native-expansion-only and stores critical run state in the same
 flash-sector transaction as progress. It is separate from the port's global
@@ -37,32 +37,44 @@ CRC32 is the standard reflected polynomial `0xEDB88320`, initial/final XOR
 `0xFFFFFFFF`, over bytes 0–47. The independent record CRC detects errors even
 if a native sector checksum happens to match.
 
-| Offset | Bytes | Meaning / Stage B value |
+| Offset | Bytes | Meaning / current Stage C value |
 | --- | ---: | --- |
 | 0 | 4 | Magic `E3RC` (`0x43523345`) |
 | 4 | 2 | Schema version 1 |
 | 6 | 2 | Record length 52 |
 | 8 | 4 | Unsigned seed, 0–4294967295 |
-| 12 | 4 | Randomizer option bits; all 0 |
+| 12 | 4 | Randomizer bits: starters 1, wild 2, trainers 4; Standard 0 |
 | 16 | 4 | Difficulty option bits; all 0 |
-| 20 | 4 | Content-rules ID `0x00010001` |
+| 20 | 4 | Content-rules ID `0x00020001` (legacy fixed B: `0x00010001`) |
 | 24 | 4 | Independent run ID generated on setup entry |
 | 28 | 4 | Trainer ID binding, read after new-save initialization |
-| 32 | 2 | Algorithm version 0: fixed campaign, no randomizer active |
-| 34 | 2 | Generation filter `0x01FF`, existing Gen 1–9 pool |
-| 36 | 1 | Mode 0 Standard; 1 Randomized reserved/unavailable |
+| 32 | 2 | Algorithm 0 Standard; 1 seeded core Randomized |
+| 34 | 2 | Generation bitmask bits 0–8; default `0x01FF`, nonempty |
+| 36 | 1 | Mode 0 Standard; 1 Randomized core implemented |
 | 37 | 1 | Difficulty 0 Normal; 1 Hard / 2 Custom reserved/unavailable |
 | 38 | 1 | Cap policy 0: inherited native behavior |
 | 39 | 1 | AI policy 0: inherited native behavior |
-| 40 | 4 | Balance options, all 0 |
+| 40 | 4 | Balance bits: no-legendaries 1, similar-BST 2; default 0 |
 | 44 | 4 | Reserved, must be 0 |
 | 48 | 4 | CRC32 |
 
-Rules ID `0x00010001` names the fixed expanded campaign at the locked engine
-revision plus Stage A integration. It does not promise seed-only reproduction
-across content changes. Algorithm 0 is deliberately inactive. Future stages
-must introduce a real algorithm and content-rules mapping before activating
-options. No donor randomizer/difficulty engine was imported.
+Rules ID `0x00020001` identifies Stage C's indexed safe species pool, keyed
+algorithm and exclusions documented in RULES.md. Randomized requires algorithm
+1, a nonzero subset of core option bits 1/2/4, a nonempty nine-generation mask,
+and only supported balance bits 1/2. Abilities (8), field items (16), held items
+(32), Hard/Custom, difficulty options, cap/AI policies and unknown bits are rejected.
+Standard uses algorithm 0, no random/balance bits and all generations; it accepts
+both current content rules and fixed-only Stage B rules `0x00010001`. A rules
+identifier is not a general content migration mechanism. There is no automatic
+import from B's SD directory and no promise that B can load C records.
+
+Schema 1/length 52 and the exact allocation/checksum remain unchanged in C.
+Native startup/Continue/save validation also checks the actual eligible pool
+(`CR_POOL`: NO VALID SPECIES POOL), including three distinct level-5 starters
+when starters or trainers are enabled (rival continuity), and a viable level-1 pool. Rejection preserves bytes and output
+configuration. Never reinterpret an unsupported randomized record as Standard.
+No event flags or variables were added. `VAR_STARTER_MON` continues its native
+chosen-index role for the rival, rather than storing new run settings.
 
 ## Lifecycle and failures
 
@@ -70,8 +82,8 @@ Setup edits only a RAM draft. A strict decimal seed editor accepts the full
 u32 range, rejects overflow and discards an unaccepted edit on B. Automatic
 seed generation occurs on setup entry or explicit regeneration, not redraw,
 Continue, opening Run Settings or serialization. The setup adapter uses the
-existing native RNG only to propose a seed/run ID; future deterministic
-randomizer decisions must use their own saved-seed algorithm.
+existing native RNG only to propose a seed/run ID; Stage C deterministic
+species/party decisions use their own saved-seed algorithm, independent of that RNG.
 
 Confirmation freezes the draft. After Birch/name selection, CB2_NewGame
 requires that confirmed draft. NewGameInitData clears SaveBlock1/3, creates
@@ -85,7 +97,7 @@ modify the record. The in-game Run Settings page is read-only. Physical START op
 the production dual-screen start adapter; the classic menu also has a row.
 
 Unknown schema/length/algorithm/reserved bytes, wrong content rules, unavailable
-options, binding mismatch or invalid CRC are rejected. Output rules and stored
+options, binding mismatch, invalid CRC or unusable native pool are rejected. Output rules and stored
 bytes remain unchanged. Continue displays a reason and blocks before map/time
 updates; ordinary/Hall-of-Fame/link save entry points return failure before
 writing. Restore a complete backed-up save and matching clock files, or use

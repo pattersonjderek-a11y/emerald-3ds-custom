@@ -1,6 +1,7 @@
 /* Host fixture linked to the actual engine codec and menu model. */
 #include "custom_run_config.h"
 #include "custom_run_menu_model.h"
+#include "custom_random_core.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -61,6 +62,13 @@ static void Codec(void)
     for(unsigned fill=0;fill<2;++fill) { memset(b,fill?255:0,52); Reject(b,CR_LEGACY); }
     c.mode=CR_RANDOMIZED; memset(b,0xA5,52); memcpy(pristine,b,52);
     assert(!CR_Encode(b,123,&c) && !memcmp(b,pristine,52));
+    CR_Begin(&d,42,100); d.config.mode=CR_RANDOMIZED; d.config.algorithm=CR_ALGORITHM;
+    d.config.randomOptions=CR_CORE_OPTIONS; d.config.generations=256; d.config.balanceFlags=3;
+    assert(CR_Confirm(&d) && CR_Commit(&d,b,123));
+    assert(CR_Decode(b,123,&c)==CR_OK && c.randomOptions==7 && c.generations==256 && c.balanceFlags==3);
+    c.randomOptions|=CR_RANDOM_ABILITIES; assert(!CR_Encode(b,123,&c));
+    CR_Begin(&d,42,100); d.config.contentRules=0x00010001u;
+    assert(CR_Confirm(&d) && CR_Commit(&d,b,123) && CR_Decode(b,123,&c)==CR_OK && c.algorithm==0);
     CR_Begin(&d,123,100); d.config.difficulty=CR_HARD; assert(!CR_Confirm(&d));
     CR_Cancel(&d); assert(!d.editing && !d.confirmed && !CR_Commit(&d,b,123));
     uint32_t seed=77;
@@ -75,19 +83,30 @@ static void Menu(void)
 {
     struct CRMenu m;
     CR_MenuBegin(&m,123,456);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_MODE && m.notice && m.draft.config.mode==CR_STANDARD);
-    Key(&m,CR_UP); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY);
+    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.draft.config.mode==CR_RANDOMIZED);
+    assert(m.draft.config.randomOptions==CR_CORE_OPTIONS && m.draft.config.algorithm==1);
     Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.notice && m.draft.config.difficulty==CR_NORMAL);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_CUSTOM);
-    for(unsigned i=0;i<9;++i) { Key(&m,CR_A); assert(m.notice && CR_Validate(&m.draft.config)==CR_OK); Key(&m,CR_DOWN); }
-    Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY);
-    Key(&m,CR_A); assert(m.page==CR_PAGE_SEED);
+    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.notice);
+    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SEED);
+    m.selected=2; Key(&m,CR_A); assert(m.page==CR_PAGE_CUSTOM);
+    for(unsigned i=3;i<6;++i) { m.selected=i; Key(&m,CR_A); assert(m.notice && m.draft.config.randomOptions==CR_CORE_OPTIONS); }
+    m.selected=0; Key(&m,CR_A); assert(m.draft.config.randomOptions==6);
+    m.selected=1; Key(&m,CR_A); assert(m.draft.config.randomOptions==4);
+    m.selected=2; Key(&m,CR_A); assert(m.notice && m.draft.config.randomOptions==4);
+    m.selected=0; Key(&m,CR_A); m.selected=1; Key(&m,CR_A);
+    m.selected=6; Key(&m,CR_A); assert(m.page==CR_PAGE_GENERATIONS);
+    for(unsigned i=0;i<8;++i) { m.selected=i; Key(&m,CR_A); }
+    m.selected=8; Key(&m,CR_A); assert(m.notice && m.draft.config.generations==256);
+    m.selected=9; Key(&m,CR_A); assert(m.page==CR_PAGE_CUSTOM);
+    m.selected=7; Key(&m,CR_A); assert(m.page==CR_PAGE_BALANCE);
+    Key(&m,CR_A); assert(m.draft.config.balanceFlags==CR_BALANCE_NO_LEGENDS);
+    Key(&m,CR_B); Key(&m,CR_B); assert(m.page==CR_PAGE_SEED);
     assert(m.draft.config.seed==123); Key(&m,CR_A); assert(m.draft.config.seed==56789);
     Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIGITS);
     strcpy(m.digits,"4294967296"); Key(&m,CR_A); assert(m.page==CR_PAGE_DIGITS && m.notice && m.draft.config.seed==56789);
     strcpy(m.digits,"4294967295"); Key(&m,CR_A); assert(m.page==CR_PAGE_SEED && m.draft.config.seed==UINT32_MAX && m.draft.manualSeed);
     Key(&m,CR_DOWN); Key(&m,CR_A); Key(&m,CR_UP); Key(&m,CR_B); assert(m.draft.config.seed==UINT32_MAX); /* discard edit */
-    Key(&m,CR_DOWN); Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SUMMARY && !m.draft.confirmed);
+    Key(&m,CR_DOWN); Key(&m,CR_DOWN); Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SUMMARY && !m.draft.confirmed);
     assert(Key(&m,CR_A)==CR_ACCEPTED && m.draft.confirmed);
     struct CRMenu accepted=m; Key(&m,CR_B); Key(&m,CR_DOWN); assert(!memcmp(&m,&accepted,sizeof(m)));
     uint8_t record[52], old[52]; memset(record,0x5A,52); memcpy(old,record,52);
@@ -106,6 +125,6 @@ static void Menu(void)
             if(outcome!=CR_STAY) break;
         }
     }
-    puts("menu: locked choices, custom preview, auto/manual seed, overflow, confirmation, cancel and 50k transition budget PASS");
+    puts("menu: randomized core, category/generation/balance options, locked later rules, auto/manual seed, overflow, confirmation, cancel and 50k transition budget PASS");
 }
 int main(void) { Storage(); Codec(); Menu(); return 0; }

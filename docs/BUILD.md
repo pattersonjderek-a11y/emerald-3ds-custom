@@ -8,7 +8,80 @@ above candidate baseline `8ebb7355742ce43bbb10528044f9a175fc990a64`.
 `dfb0f84374230f4d462191601179b742f9f077df`, original engine
 `76463dac15cad36aca5e2b3f6366abf9e53f814f`.
 
-## Stage B workflow (current development branch)
+## Stage C workflow (current development branch)
+
+A/B are preserved on `project/stage-a` / `project/stage-b`, with frozen private
+packages and metadata. Stage B's final checkpoint is `ba750f8`. Use the exact
+SDK below, without dependency upgrades, with a separate tree and runtime paths:
+
+```sh
+git switch project/stage-c
+docker --host=unix:///var/run/docker.sock exec --user 1000:1000 emerald-stage-a \
+  bash -lc 'cd /project && tools/stage_c.sh build && tools/stage_c.sh test && tools/stage_c.sh package'
+```
+
+The named container already exists in this workspace; on another laptop/host,
+build `tools/stage_a.Dockerfile` as documented below and use `docker run --rm`
+with the same bind mount/working directory/UID and `tools/stage_c.sh` commands.
+`versions` records the unchanged SDK. Actual expanded commands inside it:
+
+```sh
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-c --make -j4 --python python3
+make -C build/stage-c/3ds_port verify PYTHON=python3
+EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-c" python3 -m unittest builder.tests.test_expansion_enhancements -v
+EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-c" python3 -m unittest discover -s builder/tests -v
+python3 tools/release_audit.py --repo . --strict
+make -C build/stage-c/3ds_port release pak PYTHON=python3
+python3 tools/private_smoke_package.py --stage C
+```
+
+`make verify` now includes production core/resolver/trainer/starter/map-lookup
+host fixtures (ASan/UBSan), the updated save/menu tests and a linked ARM-data
+species/graphics audit. The latter uses SDK ARM GDB's built-in command language,
+not GDB Python, and writes private `3ds_port/build/randomizer-pool.json` / `.csv`.
+This is linked-data inspection, not emulation or a console run. Standalone:
+
+```sh
+python3 3ds_port/tests/custom_random_test.py --tree build/stage-c
+python3 3ds_port/tests/custom_run_test.py --tree build/stage-c
+python3 3ds_port/tests/custom_random_pool_test.py --tree build/stage-c \
+  --gdb /opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb \
+  --output work/stage-c-pool.json
+python3 tools/stage_c_seed_preview.py --tree build/stage-c \
+  --pool build/stage-c/3ds_port/build/randomizer-pool.json --seed 42 --generations 0x100
+```
+
+The preview executes the real C core using metadata from the exact linked pool;
+it is a host prediction to compare on the console. It is not hardware proof.
+
+Native outputs: `build/stage-c/3ds_port/emerald3ds.3dsx` and `.smdh` (embedded),
+`emerald3ds.elf` (debug), `dist/Emerald3DS.3dsx` and `.smdh` (engine-only),
+matching private `build/emerald3ds.pak`. Private test ZIP/manifest:
+`work/stage-c-private/Emerald3DS-Custom-StageC-private.zip` and `manifest.json`.
+Never commit these content-bearing outputs or upload them to public CI/releases.
+Runtime writes/read overrides are isolated under `/3ds/emerald3ds-custom-stage-c/`;
+source and embedded-binary checks protect original/A/B namespaces. The existing
+shared DSP input is read-only. Generic builder/install defaults and forwarders
+are not validated for C: use the embedded private ZIP, no separate data pack.
+
+Engine patch regeneration and source reproduction (new files must use --add):
+
+```sh
+python3 tools/regenerate_expansion_patch.py --tree build/stage-c
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-c-clean
+python3 3ds_port/tests/custom_random_test.py --tree work/stage-c-clean
+python3 3ds_port/tests/custom_run_test.py --tree work/stage-c-clean
+```
+
+The patch tool retains every existing engine path, reverse-checks it and updates
+the local digest only after it matches. Compare all patched sources and canonical
+overlays after fresh bootstrap. This proves source/host reproduction; the full
+native build is performed in the separate Stage C tree. A/B wrappers now refuse
+the wrong stage's patch so historical commands require the matching source branch.
+All source pins and tool versions remain those below. Exact current results are
+in STATUS.md; final artifact metadata is in STAGE_C_BUILD_OUTPUTS.json.
+
+## Historical Stage B workflow (checkout project/stage-b)
 
 Stage A remains frozen on remote `project/stage-a` and tag
 `stage-a-verified-48d8096` at `48d809677b496b029415d1af2e6524c4a08714d8`.

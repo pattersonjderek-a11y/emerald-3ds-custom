@@ -7,6 +7,7 @@ build metadata and is not a commit or a change to upstream history.
 """
 import argparse
 import configparser
+import hashlib
 from pathlib import Path
 import re
 import subprocess
@@ -17,7 +18,7 @@ PATCH = ROOT / 'patches/pokeemerald-expansion/0001-port.patch'
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--tree', type=Path, default=ROOT / 'build/stage-b')
+    parser.add_argument('--tree', type=Path, default=ROOT / 'build/stage-c')
     parser.add_argument('--add', nargs='*', default=[])
     args = parser.parse_args()
     tree = args.tree.resolve()
@@ -44,6 +45,11 @@ def main():
     result = '\n'.join(original.splitlines()[:3]) + '\n' + body
     subprocess.run(['git', '-C', str(tree), 'apply', '--check', '--reverse', '-'], input=result, text=True, check=True)
     PATCH.write_text(result)
+    digest = hashlib.sha256()
+    for patch in sorted(PATCH.parent.glob('*.patch')):
+        digest.update(patch.name.encode())
+        digest.update(patch.read_bytes())
+    (tree / '.emerald3ds-patches').write_text(digest.hexdigest()+'\n')
     print(f'Captured {len(staged)} engine source files; reverse apply passed. Fresh bootstrap still required.')
 
 

@@ -9,6 +9,95 @@ No emulator was run. Successful source inspection, host tests and native
 compilation do not establish boot, frame rate, campaign stability or complete
 Gen 1–9 art. Do not reuse historical upstream hardware results as new results.
 
+## Stage C: core randomizer console test (all results PENDING)
+
+Use the separate Stage C package, not the unchanged Stage B Dropbox ZIP.
+No console or emulator result has been supplied. Keep A/B available as controls;
+C has its own runtime directory. Record source/hash/model and each result.
+
+1. Back up the SD on the laptop. Extract `Emerald3DS-Custom-StageC-private.zip`
+   to the **SD root**. Confirm the app is
+   `3ds/emerald3ds-custom-stage-c/Emerald3DS.3dsx` with matching `.smdh`.
+   Leave original/A/B folders untouched. Start with no save/settings/clock/pack
+   copied from another build. Launch **Emerald 3DS Custom Stage C** in Homebrew
+   Launcher; no CIA or separate pack is needed. Shared DSP setup is below.
+2. New Game → Randomized → Normal → manual seed **42**. Digits: left/right
+   select position, up/down change it, A accepts. Customization: starters/wild/
+   trainers ON; in eligible generations turn Gen 1–8 OFF, leave Gen 9 ON;
+   both balance restrictions OFF. Abilities/items and Hard/Custom must stay locked.
+   Read the confirmation summary before beginning the normal introduction.
+3. At the bag, record all three displayed names/sprites/cries. Compare against
+   the linked-pool seed preview documented below. Choose one, inspect received
+   species/summary/moves and complete the intro battle. It must have a usable
+   attack. The scripted intro opponent is protected, so it need not be Gen 9.
+4. Press START in the field: read-only Run Settings must show seed 42,
+   Randomized/Normal, three core toggles ON, only Gen 9, rules `00020001`, ALG 1.
+   B returns cleanly. Save, exit, relaunch and Continue: all settings, party and
+   progress must stay identical. Repeated reset must not reroll the starter roster.
+5. On an ordinary route, verify randomized Gen 9 wild species and legal moves.
+   With visible encounters ON, note the overworld species/shiny appearance and
+   touch it: battle/summary must agree. Test land and later water, rods, rocks,
+   hidden tables/DexNav as unlocked. Capture one, inspect summary/moves, store/
+   withdraw and save/reload. Follower fallback artwork is a separate known limit.
+6. Test Route 103 rival and later rematches: the starter family should remain
+   coherent with the corresponding offered starter. At later levels ordinary
+   eligible level evolution may advance it; item/trade evolution is not forced.
+   Test ordinary trainers, first Gym, a later Gym, Elite Four and Champion when
+   available. Levels/size remain native; replacement moves must suit species.
+   Record doubles, scripted partner and an inherited Mega battle separately.
+7. Back up the whole C directory before another run. New Game/setup then B
+   cancel must preserve the existing save. A confirmed new run without saving
+   must also leave that on-card save available after restart. After intentionally
+   saving a new seed, Continue must retain that new run. Repeat seed 42/options
+   to compare identical choices; another seed should change the roster. Do not
+   expect every random encounter or battle action to repeat.
+8. In a separate backed-up test run, Standard/Normal must show ordinary Hoenn
+   starters/fixed tables and ALG 0. Compare existing visual/QoL/follower behavior
+   against B. Also try starters-only and trainers-only customization. Difficulty
+   and optional ability/item randomization are not implemented in C.
+9. After failure copy C's `port.log`, `port-prev.log`, any `crash_dump_*.dmp`,
+   manifest and exact actions to the laptop before relaunch rotates logs. Keep
+   saves/logs private. Do not delete the run record to bypass a recovery error.
+
+The pool audit verifies Gen 9 data and indexed front/back/icon/palette assets,
+including Sprigatito, Fuecoco, Quaxly, Ogerpon, Terapagos and Pecharunt. This is
+**linked-data evidence**, not a console screenshot or complete follower audit.
+The seed preview executes the real C resolver with this exact linked pool.
+For **42 / Gen 9 only / both balance flags OFF**, slots 1–3 are **Toedscruel,
+Tatsugiri (Curly), Meowscarada** (internal 1337 / 1367 / 1291). Seed 43 instead
+predicts Pawmot / Iron Moth / Wo-Chien. These are host predictions for comparison;
+a console mismatch is a test failure to report, not proof the console was tested. Eligibility does not
+mean every species appears in every seed, or that every form/follower is complete.
+
+| Stage C check | Result |
+| --- | --- |
+| Boot/setup/summary/read-only settings and UI return | PENDING |
+| Predicted Gen 9 starter names/sprites/gift/moves/first battle | PENDING |
+| Save/restart/Continue preserves seed, rules and progress | PENDING |
+| Same seed/options repeat; changed seed varies | PENDING |
+| Visible wild identity/shiny state matches battle | PENDING |
+| Land/water/rods/rocks/hidden/DexNav mapping | PENDING |
+| Rival family and rematch evolution continuity | PENDING |
+| Ordinary trainer/Gym/Elite Four/Champion | PENDING |
+| Double/partner/tutorial/protected facilities/Mega | PENDING |
+| Standard control; individual core switches | PENDING |
+| Cancel/new run and original/A/B/C storage isolation | PENDING |
+| Renderer/effects/dual screens/followers and frame pacing | PENDING |
+
+Host storage sentinels protect original/A/B paths; hardware SD/FAT behavior is
+still pending. Rollback backs up and removes only C's directory. Never replace
+the B package with C under the B name or import a B save automatically.
+
+### Optional Stage B Gen 9 demonstration
+
+For the preserved **development** B build on a disposable/backed-up save:
+hold **R + START** in the field → **Give X… → Pokémon (Basic)**, select
+Sprigatito (internal ID 1289), then inspect its summary and use it in battle.
+Fuecoco is 1292, Quaxly 1295, Ogerpon 1416, Terapagos 1431, Pecharunt 1434.
+These are internal species IDs, not National Dex numbers. This is a clearly
+marked developer grant, not evidence of ordinary fixed-campaign encounter
+placement. B's normal starter choices remain Treecko/Torchic/Mudkip.
+
 ## Stage B: separate console test (all results PENDING)
 
 The baseline Stage A ZIP is unchanged and separately preserved; test it using

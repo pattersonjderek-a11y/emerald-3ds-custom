@@ -3,6 +3,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p work
+if [ "${1:-build}" != versions ]; then
+  python3 - <<'STAGE_GUARD'
+from pathlib import Path
+if "+++ w/include/custom_run_config.h" in Path("patches/pokeemerald-expansion/0001-port.patch").read_text():
+    raise SystemExit("Stage A baseline is frozen. Check out project/stage-a to rebuild it; current source is Stage B/C.")
+STAGE_GUARD
+fi
 export DEVKITPRO="${DEVKITPRO:-/opt/devkitpro}"
 export DEVKITARM="${DEVKITARM:-$DEVKITPRO/devkitARM}"
 export PATH="$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH"
@@ -31,10 +38,10 @@ case "${1:-build}" in
   versions)
     python3 --version
     python3 -c 'import PIL; print("Pillow", PIL.__version__)'
-    gcc --version | head -1
-    make --version | head -1
+    gcc --version | sed -n '1p'
+    make --version | sed -n '1p'
     git --version
-    "$DEVKITARM/bin/arm-none-eabi-gcc" --version | head -1
+    "$DEVKITARM/bin/arm-none-eabi-gcc" --version | sed -n '1p'
     "$DEVKITPRO/pacman/bin/pacman" -Q
     dpkg-query -W build-essential g++ libpng-dev python3 python3-pil git
     ;;

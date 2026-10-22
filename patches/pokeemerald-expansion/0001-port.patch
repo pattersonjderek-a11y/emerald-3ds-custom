@@ -7258,6 +7258,62 @@ index 36e27d78..d41f03c6 100644
  
  #define MAP_GROUP(map) (map >> 8)
  #define MAP_NUM(map) (map & 0xFF)
+diff --git c/include/custom_random.h w/include/custom_random.h
+new file mode 100644
+index 00000000..5964c8c3
+--- /dev/null
++++ w/include/custom_random.h
+@@ -0,0 +1,24 @@
++#ifndef CUSTOM_RANDOM_H
++#define CUSTOM_RANDOM_H
++#include "custom_random_core.h"
++struct WildPokemonHeader;
++struct Pokemon;
++struct TrainerMon;
++struct TrainerGenerator;
++bool CustomRandom_Enabled(uint32_t option);
++bool CustomRandom_Validate(const struct CRConfig *config);
++u16 CustomRandom_Starter(u16 slot,u16 original);
++const struct WildPokemonHeader *CustomRandom_Header(u16 index);
++void CustomRandom_EnsureMoves(struct Pokemon *mon);
++void CustomRandom_BeginTrainer(u16 trainerId);
++void CustomRandom_EndTrainer(void);
++bool CustomRandom_TrainerActive(void);
++u32 CustomRandom_TrainerSeed(void);
++void CustomRandom_SeedTrainer(struct TrainerGenerator *generator);
++bool CustomRandom_TrainerMon(struct TrainerMon *out,const struct TrainerMon *original,u16 slot);
++#ifdef PORT_BRIDGE
++#define CR_WILD_HEADER(index) CustomRandom_Header(index)
++#else
++#define CR_WILD_HEADER(index) (&gWildMonHeaders[index])
++#endif
++#endif
+diff --git c/include/custom_random_core.h w/include/custom_random_core.h
+new file mode 100644
+index 00000000..e46323ee
+--- /dev/null
++++ w/include/custom_random_core.h
+@@ -0,0 +1,20 @@
++#ifndef CUSTOM_RANDOM_CORE_H
++#define CUSTOM_RANDOM_CORE_H
++#include "custom_run_config.h"
++#define CR_CORE_OPTIONS (CR_RANDOM_STARTERS | CR_RANDOM_WILD | CR_RANDOM_TRAINERS)
++#define CR_BALANCE_NO_LEGENDS 1u
++#define CR_BALANCE_SIMILAR 2u
++#define CR_STREAM_STARTERS 0x53545254u
++#define CR_STREAM_WILD 0x57494C44u
++#define CR_STREAM_TRAINERS 0x54524E52u
++#define CR_STREAM_PARTY 0x50525459u
++struct CRPoolEntry {
++    uint16_t species, bst;
++    uint8_t generation, legendary, firstDamageLevel;
++};
++uint32_t CRandom_Key(const struct CRConfig *, uint32_t stream, uint32_t a, uint32_t b, uint32_t slot);
++uint32_t CRandom_Bounded(uint32_t *state, uint32_t count);
++uint16_t CRandom_Pick(const struct CRConfig *, const struct CRPoolEntry *, size_t count,
++                     uint32_t stream, uint32_t a, uint32_t b, uint32_t slot,
++                     uint16_t originalBst, unsigned level, const uint16_t *exclude, size_t excluded);
++#endif
 diff --git c/include/custom_run.h w/include/custom_run.h
 new file mode 100644
 index 00000000..fcfc7b80
@@ -7279,7 +7335,7 @@ index 00000000..fcfc7b80
 +#endif
 diff --git c/include/custom_run_config.h w/include/custom_run_config.h
 new file mode 100644
-index 00000000..35883b47
+index 00000000..579c90bb
 --- /dev/null
 +++ w/include/custom_run_config.h
 @@ -0,0 +1,42 @@
@@ -7291,8 +7347,8 @@ index 00000000..35883b47
 +
 +#define CR_RECORD_SIZE 52
 +#define CR_SCHEMA 1
-+#define CR_ALGORITHM 0 /* fixed campaign; no randomizer algorithm active */
-+#define CR_CONTENT_RULES 0x00010001u
++#define CR_ALGORITHM 1 /* stable keyed core species algorithm; Standard uses 0 */
++#define CR_CONTENT_RULES 0x00020001u
 +#define CR_GENERATIONS 0x01FFu
 +#define CR_RANDOM_STARTERS (1u << 0)
 +#define CR_RANDOM_WILD (1u << 1)
@@ -7303,7 +7359,7 @@ index 00000000..35883b47
 +
 +enum CRMode { CR_STANDARD, CR_RANDOMIZED };
 +enum CRDifficulty { CR_NORMAL, CR_HARD, CR_CUSTOM };
-+enum CRStatus { CR_OK, CR_LEGACY, CR_CORRUPT, CR_VERSION, CR_CONTENT, CR_RULES, CR_BINDING };
++enum CRStatus { CR_OK, CR_LEGACY, CR_CORRUPT, CR_VERSION, CR_CONTENT, CR_RULES, CR_BINDING, CR_POOL };
 +struct CRConfig {
 +    uint32_t seed, randomOptions, difficultyOptions, contentRules, runId;
 +    uint16_t algorithm, generations;
@@ -7327,14 +7383,14 @@ index 00000000..35883b47
 +#endif
 diff --git c/include/custom_run_menu_model.h w/include/custom_run_menu_model.h
 new file mode 100644
-index 00000000..2e67c099
+index 00000000..296688a5
 --- /dev/null
 +++ w/include/custom_run_menu_model.h
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,18 @@
 +#ifndef CUSTOM_RUN_MENU_MODEL_H
 +#define CUSTOM_RUN_MENU_MODEL_H
 +#include "custom_run_config.h"
-+enum CRPage { CR_PAGE_MODE, CR_PAGE_DIFFICULTY, CR_PAGE_CUSTOM, CR_PAGE_SEED, CR_PAGE_DIGITS, CR_PAGE_SUMMARY };
++enum CRPage { CR_PAGE_MODE, CR_PAGE_DIFFICULTY, CR_PAGE_CUSTOM, CR_PAGE_SEED, CR_PAGE_DIGITS, CR_PAGE_SUMMARY, CR_PAGE_GENERATIONS, CR_PAGE_BALANCE };
 +enum CRKeys { CR_UP=1, CR_DOWN=2, CR_LEFT=4, CR_RIGHT=8, CR_A=16, CR_B=32 };
 +enum CROutcome { CR_STAY, CR_CANCELLED, CR_ACCEPTED };
 +struct CRMenu {
@@ -7346,6 +7402,7 @@ index 00000000..2e67c099
 +};
 +void CR_MenuBegin(struct CRMenu *menu, uint32_t seed, uint32_t runId);
 +enum CROutcome CR_MenuInput(struct CRMenu *menu, unsigned keys, uint32_t newSeed);
++void CR_GenerationText(char out[36],uint16_t generations);
 +void CR_MenuLines(const struct CRMenu *menu, char lines[12][36]);
 +#endif
 diff --git c/include/dodrio_berry_picking.h w/include/dodrio_berry_picking.h
@@ -8730,6 +8787,19 @@ index 94d0f9d5..f4c03bab 100644
 +#endif
  
  #endif // GUARD_START_MENU_H
+diff --git c/include/wild_encounter.h w/include/wild_encounter.h
+index f1e0b6af..8c74d8aa 100644
+--- c/include/wild_encounter.h
++++ w/include/wild_encounter.h
+@@ -41,7 +41,7 @@ struct WildPokemonHeader
+ {
+     u8 mapGroup;
+     u8 mapNum;
+-    const struct WildEncounterTypes encounterTypes[TIMES_OF_DAY_COUNT];
++    struct WildEncounterTypes encounterTypes[TIMES_OF_DAY_COUNT];
+ };
+ 
+ 
 diff --git c/map_data_rules.mk w/map_data_rules.mk
 old mode 100755
 new mode 100644
@@ -11883,11 +11953,14 @@ index 2d8de986..5ba13071 100644
          FinalizeCapture();
          return;
 diff --git c/src/battle_setup.c w/src/battle_setup.c
-index 6024da3c..809fa16c 100644
+index 6024da3c..e1624c75 100644
 --- c/src/battle_setup.c
 +++ w/src/battle_setup.c
-@@ -1,6 +1,9 @@
+@@ -1,6 +1,12 @@
  #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_random.h"
++#endif
  #include "data.h"
  #include "main.h"
 +#ifdef PORT_BRIDGE
@@ -11896,7 +11969,18 @@ index 6024da3c..809fa16c 100644
  #include "battle.h"
  #include "battle_frontier.h"
  #include "battle_pike.h"
-@@ -1095,6 +1098,17 @@ void TrainerBattleLoadArgs(const u8 *data)
+@@ -1011,6 +1017,10 @@ static void CB2_GiveStarter(void)
+     *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
+     starterMon = GetStarterPokemon(gSpecialVar_Result);
+     ScriptGiveMon(starterMon, 5, ITEM_NONE);
++#ifdef PORT_BRIDGE
++    if (CustomRandom_Enabled(CR_RANDOM_STARTERS))
++        CustomRandom_EnsureMoves(&gParties[B_TRAINER_PLAYER][0]);
++#endif
+     ResetTasks();
+     PlayBattleBGM();
+     SetMainCallback2(CB2_StartFirstBattle);
+@@ -1095,6 +1105,17 @@ void TrainerBattleLoadArgs(const u8 *data)
  {
      InitTrainerBattleParameter();
      memcpy(gTrainerBattleParameter.data, data, sizeof(TrainerBattleParameter));
@@ -11914,7 +11998,7 @@ index 6024da3c..809fa16c 100644
      sTrainerBattleEndScript = (u8*)data + sizeof(TrainerBattleParameter);
  }
  
-@@ -1109,6 +1123,12 @@ void TrainerBattleLoadArgsSecondTrainer(const u8 *data)
+@@ -1109,6 +1130,12 @@ void TrainerBattleLoadArgsSecondTrainer(const u8 *data)
      TRAINER_BATTLE_PARAM.introTextB = temp->params.introTextA;
      TRAINER_BATTLE_PARAM.defeatTextB = temp->params.defeatTextA;
      TRAINER_BATTLE_PARAM.battleScriptRetAddrB = temp->params.battleScriptRetAddrA;
@@ -11927,7 +12011,7 @@ index 6024da3c..809fa16c 100644
  }
  
  void SetMapVarsToTrainerA(void)
-@@ -1372,6 +1392,9 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
+@@ -1372,6 +1399,9 @@ void ConfigureApproachingFacilityTrainerBattle(struct ApproachingTrainer *approa
  
  bool32 GetTrainerFlagFromScriptPointer(const u8 *data)
  {
@@ -11937,7 +12021,7 @@ index 6024da3c..809fa16c 100644
      TrainerBattleParameter *temp = (TrainerBattleParameter*)(data + TRAINERBATTLE_OPCODE_OFFSET);
      return FlagGet(TRAINER_FLAGS_START + temp->params.opponentA);
  }
-@@ -1784,10 +1807,14 @@ void PlayTrainerEncounterMusic(void)
+@@ -1784,10 +1814,14 @@ void PlayTrainerEncounterMusic(void)
  
  static const u8 *ReturnEmptyStringIfNull(const u8 *string)
  {
@@ -11952,6 +12036,71 @@ index 6024da3c..809fa16c 100644
  }
  
  static const u8 *GetIntroSpeechOfApproachingTrainer(void)
+@@ -2247,34 +2281,49 @@ void CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Traine
+     u32 monIndices[monsCount];
+     struct TrainerGenerator *trainerGen = AllocZeroed(sizeof(struct TrainerGenerator));
+     MakeTrainerGenerator(trainerGen, trainer);
++#ifdef PORT_BRIDGE
++    CustomRandom_SeedTrainer(trainerGen);
++#endif
+     DoTrainerPartyPool(trainer, monIndices, monsCount, gBattleTypeFlags);
+ 
+     for (i = 0; i < monsCount; i++)
+     {
+         u32 monIndex = monIndices[i];
+-        GenerateMonFromTrainerMon(&party[i], &trainer->party[monIndex], trainerGen);
++#ifdef PORT_BRIDGE
++        struct TrainerMon mapped;
++        if (CustomRandom_TrainerMon(&mapped, &trainer->party[monIndex], i))
++        {
++            GenerateMonFromTrainerMon(&party[i], &mapped, trainerGen);
++            CustomRandom_EnsureMoves(&party[i]);
++        }
++        else
++#endif
++            GenerateMonFromTrainerMon(&party[i], &trainer->party[monIndex], trainerGen);
+     }
+     Free(trainerGen);
+ }
+ 
+ static void CreateNPCTrainerParty(struct Pokemon *party, u16 trainerNum)
+ {
++#ifdef PORT_BRIDGE
++    CustomRandom_BeginTrainer(trainerNum);
++#endif
+     if (!GetTrainerStructFromId(trainerNum)->overrideTrainer)
+-    {
+         CreateNPCTrainerPartyFromTrainer(party, GetTrainerStructFromId(trainerNum));
+-        return;
+-    }
+-
+-    struct Trainer tempTrainer;
+-    memcpy(&tempTrainer, GetTrainerStructFromId(trainerNum), sizeof(struct Trainer));
+-    const struct Trainer *origTrainer = GetTrainerStructFromId(tempTrainer.overrideTrainer);
+-
+-    tempTrainer.party = origTrainer->party;
+-
+-    tempTrainer.poolSize = origTrainer->poolSize;
+-    if (tempTrainer.partySize == 0)
+-        tempTrainer.partySize = origTrainer->partySize;
+-    CreateNPCTrainerPartyFromTrainer(party, (const struct Trainer *)(&tempTrainer));
++    else
++    {
++        struct Trainer tempTrainer;
++        memcpy(&tempTrainer, GetTrainerStructFromId(trainerNum), sizeof(struct Trainer));
++        const struct Trainer *origTrainer = GetTrainerStructFromId(tempTrainer.overrideTrainer);
++        tempTrainer.party = origTrainer->party;
++        tempTrainer.poolSize = origTrainer->poolSize;
++        if (tempTrainer.partySize == 0)
++            tempTrainer.partySize = origTrainer->partySize;
++        CreateNPCTrainerPartyFromTrainer(party, &tempTrainer);
++    }
++#ifdef PORT_BRIDGE
++    CustomRandom_EndTrainer();
++#endif
+ }
+ 
+ void CreateTrainerPartyForPlayer(void)
 diff --git c/src/battle_transition.c w/src/battle_transition.c
 index abe49bd2..4a6a5c89 100644
 --- c/src/battle_transition.c
@@ -12417,15 +12566,362 @@ index 28e8b87a..86b2de3b 100644
  
          for (i = 0; i < MON_PIC_SIZE; i++)
          {
+diff --git c/src/custom_random.c w/src/custom_random.c
+new file mode 100644
+index 00000000..c9937968
+--- /dev/null
++++ w/src/custom_random.c
+@@ -0,0 +1,284 @@
++#include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_random.h"
++#include "port_platform.h"
++#include "custom_run.h"
++#include "data.h"
++#include "battle.h"
++#include "event_data.h"
++#include "item.h"
++#include "move.h"
++#include "pokemon.h"
++#include "random.h"
++#include "trainer_util.h"
++#include "wild_encounter.h"
++#include "constants/hold_effects.h"
++#include "constants/opponents.h"
++#include "constants/vars.h"
++#include <string.h>
++
++static struct CRPoolEntry sPool[NUM_SPECIES];
++static size_t sPoolCount;
++static bool sPoolBuilt;
++static u16 sTrainerId;
++static bool sTrainerContext;
++static bool Damaging(u16 move)
++{
++    return move!=MOVE_NONE && GetMovePower(move)>0 && move!=MOVE_SNORE
++        && move!=MOVE_DREAM_EATER && move!=MOVE_LAST_RESORT && move!=MOVE_EXPLOSION && move!=MOVE_SELF_DESTRUCT;
++}
++static unsigned Generation(u16 species)
++{
++    const struct SpeciesInfo *p=&gSpeciesInfo[species];
++    const unsigned ends[]={151,251,386,493,649,721,809,905,1025};
++    unsigned i;
++    if(p->isPaldeanForm) return 9;
++    if(p->isGalarianForm || p->isHisuianForm) return 8;
++    if(p->isAlolanForm) return 7;
++    for(i=0;i<ARRAY_COUNT(ends);++i) if(p->natDexNum<=ends[i]) return i+1;
++    return 0;
++}
++static unsigned FirstDamageLevel(u16 species)
++{
++    const struct LevelUpMove *moves=gSpeciesInfo[species].levelUpLearnset;
++    unsigned min=255,i;
++    if(!moves) return min;
++    for(i=0;i<512 && moves[i].move!=LEVEL_UP_MOVE_END;++i)
++        if(Damaging(moves[i].move) && moves[i].level<min) min=moves[i].level;
++    return min;
++}
++static void BuildPool(void)
++{
++    unsigned species;
++    if(sPoolBuilt) return;
++    for(species=1;species<NUM_SPECIES;++species) {
++        const struct SpeciesInfo *p=&gSpeciesInfo[species];
++        struct CRPoolEntry entry;
++        if(!p->natDexNum || !p->baseHP || !p->frontPic || !p->backPic || !p->iconSprite
++           || !p->palette || !p->shinyPalette || !p->abilities[0] || !p->levelUpLearnset
++           || p->isMegaEvolution || p->isPrimalReversion || p->isUltraBurst || p->isGigantamax || p->isTeraForm || p->isTotem) continue;
++        /* Stable base forms plus native regional forms. Cosmetic/other form
++           variants wait for explicit dependency/asset coverage. */
++        if(Port_GetAssetSize(p->frontPic)<=4 || Port_GetAssetSize(p->backPic)<=4
++           || Port_GetAssetSize(p->iconSprite)<512 || Port_GetAssetSize(p->palette)<2
++           || Port_GetAssetSize(p->shinyPalette)<2) continue;
++        if(GET_BASE_SPECIES_ID(species)!=species && !p->isAlolanForm && !p->isGalarianForm && !p->isHisuianForm && !p->isPaldeanForm) continue;
++        if(species==SPECIES_DARMANITAN_GALAR_ZEN) continue;
++        entry.species=species; entry.generation=Generation(species);
++        entry.bst=p->baseHP+p->baseAttack+p->baseDefense+p->baseSpeed+p->baseSpAttack+p->baseSpDefense;
++        entry.legendary=p->isRestrictedLegendary || p->isSubLegendary || p->isMythical || p->isUltraBeast;
++        entry.firstDamageLevel=FirstDamageLevel(species);
++        if(entry.generation && entry.firstDamageLevel<=100) sPool[sPoolCount++]=entry;
++    }
++    sPoolBuilt=true;
++}
++static bool Config(struct CRConfig *c)
++{
++    const u8 *t=gSaveBlock2Ptr->playerTrainerId;
++    u32 id=t[0] | (u32)t[1]<<8 | (u32)t[2]<<16 | (u32)t[3]<<24;
++    return CR_Decode(gSaveBlock1Ptr->customRunConfig,id,c)==CR_OK && c->mode==CR_RANDOMIZED;
++}
++bool CustomRandom_Enabled(uint32_t option)
++{
++    struct CRConfig c;
++    return Config(&c) && (c.randomOptions&option)!=0;
++}
++static u16 Pick(const struct CRConfig *c,u32 stream,u32 a,u32 b,u32 slot,u16 original,unsigned level,const u16 *exclude,size_t excluded)
++{
++    unsigned bst=original<NUM_SPECIES ? gSpeciesInfo[original].baseHP+gSpeciesInfo[original].baseAttack+gSpeciesInfo[original].baseDefense
++        +gSpeciesInfo[original].baseSpeed+gSpeciesInfo[original].baseSpAttack+gSpeciesInfo[original].baseSpDefense : 0;
++    BuildPool();
++    return CRandom_Pick(c,sPool,sPoolCount,stream,a,b,slot,bst,level,exclude,excluded);
++}
++bool CustomRandom_Validate(const struct CRConfig *c)
++{
++    const u16 originals[]={SPECIES_TREECKO,SPECIES_TORCHIC,SPECIES_MUDKIP};
++    u16 chosen[3]; unsigned i;
++    if(c->mode!=CR_RANDOMIZED) return true;
++    BuildPool();
++    if(!Pick(c,CR_STREAM_WILD,0,0,0,SPECIES_POOCHYENA,1,NULL,0)) return false;
++    if(c->randomOptions&(CR_RANDOM_STARTERS|CR_RANDOM_TRAINERS))
++        for(i=0;i<3;++i) {
++            chosen[i]=Pick(c,CR_STREAM_STARTERS,0,0,i,originals[i],5,chosen,i);
++            if(!chosen[i]) return false;
++        }
++    return true;
++}
++static u16 StarterChoice(const struct CRConfig *c,u16 slot)
++{
++    const u16 originals[]={SPECIES_TREECKO,SPECIES_TORCHIC,SPECIES_MUDKIP};
++    u16 chosen[3]; unsigned i;
++    for(i=0;i<3;++i) chosen[i]=Pick(c,CR_STREAM_STARTERS,0,0,i,originals[i],5,chosen,i);
++    return chosen[slot];
++}
++u16 CustomRandom_Starter(u16 slot,u16 original)
++{
++    struct CRConfig c;
++    if(slot>=3 || !Config(&c) || !(c.randomOptions&CR_RANDOM_STARTERS)) return original;
++    return StarterChoice(&c,slot);
++}
++#define CR_HEADER_CACHE 2
++struct HeaderCache {
++    bool valid; u16 index; struct CRConfig config;
++    struct WildPokemonHeader header;
++    struct WildPokemonInfo info[TIMES_OF_DAY_COUNT][5];
++    struct WildPokemon mons[TIMES_OF_DAY_COUNT][5][12];
++};
++static struct HeaderCache sHeaders[CR_HEADER_CACHE];
++static unsigned sHeaderNext;
++const struct WildPokemonHeader *CustomRandom_Header(u16 index)
++{
++    const struct WildPokemonHeader *original=&gWildMonHeaders[index];
++    const unsigned counts[]={NUM_LAND_MONS_ENCOUNTER_SLOTS,NUM_WATER_MONS_ENCOUNTER_SLOTS,NUM_ROCK_SMASH_MONS_ENCOUNTER_SLOTS,NUM_FISHING_MONS_ENCOUNTER_SLOTS,NUM_HIDDEN_MONS_ENCOUNTER_SLOTS};
++    struct CRConfig c; struct HeaderCache *cache; unsigned i,t,area,slot;
++    if(original->mapGroup==MAP_GROUP(MAP_UNDEFINED) || !Config(&c) || !(c.randomOptions&CR_RANDOM_WILD)) return original;
++    for(i=0;i<CR_HEADER_CACHE;++i)
++        if(sHeaders[i].valid && sHeaders[i].index==index && !memcmp(&sHeaders[i].config,&c,sizeof(c))) return &sHeaders[i].header;
++    cache=&sHeaders[sHeaderNext++%CR_HEADER_CACHE]; cache->valid=false;
++    cache->index=index; cache->config=c; cache->header=*original;
++    for(t=0;t<TIMES_OF_DAY_COUNT;++t) {
++        const struct WildEncounterTypes *source=&original->encounterTypes[t];
++        const struct WildPokemonInfo *tables[]={source->landMonsInfo,source->waterMonsInfo,source->rockSmashMonsInfo,source->fishingMonsInfo,source->hiddenMonsInfo};
++        struct WildEncounterTypes *dest=&cache->header.encounterTypes[t];
++        const struct WildPokemonInfo **destinations[]={&dest->landMonsInfo,&dest->waterMonsInfo,&dest->rockSmashMonsInfo,&dest->fishingMonsInfo,&dest->hiddenMonsInfo};
++        for(area=0;area<5;++area) if(tables[area]) {
++            cache->info[t][area]=*tables[area];
++            cache->info[t][area].wildPokemon=cache->mons[t][area];
++            *destinations[area]=&cache->info[t][area];
++            for(slot=0;slot<counts[area];++slot) {
++                struct WildPokemon *mon=&cache->mons[t][area][slot];
++                *mon=tables[area]->wildPokemon[slot];
++                mon->species=Pick(&c,CR_STREAM_WILD,((u32)original->mapGroup<<16)|original->mapNum,(t<<8)|area,slot,mon->species,mon->minLevel,NULL,0);
++            }
++        }
++    }
++    cache->valid=true;
++    return &cache->header;
++}
++void CustomRandom_EnsureMoves(struct Pokemon *mon)
++{
++    const struct LevelUpMove *learnset;
++    u16 chosen=MOVE_NONE,species=GetMonData(mon,MON_DATA_SPECIES);
++    unsigned i,level=GetMonData(mon,MON_DATA_LEVEL);
++    for(i=0;i<MAX_MON_MOVES;++i) if(Damaging(GetMonData(mon,MON_DATA_MOVE1+i))) return;
++    learnset=gSpeciesInfo[species].levelUpLearnset;
++    for(i=0;learnset && i<512 && learnset[i].move!=LEVEL_UP_MOVE_END;++i)
++        if(learnset[i].level<=level && Damaging(learnset[i].move)) chosen=learnset[i].move;
++    if(chosen!=MOVE_NONE) SetMonMoveSlot(mon,chosen,0);
++}
++void CustomRandom_BeginTrainer(u16 id)
++{
++    sTrainerId=id;
++    sTrainerContext=id<TRAINERS_COUNT && !(gBattleTypeFlags & (BATTLE_TYPE_LINK|BATTLE_TYPE_RECORDED|BATTLE_TYPE_FRONTIER|BATTLE_TYPE_TRAINER_HILL|BATTLE_TYPE_SECRET_BASE));
++}
++void CustomRandom_EndTrainer(void) { sTrainerContext=false; }
++bool CustomRandom_TrainerActive(void) { return sTrainerContext && CustomRandom_Enabled(CR_RANDOM_TRAINERS); }
++u32 CustomRandom_TrainerSeed(void)
++{
++    struct CRConfig c;
++    if(!sTrainerContext || !Config(&c)) return 0;
++    return CRandom_Key(&c,CR_STREAM_PARTY,sTrainerId,0,0);
++}
++void CustomRandom_SeedTrainer(struct TrainerGenerator *gen)
++{
++    u32 key;
++    if(!CustomRandom_TrainerActive()) return;
++    key=CustomRandom_TrainerSeed(); gen->localRngState=LocalRandomSeed(key);
++    gen->otID=OTID_STRUCT_PRESET(key);
++}
++static unsigned StarterFamily(u16 species,unsigned *stage)
++{
++    const u16 families[3][3]={{SPECIES_TREECKO,SPECIES_GROVYLE,SPECIES_SCEPTILE},{SPECIES_TORCHIC,SPECIES_COMBUSKEN,SPECIES_BLAZIKEN},{SPECIES_MUDKIP,SPECIES_MARSHTOMP,SPECIES_SWAMPERT}};
++    unsigned family,i;
++    for(family=0;family<3;++family) for(i=0;i<3;++i) if(families[family][i]==species) { *stage=i; return family; }
++    return 3;
++}
++static u16 RivalEvolution(const struct CRConfig *c,u16 species,unsigned stages,unsigned level)
++{
++    unsigned step,i;
++    BuildPool();
++    for(step=0;step<stages;++step) {
++        const struct Evolution *evos=gSpeciesInfo[species].evolutions;
++        u16 next=species;
++        for(i=0;evos && i<32 && evos[i].method!=EVOLUTIONS_END;++i)
++            if(evos[i].method==EVO_LEVEL && evos[i].param<=level) {
++                size_t candidate;
++                for(candidate=0;candidate<sPoolCount;++candidate) {
++                    const struct CRPoolEntry *p=&sPool[candidate];
++                    if(p->species==evos[i].targetSpecies && p->firstDamageLevel<=level
++                       && (c->generations & (1u<<(p->generation-1)))
++                       && (!(c->balanceFlags&CR_BALANCE_NO_LEGENDS) || !p->legendary)) {
++                        next=p->species; break;
++                    }
++                }
++                if(next!=species) break;
++            }
++        if(next==species) break;
++        species=next;
++    }
++    return species;
++}
++/* Preserve item-triggered battle gimmicks whenever the chosen filters have
++ * a compatible base species. This is compatibility, not item randomization. */
++static u16 FormItem(u16 species,unsigned effect)
++{
++    const struct FormChange *forms=gSpeciesInfo[species].formChangeTable;
++    unsigned method=effect==HOLD_EFFECT_MEGA_STONE ? FORM_CHANGE_BATTLE_MEGA_EVOLUTION_ITEM
++        : effect==HOLD_EFFECT_PRIMAL_ORB ? FORM_CHANGE_BATTLE_PRIMAL_REVERSION
++        : effect==HOLD_EFFECT_MEMORY ? FORM_CHANGE_ITEM_HOLD : FORM_CHANGE_TERMINATOR;
++    unsigned i;
++    if(method==FORM_CHANGE_TERMINATOR) return ITEM_NONE;
++    for(i=0;forms && i<128 && forms[i].method!=FORM_CHANGE_TERMINATOR;++i)
++        if(forms[i].method==method && forms[i].param1 && GetItemHoldEffect(forms[i].param1)==effect)
++            return forms[i].param1;
++    return ITEM_NONE;
++}
++static struct CRPoolEntry sCompatiblePool[NUM_SPECIES];
++static u16 TrainerPick(const struct CRConfig *c,const struct TrainerMon *original,unsigned slot)
++{
++    unsigned effect=GetItemHoldEffect(original->heldItem);
++    if(effect==HOLD_EFFECT_MEGA_STONE || effect==HOLD_EFFECT_PRIMAL_ORB) {
++        size_t i,count=0; u16 result;
++        unsigned bst=gSpeciesInfo[original->species].baseHP+gSpeciesInfo[original->species].baseAttack
++            +gSpeciesInfo[original->species].baseDefense+gSpeciesInfo[original->species].baseSpeed
++            +gSpeciesInfo[original->species].baseSpAttack+gSpeciesInfo[original->species].baseSpDefense;
++        BuildPool();
++        for(i=0;i<sPoolCount;++i) if(FormItem(sPool[i].species,effect)) sCompatiblePool[count++]=sPool[i];
++        result=CRandom_Pick(c,sCompatiblePool,count,CR_STREAM_TRAINERS,sTrainerId,0,slot,bst,original->lvl,NULL,0);
++        if(result) return result;
++    }
++    return Pick(c,CR_STREAM_TRAINERS,sTrainerId,0,slot,original->species,original->lvl,NULL,0);
++}
++bool CustomRandom_TrainerMon(struct TrainerMon *out,const struct TrainerMon *original,u16 slot)
++{
++    struct CRConfig c; u16 species; unsigned stage=0;
++    bool rival;
++    if(!sTrainerContext || !Config(&c)) return false;
++    rival=GetTrainerStructFromId(sTrainerId)->trainerClass==TRAINER_CLASS_RIVAL && StarterFamily(original->species,&stage)<3;
++    if(!(c.randomOptions&CR_RANDOM_TRAINERS) && !(rival && (c.randomOptions&CR_RANDOM_STARTERS))) return false;
++    if(rival) {
++        unsigned chosen=(VarGet(VAR_STARTER_MON)+1)%3;
++        /* Even trainers-only runs need a stable rival family across rematches;
++         * player starter display/gift still obeys the independent starter toggle. */
++        species=StarterChoice(&c,chosen);
++        species=RivalEvolution(&c,species,stage,original->lvl);
++    } else species=TrainerPick(&c,original,slot);
++    if(!species) return false; /* startup validation rejects empty generation pools */
++    *out=*original; out->species=species; out->nickname=NULL;
++    memset(out->moves,0,sizeof(out->moves));
++    out->gender=TRAINER_MON_RANDOM_GENDER;
++    out->ability=gSpeciesInfo[species].abilities[0];
++    out->teraType=0; out->gigantamaxFactor=false;
++    if(species!=original->species) switch(GetItemHoldEffect(out->heldItem)) {
++    case HOLD_EFFECT_MEGA_STONE: case HOLD_EFFECT_PRIMAL_ORB:
++        out->heldItem=FormItem(species,GetItemHoldEffect(original->heldItem)); break;
++    case HOLD_EFFECT_PLATE:
++    case HOLD_EFFECT_MEMORY: case HOLD_EFFECT_DRIVE: case HOLD_EFFECT_Z_CRYSTAL:
++    case HOLD_EFFECT_OGERPON_MASK: case HOLD_EFFECT_SOUL_DEW: case HOLD_EFFECT_LIGHT_BALL:
++    case HOLD_EFFECT_THICK_CLUB: case HOLD_EFFECT_LEEK: case HOLD_EFFECT_ADAMANT_ORB:
++    case HOLD_EFFECT_LUSTROUS_ORB: case HOLD_EFFECT_GRISEOUS_ORB: out->heldItem=ITEM_NONE; break;
++    default: break;
++    }
++    return true;
++}
++#endif
+diff --git c/src/custom_random_core.c w/src/custom_random_core.c
+new file mode 100644
+index 00000000..5e4dcecf
+--- /dev/null
++++ w/src/custom_random_core.c
+@@ -0,0 +1,50 @@
++/* Project implementation: stable numeric keys; no native/global RNG or pointers. */
++#include "custom_random_core.h"
++static uint32_t Mix(uint32_t x)
++{
++    x ^= x >> 16; x *= 0x7FEB352Du; x ^= x >> 15;
++    x *= 0x846CA68Bu; return x ^ (x >> 16);
++}
++uint32_t CRandom_Key(const struct CRConfig *c, uint32_t stream, uint32_t a, uint32_t b, uint32_t slot)
++{
++    uint32_t x=Mix(c->seed ^ stream);
++    x=Mix(x ^ c->contentRules); x=Mix(x ^ c->algorithm);
++    x=Mix(x ^ a); x=Mix(x ^ b); return Mix(x ^ slot);
++}
++uint32_t CRandom_Bounded(uint32_t *state, uint32_t count)
++{
++    uint32_t n, threshold;
++    if(!count) return 0;
++    threshold=(0u-count)%count;
++    do { *state+=0x9E3779B9u; n=Mix(*state); } while(n<threshold);
++    return n%count;
++}
++static bool Eligible(const struct CRConfig *c, const struct CRPoolEntry *p,
++                     uint16_t bst, unsigned level, const uint16_t *exclude, size_t excluded, bool similar)
++{
++    size_t i;
++    if(!p->species || !p->generation || p->generation>9 || p->firstDamageLevel>level
++       || !(c->generations & (1u<<(p->generation-1)))) return false;
++    if((c->balanceFlags & CR_BALANCE_NO_LEGENDS) && p->legendary) return false;
++    if(similar && (p->bst*5u < bst*4u || p->bst*5u > bst*6u)) return false;
++    for(i=0;i<excluded;++i) if(p->species==exclude[i]) return false;
++    return true;
++}
++uint16_t CRandom_Pick(const struct CRConfig *c, const struct CRPoolEntry *pool, size_t count,
++                     uint32_t stream, uint32_t a, uint32_t b, uint32_t slot,
++                     uint16_t bst, unsigned level, const uint16_t *exclude, size_t excluded)
++{
++    size_t i; uint32_t n=0, selected, state=CRandom_Key(c,stream,a,b,slot);
++    bool similar=(c->balanceFlags & CR_BALANCE_SIMILAR)!=0;
++    for(i=0;i<count;++i) n+=Eligible(c,&pool[i],bst,level,exclude,excluded,similar);
++    /* Finite fallback relaxes only the optional BST band, never safety/generation rules. */
++    if(!n && similar) {
++        similar=false;
++        for(i=0;i<count;++i) n+=Eligible(c,&pool[i],bst,level,exclude,excluded,false);
++    }
++    if(!n) return 0;
++    selected=CRandom_Bounded(&state,n);
++    for(i=0;i<count;++i)
++        if(Eligible(c,&pool[i],bst,level,exclude,excluded,similar) && selected--==0) return pool[i].species;
++    return 0;
++}
 diff --git c/src/custom_run.c w/src/custom_run.c
 new file mode 100644
-index 00000000..218b5e2f
+index 00000000..2d287b7f
 --- /dev/null
 +++ w/src/custom_run.c
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,171 @@
 +#include "global.h"
 +#ifdef PORT_BRIDGE
 +#include "custom_run.h"
++#include "custom_random.h"
 +#include "custom_run_menu_model.h"
 +#include "config/save.h"
 +#include "bg.h"
@@ -12466,7 +12962,11 @@ index 00000000..218b5e2f
 +}
 +enum CRStatus CustomRun_Read(struct CRConfig *out)
 +{
-+    return CR_Decode(gSaveBlock1Ptr->customRunConfig,TrainerId(),out);
++    struct CRConfig c;
++    enum CRStatus status=CR_Decode(gSaveBlock1Ptr->customRunConfig,TrainerId(),&c);
++    if(status==CR_OK && !CustomRandom_Validate(&c)) return CR_POOL;
++    if(status==CR_OK && out) *out=c;
++    return status;
 +}
 +bool CustomRun_CanPlay(void)
 +{
@@ -12509,15 +13009,18 @@ index 00000000..218b5e2f
 +        strcpy(lines[0],"RUN SETTINGS - READ ONLY");
 +        snprintf(lines[1],36,"%s",CR_StatusText(status));
 +        if(status==CR_OK || status==CR_LEGACY) {
-+            strcpy(lines[3],"STANDARD / NORMAL");
++            strcpy(lines[3],status==CR_OK && c.mode==CR_RANDOMIZED ? "RANDOMIZED / NORMAL" : "STANDARD / NORMAL");
 +            if(status==CR_OK) {
 +                snprintf(lines[4],36,"SEED: %lu",(unsigned long)c.seed);
 +                snprintf(lines[5],36,"RUN ID: %08lX",(unsigned long)c.runId);
 +                snprintf(lines[9],36,"RULES %08lX / ALG %u",(unsigned long)c.contentRules,c.algorithm);
 +            } else strcpy(lines[4],"SEED: NOT RECORDED");
-+            strcpy(lines[6],"ALL RANDOMIZATION OFF");
-+            strcpy(lines[7],"NATIVE DIFFICULTY UNCHANGED");
-+            strcpy(lines[8],"GRAPHICAL OPTIONS ARE SEPARATE");
++            if(status==CR_OK) {
++                snprintf(lines[6],36,"STARTERS %s / WILD %s",c.randomOptions&CR_RANDOM_STARTERS ? "ON":"OFF",c.randomOptions&CR_RANDOM_WILD ? "ON":"OFF");
++                snprintf(lines[7],36,"TRAINERS %s / NORMAL",c.randomOptions&CR_RANDOM_TRAINERS ? "ON":"OFF");
++                CR_GenerationText(lines[8],c.generations);
++                snprintf(lines[10],36,"NO LEGENDS %s / SIMILAR %s",c.balanceFlags&1 ? "ON":"OFF",c.balanceFlags&2 ? "ON":"OFF");
++            } else strcpy(lines[6],"ALL RANDOMIZATION OFF");
 +        } else {
 +            strcpy(lines[3],"CONTINUE AND SAVE BLOCKED");
 +            strcpy(lines[5],"RUN RECORD KEPT - NO RESET");
@@ -12588,13 +13091,14 @@ index 00000000..218b5e2f
 +#endif
 diff --git c/src/custom_run_config.c w/src/custom_run_config.c
 new file mode 100644
-index 00000000..bd403fb0
+index 00000000..d15ee48a
 --- /dev/null
 +++ w/src/custom_run_config.c
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,118 @@
 +/* Versioned, explicitly little-endian data in SaveBlock1's reserved 52 bytes.
 + * No sidecar, event flag, variable, global options file or native RNG access. */
 +#include "custom_run_config.h"
++#include "custom_random_core.h"
 +#include <string.h>
 +#define CR_MAGIC 0x43523345u /* E3RC */
 +static uint16_t Read16(const uint8_t *p) { return (uint16_t)(p[0] | ((uint16_t)p[1] << 8)); }
@@ -12614,12 +13118,18 @@ index 00000000..bd403fb0
 +}
 +enum CRStatus CR_Validate(const struct CRConfig *c)
 +{
-+    if (c->algorithm != CR_ALGORITHM) return CR_VERSION;
-+    if (c->contentRules != CR_CONTENT_RULES) return CR_CONTENT;
-+    /* Until stages C/D/E exist, no serialized run can claim their rules. */
-+    if (c->mode != CR_STANDARD || c->difficulty != CR_NORMAL || c->randomOptions
-+        || c->difficultyOptions || c->capMode || c->aiPolicy || c->balanceFlags
-+        || c->generations != CR_GENERATIONS) return CR_RULES;
++    if (c->contentRules != CR_CONTENT_RULES && c->contentRules != 0x00010001u) return CR_CONTENT;
++    if (c->difficulty != CR_NORMAL || c->difficultyOptions || c->capMode || c->aiPolicy) return CR_RULES;
++    if (c->mode == CR_STANDARD) {
++        if (c->randomOptions || c->balanceFlags || c->generations != CR_GENERATIONS) return CR_RULES;
++        if (c->algorithm != 0) return CR_VERSION;
++    } else if (c->mode == CR_RANDOMIZED) {
++        if (!c->randomOptions || (c->randomOptions & ~CR_CORE_OPTIONS)
++            || !c->generations || (c->generations & ~CR_GENERATIONS)
++            || (c->balanceFlags & ~(CR_BALANCE_NO_LEGENDS | CR_BALANCE_SIMILAR))) return CR_RULES;
++        if (c->algorithm != CR_ALGORITHM) return CR_VERSION;
++        if (c->contentRules != CR_CONTENT_RULES) return CR_CONTENT;
++    } else return CR_RULES;
 +    return CR_OK;
 +}
 +enum CRStatus CR_Decode(const uint8_t b[CR_RECORD_SIZE], uint32_t trainerId, struct CRConfig *out)
@@ -12664,7 +13174,7 @@ index 00000000..bd403fb0
 +    memset(d, 0, sizeof(*d));
 +    d->config.seed = seed; d->config.runId = runId;
 +    d->config.contentRules = CR_CONTENT_RULES; d->config.generations = CR_GENERATIONS;
-+    d->config.algorithm = CR_ALGORITHM; d->editing = true;
++    d->config.algorithm = 0; d->editing = true;
 +}
 +void CR_Cancel(struct CRDraft *d) { memset(d, 0, sizeof(*d)); }
 +bool CR_Confirm(struct CRDraft *d)
@@ -12693,120 +13203,159 @@ index 00000000..bd403fb0
 +const char *CR_StatusText(enum CRStatus s)
 +{
 +    switch (s) {
-+    case CR_OK: return "RECORDED FIXED RUN";
++    case CR_OK: return "VALID SAVED RUN";
 +    case CR_LEGACY: return "LEGACY FIXED RUN - NO SEED";
 +    case CR_VERSION: return "UNSUPPORTED RUN VERSION";
 +    case CR_CONTENT: return "DIFFERENT CONTENT RULES";
 +    case CR_RULES: return "RUN RULES UNAVAILABLE";
++    case CR_POOL: return "NO VALID SPECIES POOL";
 +    case CR_BINDING: return "RUN BELONGS TO ANOTHER SAVE";
 +    default: return "CORRUPT RUN RECORD";
 +    }
 +}
 diff --git c/src/custom_run_menu_model.c w/src/custom_run_menu_model.c
 new file mode 100644
-index 00000000..28f262d1
+index 00000000..05a72615
 --- /dev/null
 +++ w/src/custom_run_menu_model.c
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,138 @@
 +#include "custom_run_menu_model.h"
++#include "custom_random_core.h"
 +#include <stdio.h>
 +#include <string.h>
-+void CR_MenuBegin(struct CRMenu *m, uint32_t seed, uint32_t runId)
++void CR_MenuBegin(struct CRMenu *m,uint32_t seed,uint32_t runId)
 +{
-+    memset(m, 0, sizeof(*m)); CR_Begin(&m->draft, seed, runId);
++    memset(m,0,sizeof(*m)); CR_Begin(&m->draft,seed,runId);
 +}
-+static void Page(struct CRMenu *m, enum CRPage p) { m->page=p; m->selected=0; m->notice=false; }
-+enum CROutcome CR_MenuInput(struct CRMenu *m, unsigned keys, uint32_t newSeed)
++static void Page(struct CRMenu *m,enum CRPage p) { m->page=p; m->selected=0; m->notice=false; }
++enum CROutcome CR_MenuInput(struct CRMenu *m,unsigned keys,uint32_t newSeed)
 +{
-+    static const unsigned counts[] = {2,3,10,3,1,2};
-+    if (m->draft.confirmed || !m->draft.editing) return CR_STAY;
-+    if (m->page == CR_PAGE_DIGITS) {
-+        if (keys & CR_B) { Page(m,CR_PAGE_SEED); return CR_STAY; }
-+        if (keys & CR_LEFT) m->digit=(m->digit+9)%10;
-+        if (keys & CR_RIGHT) m->digit=(m->digit+1)%10;
-+        if (keys & CR_UP) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+1)%10;
-+        if (keys & CR_DOWN) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+9)%10;
-+        if (keys & CR_A) {
++    static const unsigned counts[]={2,3,10,4,1,2,10,3};
++    struct CRConfig *c=&m->draft.config;
++    if(m->draft.confirmed || !m->draft.editing) return CR_STAY;
++    if(m->page==CR_PAGE_DIGITS) {
++        if(keys&CR_B) { Page(m,CR_PAGE_SEED); return CR_STAY; }
++        if(keys&CR_LEFT) m->digit=(m->digit+9)%10;
++        if(keys&CR_RIGHT) m->digit=(m->digit+1)%10;
++        if(keys&CR_UP) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+1)%10;
++        if(keys&CR_DOWN) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+9)%10;
++        if(keys&CR_A) {
 +            uint32_t seed;
-+            if (CR_ParseSeed(m->digits,&seed)) { m->draft.config.seed=seed; m->draft.manualSeed=true; Page(m,CR_PAGE_SEED); }
++            if(CR_ParseSeed(m->digits,&seed)) { c->seed=seed; m->draft.manualSeed=true; Page(m,CR_PAGE_SEED); }
 +            else m->notice=true;
 +        }
 +        return CR_STAY;
 +    }
-+    if (keys & CR_B) {
-+        if (m->page == CR_PAGE_MODE) { CR_Cancel(&m->draft); return CR_CANCELLED; }
-+        Page(m,m->page==CR_PAGE_DIFFICULTY ? CR_PAGE_MODE : m->page==CR_PAGE_CUSTOM ? CR_PAGE_DIFFICULTY : m->page==CR_PAGE_SEED ? CR_PAGE_DIFFICULTY : CR_PAGE_SEED);
-+        return CR_STAY;
++    if(keys&CR_B) {
++        enum CRPage back;
++        if(m->page==CR_PAGE_MODE) { CR_Cancel(&m->draft); return CR_CANCELLED; }
++        back=m->page==CR_PAGE_DIFFICULTY ? CR_PAGE_MODE : m->page==CR_PAGE_CUSTOM || m->page==CR_PAGE_SUMMARY ? CR_PAGE_SEED
++            : m->page==CR_PAGE_GENERATIONS || m->page==CR_PAGE_BALANCE ? CR_PAGE_CUSTOM : CR_PAGE_DIFFICULTY;
++        Page(m,back); return CR_STAY;
 +    }
-+    if (keys & CR_UP) m->selected=(m->selected+counts[m->page]-1)%counts[m->page];
-+    if (keys & CR_DOWN) m->selected=(m->selected+1)%counts[m->page];
-+    if (!(keys & CR_A)) return CR_STAY;
-+    switch (m->page) {
++    if(keys&CR_UP) m->selected=(m->selected+counts[m->page]-1)%counts[m->page];
++    if(keys&CR_DOWN) m->selected=(m->selected+1)%counts[m->page];
++    if(!(keys&CR_A)) return CR_STAY;
++    switch(m->page) {
 +    case CR_PAGE_MODE:
-+        if (m->selected==0) Page(m,CR_PAGE_DIFFICULTY); else m->notice=true;
-+        break;
++        c->mode=m->selected;
++        c->randomOptions=c->mode==CR_RANDOMIZED ? CR_CORE_OPTIONS : 0;
++        c->algorithm=c->mode==CR_RANDOMIZED ? CR_ALGORITHM : 0;
++        c->contentRules=CR_CONTENT_RULES; c->generations=CR_GENERATIONS; c->balanceFlags=0;
++        Page(m,CR_PAGE_DIFFICULTY); break;
 +    case CR_PAGE_DIFFICULTY:
-+        if (m->selected==0) Page(m,CR_PAGE_SEED);
-+        else if (m->selected==2) Page(m,CR_PAGE_CUSTOM);
-+        else m->notice=true;
++        if(!m->selected) Page(m,CR_PAGE_SEED); else m->notice=true;
 +        break;
 +    case CR_PAGE_CUSTOM:
-+        /* A preview of future controls; none can alter active run rules. */
-+        if (m->selected==9) Page(m,CR_PAGE_DIFFICULTY); else m->notice=true;
++        if(m->selected<3) {
++            uint32_t options=c->randomOptions^(1u<<m->selected);
++            if(options) { c->randomOptions=options; m->notice=false; } else m->notice=true;
++        } else if(m->selected==6) Page(m,CR_PAGE_GENERATIONS);
++        else if(m->selected==7) Page(m,CR_PAGE_BALANCE);
++        else if(m->selected==9) Page(m,CR_PAGE_SEED);
++        else m->notice=true;
++        break;
++    case CR_PAGE_GENERATIONS:
++        if(m->selected==9) Page(m,CR_PAGE_CUSTOM);
++        else if(c->generations^(1u<<m->selected)) { c->generations^=1u<<m->selected; m->notice=false; }
++        else m->notice=true;
++        break;
++    case CR_PAGE_BALANCE:
++        if(m->selected==2) Page(m,CR_PAGE_CUSTOM);
++        else c->balanceFlags^=1u<<m->selected;
 +        break;
 +    case CR_PAGE_SEED:
-+        if (m->selected==0) { m->draft.config.seed=newSeed; m->draft.manualSeed=false; }
-+        else if (m->selected==1) { snprintf(m->digits,sizeof(m->digits),"%010lu",(unsigned long)m->draft.config.seed); m->digit=0; Page(m,CR_PAGE_DIGITS); }
++        if(!m->selected) { c->seed=newSeed; m->draft.manualSeed=false; }
++        else if(m->selected==1) { snprintf(m->digits,sizeof(m->digits),"%010lu",(unsigned long)c->seed); m->digit=0; Page(m,CR_PAGE_DIGITS); }
++        else if(m->selected==2) { if(c->mode==CR_RANDOMIZED) Page(m,CR_PAGE_CUSTOM); else m->notice=true; }
 +        else Page(m,CR_PAGE_SUMMARY);
 +        break;
 +    case CR_PAGE_SUMMARY:
-+        if (m->selected==1) Page(m,CR_PAGE_SEED);
-+        else if (CR_Confirm(&m->draft)) return CR_ACCEPTED;
++        if(m->selected) Page(m,CR_PAGE_SEED);
++        else if(CR_Confirm(&m->draft)) return CR_ACCEPTED;
 +        break;
 +    default: break;
 +    }
 +    return CR_STAY;
 +}
-+void CR_MenuLines(const struct CRMenu *m, char l[12][36])
++static const char *On(bool value) { return value ? "ON" : "OFF"; }
++void CR_GenerationText(char out[36],uint16_t generations)
 +{
-+    unsigned i;
++    unsigned i; size_t pos=6;
++    strcpy(out,"GENS: ");
++    for(i=0;i<9;++i) if(generations&(1u<<i)) { out[pos++]='1'+i; out[pos++]=' '; }
++    out[pos]=0;
++}
++void CR_MenuLines(const struct CRMenu *m,char l[12][36])
++{
++    const struct CRConfig *c=&m->draft.config;
++    unsigned i,first=2;
 +    memset(l,0,12*36);
-+    switch (m->page) {
++    switch(m->page) {
 +    case CR_PAGE_MODE:
-+        strcpy(l[0],"NEW GAME - MODE"); strcpy(l[2],"STANDARD - FIXED CAMPAIGN");
-+        strcpy(l[3],"RANDOMIZED - UNAVAILABLE"); strcpy(l[6],"RANDOMIZER ARRIVES IN STAGE C"); break;
++        strcpy(l[0],"NEW GAME - MODE"); strcpy(l[2],"STANDARD - FIXED CAMPAIGN"); strcpy(l[3],"RANDOMIZED - CORE SPECIES"); break;
 +    case CR_PAGE_DIFFICULTY:
-+        strcpy(l[0],"NEW GAME - DIFFICULTY"); strcpy(l[2],"NORMAL");
-+        strcpy(l[3],"HARD - UNAVAILABLE"); strcpy(l[4],"CUSTOM - LOCKED RULES PREVIEW");
-+        strcpy(l[7],"HARD RULES ARRIVE IN STAGE D"); break;
-+    case CR_PAGE_CUSTOM: {
-+        static const char *const rows[]={"STARTERS - OFF / LOCKED","WILD - OFF / LOCKED","TRAINERS - OFF / LOCKED","ABILITIES - OFF / LOCKED","FIELD ITEMS - OFF / LOCKED","HELD ITEMS - OFF / LOCKED","GENERATIONS 1-9 - LOCKED","BALANCE / CAPS / AI - LOCKED","CUSTOM DIFFICULTY - UNAVAILABLE","BACK - KEEP NORMAL"};
-+        strcpy(l[0],"CUSTOMIZATION - PREVIEW ONLY");
-+        for(i=0;i<10;++i) strcpy(l[i+1],rows[i]);
-+        break; }
++        strcpy(l[0],"NEW GAME - DIFFICULTY"); strcpy(l[2],"NORMAL"); strcpy(l[3],"HARD - UNAVAILABLE");
++        strcpy(l[4],"CUSTOM DIFFICULTY - UNAVAILABLE"); strcpy(l[7],"HARD RULES ARRIVE IN STAGE D"); break;
++    case CR_PAGE_CUSTOM:
++        first=1; strcpy(l[0],"CUSTOMIZE RANDOMIZER");
++        snprintf(l[1],36,"STARTERS: %s",On(c->randomOptions&CR_RANDOM_STARTERS));
++        snprintf(l[2],36,"WILD: %s",On(c->randomOptions&CR_RANDOM_WILD));
++        snprintf(l[3],36,"TRAINERS: %s",On(c->randomOptions&CR_RANDOM_TRAINERS));
++        strcpy(l[4],"ABILITIES - OFF / LOCKED"); strcpy(l[5],"FIELD ITEMS - OFF / LOCKED"); strcpy(l[6],"HELD ITEMS - OFF / LOCKED");
++        strcpy(l[7],"ELIGIBLE GENERATIONS"); strcpy(l[8],"OPTIONAL BALANCE RULES"); strcpy(l[9],"CUSTOM DIFFICULTY - UNAVAILABLE"); strcpy(l[10],"BACK TO SEED"); break;
++    case CR_PAGE_GENERATIONS:
++        first=1; strcpy(l[0],"ELIGIBLE GENERATIONS");
++        for(i=0;i<9;++i) snprintf(l[i+1],36,"GEN %u: %s",i+1,On(c->generations&(1u<<i)));
++        strcpy(l[10],"BACK"); break;
++    case CR_PAGE_BALANCE:
++        strcpy(l[0],"OPTIONAL BALANCE RULES"); snprintf(l[2],36,"NO LEGENDARIES: %s",On(c->balanceFlags&CR_BALANCE_NO_LEGENDS));
++        snprintf(l[3],36,"SIMILAR STRENGTH: %s",On(c->balanceFlags&CR_BALANCE_SIMILAR)); strcpy(l[4],"BACK");
++        strcpy(l[7],"BOTH OFF MEANS UNRESTRICTED"); strcpy(l[8],"SIMILAR BST BAND: 80 TO 120 PCT"); break;
 +    case CR_PAGE_SEED:
-+        strcpy(l[0],"NEW GAME - RUN SEED"); strcpy(l[2],"GENERATE AUTOMATIC SEED"); strcpy(l[3],"ENTER MANUAL SEED"); strcpy(l[4],"REVIEW AND CONFIRM");
-+        snprintf(l[6],36,"SEED: %lu",(unsigned long)m->draft.config.seed);
-+        strcpy(l[7],"SEED IS RECORDED FOR THIS RUN"); strcpy(l[8],"RANDOMIZATION REMAINS OFF"); break;
++        strcpy(l[0],"NEW GAME - RUN SEED"); strcpy(l[2],"GENERATE AUTOMATIC SEED"); strcpy(l[3],"ENTER MANUAL SEED");
++        strcpy(l[4],c->mode==CR_RANDOMIZED ? "CUSTOMIZE RANDOMIZER" : "CUSTOMIZE - RANDOMIZED ONLY"); strcpy(l[5],"REVIEW AND CONFIRM");
++        snprintf(l[7],36,"SEED: %lu",(unsigned long)c->seed); strcpy(l[8],"SAVED RULES CONTROL THIS RUN"); break;
 +    case CR_PAGE_DIGITS:
 +        strcpy(l[0],"MANUAL SEED - DECIMAL"); strcpy(l[2],m->digits);
 +        for(i=0;i<10;++i) l[3][i]=i==m->digit ? '>' : ' ';
 +        l[3][10]=0;
-+        strcpy(l[5],"LEFT/RIGHT SELECT A DIGIT"); strcpy(l[6],"UP/DOWN CHANGE THE DIGIT");
-+        strcpy(l[7],"A ACCEPT - B DISCARD EDIT"); strcpy(l[8],"RANGE 0 TO 4294967295");
-+        if(m->notice) strcpy(l[10],"SEED EXCEEDS 4294967295");
-+        return;
++        strcpy(l[5],"LEFT/RIGHT SELECT A DIGIT"); strcpy(l[6],"UP/DOWN CHANGE THE DIGIT"); strcpy(l[7],"A ACCEPT - B DISCARD EDIT");
++        strcpy(l[8],"RANGE 0 TO 4294967295"); if(m->notice) strcpy(l[10],"SEED EXCEEDS 4294967295"); return;
 +    case CR_PAGE_SUMMARY:
-+        strcpy(l[0],"CONFIRM NEW RUN"); strcpy(l[2],"START THIS FIXED RUN"); strcpy(l[3],"BACK TO SEED");
-+        strcpy(l[5],"STANDARD / NORMAL"); snprintf(l[6],36,"SEED: %lu",(unsigned long)m->draft.config.seed);
-+        strcpy(l[7],"ALL RANDOMIZATION OFF"); strcpy(l[8],"NATIVE DIFFICULTY UNCHANGED");
-+        strcpy(l[9],"OLD SAVE STAYS UNTIL YOU SAVE"); break;
++        strcpy(l[0],"CONFIRM NEW RUN"); strcpy(l[2],"START THIS RUN"); strcpy(l[3],"BACK TO SEED");
++        strcpy(l[4],c->mode==CR_RANDOMIZED ? "RANDOMIZED / NORMAL" : "STANDARD / NORMAL");
++        snprintf(l[5],36,"SEED: %lu",(unsigned long)c->seed);
++        snprintf(l[6],36,"STARTERS %s / WILD %s",On(c->randomOptions&CR_RANDOM_STARTERS),On(c->randomOptions&CR_RANDOM_WILD));
++        snprintf(l[7],36,"TRAINERS %s / ALG %u",On(c->randomOptions&CR_RANDOM_TRAINERS),c->algorithm);
++        CR_GenerationText(l[8],c->generations);
++        snprintf(l[9],36,"NO LEGENDS %s / SIMILAR %s",On(c->balanceFlags&1),On(c->balanceFlags&2)); strcpy(l[10],"OLD SAVE STAYS UNTIL YOU SAVE"); break;
 +    }
-+    if(m->page!=CR_PAGE_DIGITS) {
-+        unsigned row=m->selected+(m->page==CR_PAGE_CUSTOM?1:2);
++    {
++        unsigned row=m->selected+first;
 +        size_t len=strlen(l[row]); memmove(l[row]+2,l[row],len+1); l[row][0]='>'; l[row][1]=' ';
-+        if(m->page!=CR_PAGE_CUSTOM) strcpy(l[11],m->notice?"UNAVAILABLE - CHOICE NOT CHANGED":"A SELECT - B BACK / CANCEL");
 +    }
++    strcpy(l[11],m->notice ? "UNAVAILABLE OR LAST CHOICE" : "A SELECT - B BACK / CANCEL");
 +}
 diff --git c/src/data/items.h w/src/data/items.h
 index c51a5acf..08ffbee9 100644
@@ -14417,6 +14966,112 @@ index 6c95937d..a686b0e1 100644
                  }
              }
  
+diff --git c/src/dexnav.c w/src/dexnav.c
+index 2a6685de..9d8b612f 100644
+--- c/src/dexnav.c
++++ w/src/dexnav.c
+@@ -1,4 +1,5 @@
+ #include "global.h"
++#include "custom_random.h"
+ #include "battle_main.h"
+ #include "battle_setup.h"
+ #include "bg.h"
+@@ -1482,7 +1483,7 @@ static u8 GetEncounterLevelFromMapData(enum Species species, enum EncounterType
+     {
+     case ENCOUNTER_TYPE_LAND:    // grass
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
+-        const struct WildPokemonInfo *landMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++        const struct WildPokemonInfo *landMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+ 
+         if (landMonsInfo == NULL)
+             return MON_LEVEL_NONEXISTENT; //Hidden Pokémon should only appear on walkable tiles or surf tiles
+@@ -1498,7 +1499,7 @@ static u8 GetEncounterLevelFromMapData(enum Species species, enum EncounterType
+         break;
+     case ENCOUNTER_TYPE_WATER:    //water
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
+-        const struct WildPokemonInfo *waterMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++        const struct WildPokemonInfo *waterMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+ 
+         if (waterMonsInfo == NULL)
+             return MON_LEVEL_NONEXISTENT; //Hidden Pokémon should only appear on walkable tiles or surf tiles
+@@ -1514,7 +1515,7 @@ static u8 GetEncounterLevelFromMapData(enum Species species, enum EncounterType
+         break;
+     case ENCOUNTER_TYPE_HIDDEN:
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_HIDDEN);
+-        const struct WildPokemonInfo *hiddenMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].hiddenMonsInfo;
++        const struct WildPokemonInfo *hiddenMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].hiddenMonsInfo;
+ 
+         if (hiddenMonsInfo == NULL)
+             return MON_LEVEL_NONEXISTENT;
+@@ -1695,7 +1696,7 @@ static bool8 CapturedAllLandMons(u32 headerId)
+     int count = 0;
+     enum TimeOfDay timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
+ 
+-    const struct WildPokemonInfo *landMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++    const struct WildPokemonInfo *landMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+ 
+     if (landMonsInfo != NULL)
+     {
+@@ -1728,7 +1729,7 @@ static bool8 CapturedAllWaterMons(u32 headerId)
+     u8 count = 0;
+     enum TimeOfDay timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
+ 
+-    const struct WildPokemonInfo *waterMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++    const struct WildPokemonInfo *waterMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+ 
+     if (waterMonsInfo != NULL)
+     {
+@@ -1759,7 +1760,7 @@ static bool8 CapturedAllHiddenMons(u32 headerId)
+     u8 count = 0;
+     enum TimeOfDay timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_HIDDEN);
+ 
+-        const struct WildPokemonInfo *hiddenMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].hiddenMonsInfo;
++        const struct WildPokemonInfo *hiddenMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].hiddenMonsInfo;
+ 
+     if (hiddenMonsInfo != NULL)
+     {
+@@ -1907,11 +1908,11 @@ static void DexNavLoadEncounterData(void)
+         return;
+ 
+     timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
+-    const struct WildPokemonInfo *landMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++    const struct WildPokemonInfo *landMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+     timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
+-    const struct WildPokemonInfo *waterMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++    const struct WildPokemonInfo *waterMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+     timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_HIDDEN);
+-    const struct WildPokemonInfo *hiddenMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].hiddenMonsInfo;
++    const struct WildPokemonInfo *hiddenMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].hiddenMonsInfo;
+ 
+     // nop struct data
+     memset(sDexNavUiDataPtr->landSpecies, 0, sizeof(sDexNavUiDataPtr->landSpecies));
+@@ -2495,7 +2496,7 @@ bool32 TryFindHiddenPokemon(void)
+             return FALSE;
+ 
+         enum TimeOfDay timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_HIDDEN);
+-        const struct WildPokemonInfo *hiddenMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].hiddenMonsInfo;
++        const struct WildPokemonInfo *hiddenMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].hiddenMonsInfo;
+         bool8 isHiddenMon = FALSE;
+ 
+         // while you can still technically find hidden Pokémon if there are not hidden-only Pokémon on a map,
+@@ -2520,7 +2521,7 @@ bool32 TryFindHiddenPokemon(void)
+             }
+             else
+             {
+-                species = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo->wildPokemon[ChooseWildMonIndex_Land()].species;
++                species = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo->wildPokemon[ChooseWildMonIndex_Land()].species;
+                 environment = ENCOUNTER_TYPE_LAND;
+             }
+             break;
+@@ -2538,7 +2539,7 @@ bool32 TryFindHiddenPokemon(void)
+                 }
+                 else
+                 {
+-                    species = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo->wildPokemon[ChooseWildMonIndex_Water()].species;
++                    species = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo->wildPokemon[ChooseWildMonIndex_Water()].species;
+                     environment = ENCOUNTER_TYPE_WATER;
+ 
+                 }
 diff --git c/src/dma3_manager.c w/src/dma3_manager.c
 index 8ddc36f1..e131bfbf 100644
 --- c/src/dma3_manager.c
@@ -19538,10 +20193,16 @@ index e3c6869f..48d689a0 100644
 +}
 +#endif
 diff --git c/src/match_call.c w/src/match_call.c
-index 6728f9b7..cc1c385f 100644
+index 6728f9b7..dcfb1e5e 100644
 --- c/src/match_call.c
 +++ w/src/match_call.c
-@@ -136,7 +136,7 @@ static u32 GetCurrentTotalMinutes(struct Time *);
+@@ -1,4 +1,5 @@
+ #include "global.h"
++#include "custom_random.h"
+ #include "malloc.h"
+ #include "battle.h"
+ #include "battle_setup.h"
+@@ -136,7 +137,7 @@ static u32 GetCurrentTotalMinutes(struct Time *);
  static u32 GetNumRegisteredTrainers(void);
  static u32 GetActiveMatchCallTrainerId(u32);
  static int GetTrainerMatchCallId(int);
@@ -19550,7 +20211,7 @@ index 6728f9b7..cc1c385f 100644
  static bool32 TrainerIsEligibleForRematch(int);
  static void StartMatchCall(void);
  static void ExecuteMatchCall(u8);
-@@ -1500,7 +1500,7 @@ static bool32 TrainerIsEligibleForRematch(int matchCallId)
+@@ -1500,7 +1501,7 @@ static bool32 TrainerIsEligibleForRematch(int matchCallId)
  #endif //FREE_MATCH_CALL
  }
  
@@ -19559,6 +20220,29 @@ index 6728f9b7..cc1c385f 100644
  {
      const struct MapHeader *mapHeader = Overworld_GetMapHeaderByGroupAndId(gRematchTable[matchCallId].mapGroup, gRematchTable[matchCallId].mapNum);
      return mapHeader->regionMapSectionId;
+@@ -1755,18 +1756,18 @@ static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr)
+         {
+             timeOfDay = GetTimeOfDayForEncounters(i, WILD_AREA_LAND);
+             numSpecies = 0;
+-            if (gWildMonHeaders[i].encounterTypes[timeOfDay].landMonsInfo)
++            if ((*CR_WILD_HEADER(i)).encounterTypes[timeOfDay].landMonsInfo)
+             {
+                 slot = GetLandEncounterSlotForMatchCall();
+-                species[numSpecies] = gWildMonHeaders[i].encounterTypes[timeOfDay].landMonsInfo->wildPokemon[slot].species;
++                species[numSpecies] = (*CR_WILD_HEADER(i)).encounterTypes[timeOfDay].landMonsInfo->wildPokemon[slot].species;
+                 numSpecies++;
+             }
+ 
+             timeOfDay = GetTimeOfDayForEncounters(i, WILD_AREA_WATER);
+-            if (gWildMonHeaders[i].encounterTypes[timeOfDay].waterMonsInfo)
++            if ((*CR_WILD_HEADER(i)).encounterTypes[timeOfDay].waterMonsInfo)
+             {
+                 slot = GetWaterEncounterSlotForMatchCall();
+-                species[numSpecies] = gWildMonHeaders[i].encounterTypes[timeOfDay].waterMonsInfo->wildPokemon[slot].species;
++                species[numSpecies] = (*CR_WILD_HEADER(i)).encounterTypes[timeOfDay].waterMonsInfo->wildPokemon[slot].species;
+                 numSpecies++;
+             }
+ 
 diff --git c/src/math_util.c w/src/math_util.c
 index 801690ca..c6c2e424 100644
 --- c/src/math_util.c
@@ -28232,10 +28916,16 @@ index d36708ff..68b6a6cd 100644
 +}
 +#endif
 diff --git c/src/pokedex_area_screen.c w/src/pokedex_area_screen.c
-index 79201e93..138b4fe5 100644
+index 79201e93..aa0d663c 100644
 --- c/src/pokedex_area_screen.c
 +++ w/src/pokedex_area_screen.c
-@@ -130,6 +130,9 @@ static void CreateAreaMarkerSprites(void);
+@@ -1,4 +1,5 @@
+ #include "global.h"
++#include "custom_random.h"
+ #include "bg.h"
+ #include "decompress.h"
+ #include "event_data.h"
+@@ -130,6 +131,9 @@ static void CreateAreaMarkerSprites(void);
  static void LoadAreaUnknownGraphics(void);
  static void CreateAreaUnknownSprites(void);
  static void Task_HandlePokedexAreaScreenInput(u8);
@@ -28245,7 +28935,16 @@ index 79201e93..138b4fe5 100644
  static void ResetPokedexAreaMapBg(void);
  static void DestroyAreaScreenSprites(void);
  static void AddTimeOfDayLabels(void);
-@@ -865,6 +868,16 @@ static void Task_HandlePokedexAreaScreenInput(u8 taskId)
+@@ -340,7 +344,7 @@ static void FindMapsWithMon(enum Species species)
+         if (GetRegionMapType(headerSectionId) != currentRegionMapType)
+             continue;
+ 
+-        if (MapHasSpecies(&gWildMonHeaders[i].encounterTypes[gAreaTimeOfDay], headerSectionId, species))
++        if (MapHasSpecies(&(*CR_WILD_HEADER(i)).encounterTypes[gAreaTimeOfDay], headerSectionId, species))
+         {
+             switch (gWildMonHeaders[i].mapGroup)
+             {
+@@ -865,6 +869,16 @@ static void Task_HandlePokedexAreaScreenInput(u8 taskId)
              return;
          break;
      case 1:
@@ -32917,10 +33616,18 @@ index 648fa837..f890cb95 100644
 +}
 +#endif
 diff --git c/src/starter_choose.c w/src/starter_choose.c
-index 78bafced..a4e328e7 100644
+index 78bafced..41b9834c 100644
 --- c/src/starter_choose.c
 +++ w/src/starter_choose.c
-@@ -24,6 +24,10 @@
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_random.h"
++#endif
+ #include "bg.h"
+ #include "data.h"
+ #include "decompress.h"
+@@ -24,6 +27,10 @@
  #include "constants/songs.h"
  #include "constants/rgb.h"
  
@@ -32931,7 +33638,22 @@ index 78bafced..a4e328e7 100644
  #define STARTER_MON_COUNT   3
  
  // Position of the sprite of the selected starter Pokémon
-@@ -538,12 +542,35 @@ static void Task_HandleConfirmStarterInput(u8 taskId)
+@@ -349,9 +356,13 @@ static const struct SpriteTemplate sSpriteTemplate_StarterCircle =
+ // .text
+ u16 GetStarterPokemon(u16 chosenStarterId)
+ {
+-    if (chosenStarterId > STARTER_MON_COUNT)
++    if (chosenStarterId >= STARTER_MON_COUNT)
+         chosenStarterId = 0;
++#ifdef PORT_BRIDGE
++    return CustomRandom_Starter(chosenStarterId, sStarterMon[chosenStarterId]);
++#else
+     return sStarterMon[chosenStarterId];
++#endif
+ }
+ 
+ static void VblankCB_StarterChoose(void)
+@@ -538,12 +549,35 @@ static void Task_HandleConfirmStarterInput(u8 taskId)
  {
      u8 spriteId;
  
@@ -34390,6 +35112,50 @@ index 8099289f..1cafe897 100644
      sSpritePics[i].frames = framePics;
      sSpritePics[i].images = images;
      sSpritePics[i].paletteTag = paletteTag;
+diff --git c/src/trainer_pools.c w/src/trainer_pools.c
+index eb6fb75b..d1ce8acd 100644
+--- c/src/trainer_pools.c
++++ w/src/trainer_pools.c
+@@ -1,4 +1,10 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "custom_random.h"
++#define CR_POOL_ACTIVE() CustomRandom_TrainerActive()
++#else
++#define CR_POOL_ACTIVE() FALSE
++#endif
+ #include "data.h"
+ #include "item.h"
+ #include "malloc.h"
+@@ -245,6 +251,10 @@ static u32 PickMonFromPool(const struct Trainer *trainer, u8 *poolIndexArray, u3
+ static u32 GetPoolSeed(const struct Trainer *trainer)
+ {
+     u32 seed;
++#ifdef PORT_BRIDGE
++    if (CustomRandom_TrainerActive())
++        return CustomRandom_TrainerSeed();
++#endif
+     if (B_POOL_SETTING_USE_FIXED_SEED)
+         seed = B_POOL_SETTING_FIXED_SEED;
+     else
+@@ -262,7 +272,7 @@ static void RandomizePoolIndices(const struct Trainer *trainer, u8 *poolIndexArr
+         poolIndexArray[i] = i;
+     u32 rnd;
+     rng_value_t localRngState;
+-    if (B_POOL_SETTING_CONSISTENT_RNG)
++    if (B_POOL_SETTING_CONSISTENT_RNG || CR_POOL_ACTIVE())
+     {
+         u32 seed = GetPoolSeed(trainer);
+         localRngState = LocalRandomSeed(seed);
+@@ -293,7 +303,7 @@ static void RandomizePoolIndices(const struct Trainer *trainer, u8 *poolIndexArr
+             numBits = 2;
+         if (usedBits + numBits > 32)
+         {
+-            if (B_POOL_SETTING_CONSISTENT_RNG)
++            if (B_POOL_SETTING_CONSISTENT_RNG || CR_POOL_ACTIVE())
+                 rnd = LocalRandom32(&localRngState);
+             else
+                 rnd = Random32();
 diff --git c/src/trainer_see.c w/src/trainer_see.c
 index 6242d391..247323bf 100644
 --- c/src/trainer_see.c
@@ -34543,22 +35309,23 @@ index e8ef8bde..4789b598 100644
  }
  
 diff --git c/src/wild_encounter.c w/src/wild_encounter.c
-index dd6a0c88..95bb4538 100644
+index dd6a0c88..d61d307e 100644
 --- c/src/wild_encounter.c
 +++ w/src/wild_encounter.c
-@@ -1,8 +1,7 @@
+@@ -1,8 +1,8 @@
  #include "global.h"
 -#include "battle_setup.h"
 -#include "battle_pike.h"
 -#include "battle_pyramid.h"
 -#include "event_data.h"
++#include "custom_random.h"
 +#include "wild_encounter.h"
 +#include "pokemon.h"
 +#include "metatile_behavior.h"
  #include "fieldmap.h"
  #include "fishing.h"
  #include "follower_npc.h"
-@@ -11,18 +10,16 @@
+@@ -11,18 +11,16 @@
  #include "field_player_avatar.h"
  #include "link.h"
  #include "mass_outbreak.h"
@@ -34581,7 +35348,7 @@ index dd6a0c88..95bb4538 100644
  #include "battle_pike.h"
  #include "battle_pyramid.h"
  #include "constants/abilities.h"
-@@ -48,6 +45,9 @@ extern const u8 EventScript_SprayWoreOff[];
+@@ -48,6 +46,9 @@ extern const u8 EventScript_SprayWoreOff[];
  static u16 FeebasRandom(void);
  static void FeebasSeedRng(u16 seed);
  static void ApplyFluteEncounterRateMod(u32 *encRate);
@@ -34591,7 +35358,43 @@ index dd6a0c88..95bb4538 100644
  static void ApplyCleanseTagEncounterRateMod(u32 *encRate);
  static u8 GetMaxLevelOfSpeciesInWildTable(const struct WildPokemon *wildMon, enum Species species, enum WildPokemonArea area);
  #ifdef BUGFIX
-@@ -605,6 +605,9 @@ static bool8 EncounterOddsCheck(u16 encounterRate)
+@@ -463,19 +464,19 @@ enum TimeOfDay GetTimeOfDayForEncounters(u32 headerId, enum WildPokemonArea area
+     {
+     default:
+     case WILD_AREA_LAND:
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+         break;
+     case WILD_AREA_WATER:
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+         break;
+     case WILD_AREA_ROCKS:
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].rockSmashMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].rockSmashMonsInfo;
+         break;
+     case WILD_AREA_FISHING:
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].fishingMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].fishingMonsInfo;
+         break;
+     case WILD_AREA_HIDDEN:
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].hiddenMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].hiddenMonsInfo;
+         break;
+     }
+ 
+@@ -516,6 +517,10 @@ void CreateWildMon(enum Species species, u8 level)
+     u32 personality = GetMonPersonality(species, GetSynchronizedGender(WILDMON_ORIGIN, species), PickWildMonNature(species), RANDOM_UNOWN_LETTER);
+     CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][0], species, level, personality, OTID_STRUCT_PLAYER_ID, USE_RANDOM_IVS);
+     GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][0]);
++#ifdef PORT_BRIDGE
++    if (CustomRandom_Enabled(CR_RANDOM_WILD))
++        CustomRandom_EnsureMoves(&gParties[B_TRAINER_OPPONENT_A][0]);
++#endif
+ }
+ 
+ #ifdef BUGFIX
+@@ -605,6 +610,9 @@ static bool8 EncounterOddsCheck(u16 encounterRate)
  static bool8 WildEncounterCheck(u32 encounterRate, bool8 ignoreAbility)
  {
      encounterRate *= 16;
@@ -34601,7 +35404,7 @@ index dd6a0c88..95bb4538 100644
      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
          encounterRate = encounterRate * 80 / 100;
      ApplyFluteEncounterRateMod(&encounterRate);
-@@ -662,6 +665,843 @@ bool8 AreLegendariesInSootopolisPreventingEncounters(void)
+@@ -662,6 +670,847 @@ bool8 AreLegendariesInSootopolisPreventingEncounters(void)
      return FlagGet(FLAG_LEGENDARIES_IN_SOOTOPOLIS);
  }
  
@@ -34660,9 +35463,9 @@ index dd6a0c88..95bb4538 100644
 +
 +static const struct WildPokemonInfo *GetLandMonsInfo(u16 headerId)
 +{
-+    const struct WildPokemonHeader *header = &gWildMonHeaders[headerId];
++    const struct WildPokemonHeader *header = &(*CR_WILD_HEADER(headerId));
 +    const struct WildPokemonInfo *original = header->encounterTypes[GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND)].landMonsInfo;
-+    return CtrEncounters_Land(original, header->mapGroup, header->mapNum);
++    return CustomRandom_Enabled(CR_RANDOM_WILD) ? original : CtrEncounters_Land(original, header->mapGroup, header->mapNum);
 +}
 +
 +static u32 EncounterRatePercent(void)
@@ -35059,7 +35862,7 @@ index dd6a0c88..95bb4538 100644
 +        if (VisibleAt(x, y, NULL) != NULL)
 +            continue;
 +        water = MetatileBehavior_IsWaterWildEncounter(MapGridGetMetatileBehaviorAt(x, y));
-+        info = water ? gWildMonHeaders[headerId].encounterTypes[GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER)].waterMonsInfo : GetLandMonsInfo(headerId);
++        info = water ? (*CR_WILD_HEADER(headerId)).encounterTypes[GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER)].waterMonsInfo : GetLandMonsInfo(headerId);
 +        if (info == NULL || !VisibleTileFits(x, y, water))
 +            continue;
 +        if (water && AreLegendariesInSootopolisPreventingEncounters())
@@ -35109,6 +35912,10 @@ index dd6a0c88..95bb4538 100644
 +    ZeroEnemyPartyMons();
 +    CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][0], v->species, v->level, v->personality, OTID_STRUCT_PLAYER_ID, USE_RANDOM_IVS);
 +    GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][0]);
++#ifdef PORT_BRIDGE
++    if (CustomRandom_Enabled(CR_RANDOM_WILD))
++        CustomRandom_EnsureMoves(&gParties[B_TRAINER_OPPONENT_A][0]);
++#endif
 +    {
 +        bool32 shiny = v->shiny;
 +        SetMonData(&gParties[B_TRAINER_OPPONENT_A][0], MON_DATA_IS_SHINY, &shiny);
@@ -35245,7 +36052,7 @@ index dd6a0c88..95bb4538 100644
 +                 "repel %u lead lv %d visible %lu (replaces random %d)",
 +                 sGroup, sNum, headerId == HEADER_NONE ? -1 : headerId,
 +                 headerId != HEADER_NONE && GetLandMonsInfo(headerId) != NULL,
-+                 headerId != HEADER_NONE && gWildMonHeaders[headerId].encounterTypes[GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER)].waterMonsInfo != NULL,
++                 headerId != HEADER_NONE && (*CR_WILD_HEADER(headerId)).encounterTypes[GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER)].waterMonsInfo != NULL,
 +                 (unsigned long)EncounterRatePercent(), sWildEncountersDisabled, VarGet(VAR_REPEL_STEP_COUNT),
 +                 (int)GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), (unsigned long)VISIBLE_MOST(),
 +                 VISIBLE_REPLACES_RANDOM());
@@ -35445,7 +36252,7 @@ index dd6a0c88..95bb4538 100644
  bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
  {
      u32 headerId;
-@@ -714,11 +1554,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -714,11 +1563,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
          {
              timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
  
@@ -35459,7 +36266,7 @@ index dd6a0c88..95bb4538 100644
                  return FALSE;
  
              if (TryStartRoamerEncounter())
-@@ -732,6 +1572,10 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -732,6 +1581,10 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
              }
              else
              {
@@ -35470,7 +36277,7 @@ index dd6a0c88..95bb4538 100644
                  if (DoMassOutbreakEncounterTest() == TRUE && SetUpMassOutbreakEncounter(WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
                  {
                      BattleSetup_StartWildBattle();
-@@ -739,12 +1583,12 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -739,12 +1592,12 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
                  }
  
                  // try a regular wild land encounter
@@ -35485,17 +36292,181 @@ index dd6a0c88..95bb4538 100644
                          gParties[B_TRAINER_OPPONENT_A][1] = mon1;
                          BattleSetup_StartDoubleWildBattle();
                      }
-@@ -783,6 +1627,10 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -765,11 +1618,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+ 
+             if (AreLegendariesInSootopolisPreventingEncounters() == TRUE)
+                 return FALSE;
+-            else if (gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo == NULL)
++            else if ((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo == NULL)
+                 return FALSE;
+             else if (prevMetatileBehavior != curMetatileBehavior && !AllowWildCheckOnNewMetatile())
+                 return FALSE;
+-            else if (WildEncounterCheck(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo->encounterRate, FALSE) != TRUE)
++            else if (WildEncounterCheck((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo->encounterRate, FALSE) != TRUE)
+                 return FALSE;
+ 
+             if (TryStartRoamerEncounter())
+@@ -783,13 +1636,17 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
              }
              else // try a regular surfing encounter
              {
+-                if (TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
 +#ifdef PLATFORM_3DS
 +                if (VISIBLE_REPLACES_RANDOM())
 +                    return FALSE;
 +#endif
-                 if (TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
++                if (TryGenerateWildMon((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
                  {
                      gIsSurfingEncounter = TRUE;
+                     if (TryDoDoubleWildBattle())
+                     {
+                         struct Pokemon mon1 = gParties[B_TRAINER_OPPONENT_A][0];
+-                        TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_KEEN_EYE);
++                        TryGenerateWildMon((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_KEEN_EYE);
+                         gParties[B_TRAINER_OPPONENT_A][1] = mon1;
+                         BattleSetup_StartDoubleWildBattle();
+                     }
+@@ -817,7 +1674,7 @@ void RockSmashWildEncounter(void)
+     {
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_ROCKS);
+ 
+-        const struct WildPokemonInfo *wildPokemonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].rockSmashMonsInfo;
++        const struct WildPokemonInfo *wildPokemonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].rockSmashMonsInfo;
+ 
+         if (wildPokemonInfo == NULL)
+         {
+@@ -891,7 +1748,7 @@ bool8 SweetScentWildEncounter(void)
+         {
+             timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
+ 
+-            if (gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo == NULL)
++            if ((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo == NULL)
+                 return FALSE;
+ 
+             if (TryStartRoamerEncounter())
+@@ -903,7 +1760,7 @@ bool8 SweetScentWildEncounter(void)
+             if (DoMassOutbreakEncounterTest() == TRUE)
+                 SetUpMassOutbreakEncounter(0);
+             else
+-                TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo, WILD_AREA_LAND, 0);
++                TryGenerateWildMon((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo, WILD_AREA_LAND, 0);
+ 
+             BattleSetup_StartWildBattle();
+             return TRUE;
+@@ -914,7 +1771,7 @@ bool8 SweetScentWildEncounter(void)
+ 
+             if (AreLegendariesInSootopolisPreventingEncounters() == TRUE)
+                 return FALSE;
+-            if (gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo == NULL)
++            if ((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo == NULL)
+                 return FALSE;
+ 
+             if (TryStartRoamerEncounter())
+@@ -923,7 +1780,7 @@ bool8 SweetScentWildEncounter(void)
+                 return TRUE;
+             }
+ 
+-            TryGenerateWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, 0);
++            TryGenerateWildMon((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo, WILD_AREA_WATER, 0);
+             BattleSetup_StartWildBattle();
+             return TRUE;
+         }
+@@ -937,7 +1794,7 @@ bool8 DoesCurrentMapHaveFishingMons(void)
+     u32 headerId = GetCurrentMapWildMonHeaderId();
+     enum TimeOfDay timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_FISHING);
+ 
+-    if (headerId != HEADER_NONE && gWildMonHeaders[headerId].encounterTypes[timeOfDay].fishingMonsInfo != NULL)
++    if (headerId != HEADER_NONE && (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].fishingMonsInfo != NULL)
+         return TRUE;
+     else
+         return FALSE;
+@@ -963,7 +1820,7 @@ void FishingWildEncounter(u8 rod)
+     {
+         headerId = GetCurrentMapWildMonHeaderId();
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_FISHING);
+-        species = GenerateFishingWildMon(gWildMonHeaders[headerId].encounterTypes[timeOfDay].fishingMonsInfo, rod);
++        species = GenerateFishingWildMon((*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].fishingMonsInfo, rod);
+     }
+ 
+     IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS);
+@@ -984,10 +1841,10 @@ u16 GetLocalWildMon(bool8 *isWaterMon)
+         return SPECIES_NONE;
+ 
+     timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
+-    landMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++    landMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+ 
+     timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
+-    waterMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++    waterMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+ 
+     // Neither
+     if (landMonsInfo == NULL && waterMonsInfo == NULL)
+@@ -1022,7 +1879,7 @@ u16 GetLocalWaterMon(void)
+     {
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
+ 
+-        const struct WildPokemonInfo *waterMonsInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++        const struct WildPokemonInfo *waterMonsInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+ 
+         if (waterMonsInfo)
+             return waterMonsInfo->wildPokemon[ChooseWildMonIndex_Water()].species;
+diff --git c/src/wild_encounter_ow.c w/src/wild_encounter_ow.c
+index 78354668..6e8ce1b1 100644
+--- c/src/wild_encounter_ow.c
++++ w/src/wild_encounter_ow.c
+@@ -1,4 +1,5 @@
+ #include "global.h"
++#include "custom_random.h"
+ #include "wild_encounter_ow.h"
+ #include "battle_setup.h"
+ #include "battle_main.h"
+@@ -468,13 +469,13 @@ static bool32 CreateEnemyPartyOWE(struct InfoOWE *info, s32 x, s32 y)
+     {
+         wildArea = WILD_AREA_WATER;
+         timeOfDay = GetTimeOfDayForEncounters(headerId, wildArea);
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+     }
+     else
+     {
+         wildArea = WILD_AREA_LAND;
+         timeOfDay = GetTimeOfDayForEncounters(headerId, wildArea);
+-        wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++        wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+     }
+ 
+     if (wildMonInfo == NULL)
+@@ -605,13 +606,13 @@ static bool32 StartWildBattleWithOWE_CheckDoubleBattle(struct ObjectEvent *owe,
+         {
+             wildArea = WILD_AREA_WATER;
+             timeOfDay = GetTimeOfDayForEncounters(headerId, wildArea);
+-            wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo;
++            wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo;
+         }
+         else
+         {
+             wildArea = WILD_AREA_LAND;
+             timeOfDay = GetTimeOfDayForEncounters(headerId, wildArea);
+-            wildMonInfo = gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo;
++            wildMonInfo = (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo;
+         }
+ 
+         if (TryGenerateWildMon(wildMonInfo, wildArea, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE))
+@@ -702,11 +703,11 @@ static bool32 CheckCurrentWildMonHeaderForOWE(bool32 shouldSpawnWaterMons)
+     if (shouldSpawnWaterMons)
+     {
+         timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
+-        return gWildMonHeaders[headerId].encounterTypes[timeOfDay].waterMonsInfo != NULL;
++        return (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].waterMonsInfo != NULL;
+     }
+ 
+     timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
+-    return gWildMonHeaders[headerId].encounterTypes[timeOfDay].landMonsInfo != NULL;
++    return (*CR_WILD_HEADER(headerId)).encounterTypes[timeOfDay].landMonsInfo != NULL;
+ }
+ 
+ static u32 GetOldestActiveOWESlot(bool32 forceRemove)
 diff --git c/tools/mapjson/mapjson.cpp w/tools/mapjson/mapjson.cpp
 index d05467ab..50c160bf 100644
 --- c/tools/mapjson/mapjson.cpp

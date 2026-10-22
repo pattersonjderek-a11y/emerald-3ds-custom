@@ -54,6 +54,9 @@ def main():
     if args.full and args.expansion and (root.parent / 'include/custom_run_config.h').is_file():
         required += ['CustomRunMenu_Setup', 'CustomRunMenu_View', 'CustomRun_Read',
                      'CustomRun_CommitNewSave', 'CR_Decode', 'CR_MenuInput', 'CR_MenuLines']
+    if args.full and args.expansion and (root.parent / 'include/custom_random_core.h').is_file():
+        required += ['CustomRandom_Starter', 'CustomRandom_Header', 'CustomRandom_TrainerMon',
+                     'CustomRandom_EnsureMoves', 'CRandom_Key', 'CRandom_Pick']
     if args.full and args.expansion:
         required += ['VisibleWild_Update', 'VisibleWild_StepOnto', 'VisibleWild_CameraShift', 'VisibleWild_IsSprite']
     if args.full:

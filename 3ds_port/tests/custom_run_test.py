@@ -34,6 +34,7 @@ def adapter(tree):
 #include <stdio.h>
 #include <string.h>
 #include "custom_run_menu_model.h"
+#define CustomRandom_Validate(c) ((void)(c),true)
 typedef uint8_t u8;
 static struct { u8 prefix[0x988], customRunConfig[52]; uint32_t money; uint16_t registeredItem; } save1;
 static struct { u8 playerTrainerId[4]; uint32_t encryptionKey; u8 specialSaveWarpFlags,gcnLinkFlags; } save2;
@@ -111,6 +112,7 @@ def sectors(tree):
 #include <stdio.h>
 #include <string.h>
 #include "custom_run_config.h"
+#define CustomRandom_Validate(c) ((void)(c),true)
 typedef uint8_t u8; typedef uint16_t u16; typedef uint32_t u32; typedef uint8_t bool8;
 #define TRUE 1
 #define FALSE 0
@@ -178,6 +180,7 @@ def guards(tree):
 #include <stdio.h>
 #include <string.h>
 #include "custom_run_config.h"
+#define CustomRandom_Validate(c) ((void)(c),true)
 typedef uint8_t u8; typedef uint16_t u16; typedef uint32_t u32; typedef uint8_t bool8;
 #define PORT_BRIDGE 1
 #define TRUE 1

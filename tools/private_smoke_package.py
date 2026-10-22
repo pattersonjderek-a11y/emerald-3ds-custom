@@ -26,12 +26,15 @@ def sha(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--stage', choices=('A', 'B'), default='A')
+    ap.add_argument('--stage', choices=('A', 'B', 'C'), default='A')
     ap.add_argument('--tree', type=Path)
     args = ap.parse_args()
-    tree = (args.tree or ROOT / ('build/stage-b' if args.stage == 'B' else 'build/expansion')).resolve()
-    namespace = 'emerald3ds-custom-stage-b' if args.stage == 'B' else 'emerald3ds-custom'
+    tree = (args.tree or ROOT / {'A':'build/expansion','B':'build/stage-b','C':'build/stage-c'}[args.stage]).resolve()
+    namespace = 'emerald3ds-custom' + (f'-stage-{args.stage.lower()}' if args.stage != 'A' else '')
     port = tree / '3ds_port'
+    from bootstrap import patch_digest
+    expected = patch_digest(sorted((ROOT / 'patches/pokeemerald-expansion').glob('*.patch')))
+    assert (tree / '.emerald3ds-patches').read_text().strip() == expected, 'Tree/patch mismatch; use the matching source branch or bootstrap'
     # Re-run the gating audits. No package is written if any check fails.
     subprocess.run(['make', '-C', str(port), 'verify', 'PYTHON=python3'], check=True)
     subprocess.run([sys.executable, '-m', 'unittest',
@@ -50,8 +53,10 @@ def main():
     blob = app.read_bytes()
     assert blob[:4] == b'3DSX'
     assert f'sdmc:/3ds/{namespace}/'.encode() in blob
-    if args.stage == 'B':
+    if args.stage != 'A':
         assert b'sdmc:/3ds/emerald3ds-custom/' not in blob
+    if args.stage == 'C':
+        assert b'sdmc:/3ds/emerald3ds-custom-stage-b/' not in blob
     assert b'sdmc:/3ds/emerald3ds/' not in blob
     assert b'sdmc:/3ds/pokeemerald/' not in blob
     assert struct.pack('<I', abi) in blob, 'ABI missing from embedded application'
@@ -87,7 +92,7 @@ def main():
         'native_verified': True, 'emulator_tested': False, 'hardware_tested': False,
         'limitations': 'Generated asset inventory is not a complete Gen 1-9/follower coverage audit.',
     }
-    out = ROOT / ('work/stage-b-private' if args.stage == 'B' else 'work/private-smoke')
+    out = ROOT / (f'work/stage-{args.stage.lower()}-private' if args.stage != 'A' else 'work/private-smoke')
     out.mkdir(parents=True, exist_ok=True)
     manifest = json.dumps(report, indent=2) + '\n'
     (out / 'manifest.json').write_text(manifest)

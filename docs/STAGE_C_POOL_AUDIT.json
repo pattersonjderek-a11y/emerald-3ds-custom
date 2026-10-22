@@ -1,0 +1,67 @@
+{
+  "evidence": "linked ARM data and indexed graphics; no emulator/console execution",
+  "eligible": 1072,
+  "by_generation": {
+    "1": 147,
+    "2": 99,
+    "3": 133,
+    "4": 107,
+    "5": 156,
+    "6": 71,
+    "7": 104,
+    "8": 131,
+    "9": 124
+  },
+  "excluded": {
+    "no_usable_levelup_attack": 10,
+    "unsupported_form": 489
+  },
+  "engine_pin": "dfb0f84374230f4d462191601179b742f9f077df",
+  "content_rules": "00020001",
+  "algorithm": 1,
+  "examples": [
+    {
+      "name": "Sprigatito",
+      "species_id": 1289,
+      "national_dex": 906,
+      "generation": 9,
+      "first_attack_level": 1
+    },
+    {
+      "name": "Fuecoco",
+      "species_id": 1292,
+      "national_dex": 909,
+      "generation": 9,
+      "first_attack_level": 1
+    },
+    {
+      "name": "Quaxly",
+      "species_id": 1295,
+      "national_dex": 912,
+      "generation": 9,
+      "first_attack_level": 1
+    },
+    {
+      "name": "Ogerpon",
+      "species_id": 1416,
+      "national_dex": 1017,
+      "generation": 9,
+      "first_attack_level": 1
+    },
+    {
+      "name": "Terapagos",
+      "species_id": 1431,
+      "national_dex": 1024,
+      "generation": 9,
+      "first_attack_level": 1
+    },
+    {
+      "name": "Pecharunt",
+      "species_id": 1434,
+      "national_dex": 1025,
+      "generation": 9,
+      "first_attack_level": 1
+    }
+  ],
+  "limitations": "Eligibility is not full cry, evolution, form, ability or follower certification. No emulator/console execution."
+}

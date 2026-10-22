@@ -45,3 +45,12 @@ lifecycle functions, and checks the complete icon/terrain palette groups.
 These checks do not replace gameplay testing on a 3DS. In particular, new
 follower art, menus, field HMs, trainer transitions and save/reload behavior
 still need physical-console regression testing with the deployed build.
+
+## Custom project Stage C
+
+The existing integration remains the foundation. The current custom branch adds
+save-bound seeded starters/wild/trainer species through the existing native
+factories/table readers, without replacing renderer, followers or QoL systems.
+See RULES.md for exact pool/exclusions and DEVICE_TESTS.md for pending acceptance.
+Hard/Custom difficulty and optional ability/item randomization remain unavailable.
+Indexed Gen 1–9 eligibility does not certify every cry/follower/form implementation.
