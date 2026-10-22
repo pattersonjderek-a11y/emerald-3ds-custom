@@ -63,6 +63,11 @@ Packaging reruns checks, checks every pack CRC and embedded ABI/namespace.
 Only the separate engine-only audit ZIP may be considered for publication.
 Stage D runtime state stays in `/3ds/emerald3ds-custom-stage-d/`.
 
+Exact verified output sizes/hashes and packaged source checkpoint are in
+[STAGE_D_BUILD_OUTPUTS.json](STAGE_D_BUILD_OUTPUTS.json). Package log:
+`work/stage-d-package.log`; independent engine-only audit:
+`work/stage-d-engine-audit.log`.
+
 Historical workflows and tool installation instructions follow.
 
 The product specification is the repository-root `PROJECT_BLUEPRINT.md`.

@@ -98,3 +98,29 @@ Next: original-XL D smoke/balance testing and visual-fix retest using
 [DEVICE_TESTS.md](DEVICE_TESTS.md). Then Stage E can address optional abilities/
 items and the comprehensive follower/art audit. Hardware/campaign acceptance
 remains separate from completed engineering checks.
+
+## Final checkpoint and package
+
+Implementation/source checkpoint: `ece640577c1f2a001c880eb94b174ae62187ba23`, pushed to
+[project/stage-d](https://github.com/pattersonjderek-a11y/emerald-3ds-custom/tree/project/stage-d).
+No GitHub write blocker. `tools/stage_d.sh build`, `tools/stage_d.sh test` and
+`tools/stage_d.sh package` all passed. The private package was made from a clean
+source checkpoint; all package CRCs/hashes and the separate engine-only ZIP
+strict publication audit passed. All 30 recorded A/B/C/visual output hashes are
+unchanged. No ROM/save/firmware/content build artifact is committed or published.
+
+| Output | Bytes |
+| --- | ---: |
+| `build/stage-d/3ds_port/emerald3ds.3dsx` | 54,925,412 |
+| `build/stage-d/3ds_port/dist/Emerald3DS.3dsx` | 9,410,988 |
+| `build/stage-d/3ds_port/build/emerald3ds.pak` | 44,776,832 |
+| `work/stage-d-private/Emerald3DS-Custom-StageD-private.zip` | 20,518,236 |
+
+ZIP SHA-256: `79ef411c6116bd3db39a451523b0f2a7885de0de8ee33ed936e5805c50f727e2`. Matching engine/data 9e27eb83 `9e27eb83`; 17,513 data entries /
+43,983,857 bytes. Exact paths/hashes: [STAGE_D_BUILD_OUTPUTS.json](STAGE_D_BUILD_OUTPUTS.json).
+Manifest: `work/stage-d-private/manifest.json`. Package log:
+`work/stage-d-package.log`; engine-only audit: `work/stage-d-engine-audit.log`.
+
+No unresolved build/dependency/publication blocker remains. Stage D balance,
+visual-fix acceptance, save/Continue and performance on the original XL remain
+pending. No emulator or physical-console execution was performed by Codex.

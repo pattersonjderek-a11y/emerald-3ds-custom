@@ -1,0 +1,71 @@
+{
+  "source_commit": "ece640577c1f2a001c880eb94b174ae62187ba23",
+  "engine_commit": "dfb0f84374230f4d462191601179b742f9f077df",
+  "expansion_patch_sha256": "2d4992596e825b0d6c36f9e00f7a3d20e4dcdfc61826b46f9fef91bf8adb3ce1",
+  "engine_abi": "9e27eb83",
+  "namespace": "emerald3ds-custom-stage-d",
+  "game_data_files": 17513,
+  "game_data_bytes": 43983857,
+  "asset_index_entries": 17536,
+  "asset_pointer_entries": 1451,
+  "native_compilation_verified": true,
+  "host_tests_verified": true,
+  "fresh_source_reproduced": true,
+  "emulator_tested": false,
+  "physical_console_tested": false,
+  "species_pool_entries": 1072,
+  "generation_9_pool_entries": 124,
+  "species_pool_unchanged_from_c": true,
+  "content_rules": "00030001",
+  "schema": 1,
+  "randomizer_algorithm": 1,
+  "trainer_data_audit": {
+    "evidence": "native linked data inspected, no ARM execution",
+    "prepared_variants": 49,
+    "prepared_party_entries": 238,
+    "all_levels_sizes_battle_types_retained": true,
+    "all_ivs_31": true,
+    "all_evs_64_each": true,
+    "all_have_held_item": true,
+    "native_ai_preserved_for_independent_custom_choice": true,
+    "no_omniscient_variant": true
+  },
+  "artifacts": {
+    "build/stage-d/3ds_port/emerald3ds.3dsx": {
+      "bytes": 54925412,
+      "sha256": "03f279325c81b5a966b81c0919f1fa14733acbc4550e5a596e46ca240e4ae886"
+    },
+    "build/stage-d/3ds_port/emerald3ds.smdh": {
+      "bytes": 14016,
+      "sha256": "24a1b4f54b6f04e974dbd50e6c6165c5ec330dc114d47eec560e5d17b53b1b9d"
+    },
+    "build/stage-d/3ds_port/emerald3ds.elf": {
+      "bytes": 71945000,
+      "sha256": "1dd88540ec3e8121d16fe3550e6831ef7781cf5f66f1fca34bb600942e8d5d42"
+    },
+    "build/stage-d/3ds_port/build/gamedata_image.elf": {
+      "bytes": 85916160,
+      "sha256": "3cce53427be75899ba8853ae99c92397e6b2d5174fe57bb1514dd53ac76bfff1"
+    },
+    "build/stage-d/3ds_port/dist/Emerald3DS.3dsx": {
+      "bytes": 9410988,
+      "sha256": "66312ab96d00b09e3fe69517c89ec2ad8a6c1325119f293f4a3f1ddc9cbe5140"
+    },
+    "build/stage-d/3ds_port/dist/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "24a1b4f54b6f04e974dbd50e6c6165c5ec330dc114d47eec560e5d17b53b1b9d"
+    },
+    "build/stage-d/3ds_port/build/emerald3ds.pak": {
+      "bytes": 44776832,
+      "sha256": "1c45f55c2bda3b4b7ee66e177144d439e73fb6dbcab3a84508b53116af7849e1"
+    },
+    "work/stage-d-private/Emerald3DS-Custom-StageD-private.zip": {
+      "bytes": 20518236,
+      "sha256": "79ef411c6116bd3db39a451523b0f2a7885de0de8ee33ed936e5805c50f727e2"
+    },
+    "work/stage-d-engine-only.zip": {
+      "bytes": 3003804,
+      "sha256": "3303f9c64649a3e672e2d643def208b7bfb6b5fcca542b3ae7aec6899b9af28e"
+    }
+  }
+}
