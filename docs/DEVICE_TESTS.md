@@ -14,6 +14,9 @@ Gen 1–9 art. Do not reuse historical upstream hardware results as new results.
 The baseline Stage A ZIP is unchanged and separately preserved; test it using
 the original checklist below. Stage B is a different app and runtime namespace.
 No emulator, physical-console, restart or campaign result is claimed for Stage B.
+Stage B implementation is `62d7edce10e4fc35e00b8c629e899bd9bb143390`;
+package/native artifact hashes are in `STAGE_B_BUILD_OUTPUTS.json`.
+Private ZIP SHA-256: `9e52bde5bece05774707e9ac075b4a7e79c8084de2dec6f9de6435d1d7b3efb3`.
 
 1. Back up the SD card on your laptop, including existing Emerald installations
    and Stage A. Record original 3DS XL versus New 3DS XL and launcher version.

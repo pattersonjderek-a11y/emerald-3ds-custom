@@ -61,11 +61,12 @@ START-adapter integration was rebuilt with that same native make command.
 clock/settings/input/graphics/voxel/expansion regressions and new production
 configuration tests, plus ARM11 hard-float/link audit with **45 required
 symbols**, no strong undefined symbols, 17,536 indexed assets and 1,451 pointer
-rows. Final packaging repeats this gate after the START integration fix.
+rows. Final `tools/stage_b.sh package` repeated this gate after the START
+integration fix and passed (exit 0), including the new access regression.
 
 Additional commands/results:
 
-- `python3 3ds_port/tests/custom_run_test.py --tree build/stage-b`: all six
+- `python3 3ds_port/tests/custom_run_test.py --tree build/stage-b`: all
   production harnesses passed ASan/UBSan, including START access and storage
   canaries preserving every byte outside the reservation.
 - `EMERALD3DS_EXPANSION_TREE="$PWD/build/stage-b" python3 -m unittest builder.tests.test_expansion_enhancements -v`:
@@ -95,8 +96,38 @@ is still a later audit, not claimed by this stage.
 Native/private outputs: `build/stage-b/3ds_port/emerald3ds.3dsx` and `.smdh`;
 engine-only `build/stage-b/3ds_port/dist/Emerald3DS.3dsx` and `.smdh`;
 matching private `build/stage-b/3ds_port/build/emerald3ds.pak`.
-Final private ZIP/manifest and artifact metadata are prepared after this
-implementation checkpoint under `work/stage-b-private/`.
+Implementation checkpoint: `62d7edce10e4fc35e00b8c629e899bd9bb143390`.
+Final `tools/stage_b.sh package` passed: release/pack, full make verify,
+9 expansion adapters, strict source audit, every matching pack-entry CRC,
+embedded namespace/ABI checks and private package generation. Engine-only
+ZIP strict audit passed separately. The final package ZIP CRC and contents
+passed inspection: app, metadata, debug marker, manifest and instructions;
+no ROM, saves, firmware, separate pack or CIA. Package build source was clean.
+
+| Output | Bytes |
+| --- | ---: |
+| `build/stage-b/3ds_port/emerald3ds.3dsx` | 54,900,464 |
+| `build/stage-b/3ds_port/dist/Emerald3DS.3dsx` | 9397208 |
+| `build/stage-b/3ds_port/build/emerald3ds.pak` | 44,765,664 |
+| `work/stage-b-private/Emerald3DS-Custom-StageB-private.zip` | 20,502,687 |
+
+Private manifest: `work/stage-b-private/manifest.json`. Recorded sizes/hashes:
+[STAGE_B_BUILD_OUTPUTS.json](STAGE_B_BUILD_OUTPUTS.json). ABI `a3b35321`,
+17,513 data files / 43,972,689 bytes; all pack CRCs and indexed assets pass.
+Private ZIP SHA-256:
+`9e52bde5bece05774707e9ac075b4a7e79c8084de2dec6f9de6435d1d7b3efb3`.
+The Stage A artifacts and separately preserved ZIP were rehashed after Stage B
+compilation and remain unchanged. Stage A ZIP stays at
+`work/baseline-stage-a-48d8096/Emerald3DS-Custom-StageA-private.zip`.
+
+Final source reproduction: all 269 engine patch files and 293 canonical overlay
+files match `work/stage-b-clean`, reverse application passes, and the final
+production host harnesses pass there too. Logs also include
+`work/stage-b-package.log` and `work/stage-b-engine-audit.log`.
+No new dependency, build or source-publication blocker remains. The generic
+builder installer still targets Stage A, the forwarder identity and a public
+expansion player-data recipe remain unvalidated, and full art/follower coverage
+is deferred. Use the private embedded ZIP for device testing.
 
 ## Acceptance and next task
 
