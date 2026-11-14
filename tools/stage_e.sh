@@ -18,6 +18,7 @@ case "${1:-build}" in
   python3 tools/private_smoke_package.py --stage E --tree build/stage-e
   ;;
  audit)
+  python3 tools/audit_ability_access.py --tree build/stage-e --output work/stage-e-ability-access.json
   python3 3ds_port/tests/content_audit.py --tree build/stage-e --gdb "$DEVKITARM/bin/arm-none-eabi-gdb" --output work/stage-e-content.json
   ;;
  fresh)

@@ -14,7 +14,7 @@ for folder in ('3ds_port','builder','tools'):
  for src in (ROOT/folder).rglob('*'):
   rel=src.relative_to(ROOT)
   if not src.is_file() or any(x in ('__pycache__','build','dist') for x in rel.parts) or src.suffix=='.pyc':continue
-  assert (a.fresh/rel).read_bytes()==src.read_bytes(),str(rel)
+  for tree in (a.tree,a.fresh):assert (tree/rel).read_bytes()==src.read_bytes(),str(tree/rel)
   count+=1
 assert (a.tree/'.emerald3ds-patches').read_text()==(a.fresh/'.emerald3ds-patches').read_text()
 print(f'Fresh source reproduction PASS: pin {pin}, {len(paths)} engine paths, {count} canonical overlay files (no compilation claimed).')

@@ -1,3 +1,7 @@
+> Stage E/v0.5.0 uses the frozen ARM SDK with Python 3.13.17/Pillow 12.3.0.
+> Use `tools/stage_e.sh` and docs/BUILD.md on `project/stage-e-v050`.
+> The following general development notes remain useful for other branches.
+
 # Development
 
 For **Emerald 3DS Custom**, start with [BUILD.md](BUILD.md) and

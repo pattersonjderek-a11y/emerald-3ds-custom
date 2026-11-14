@@ -1,0 +1,25 @@
+{
+  "evidence": "linked ARM data / indexed files; no ARM, emulator, GPU or console execution",
+  "elf_sha256": "8084539b8586bf2ef19892fd3544d158e0d2b83c73b586c7edf7a70c9e516bd2",
+  "enabled_forms": 1571,
+  "core_base_species": 1025,
+  "generation_9_base_species": 120,
+  "base_cries_with_samples": 1025,
+  "base_unique_cry_wave_pointers": 1024,
+  "base_short_palettes": 27,
+  "base_followers": {
+    "source_name_match": 962,
+    "shared_or_unmatched": 63
+  },
+  "all_form_followers": {
+    "source_name_match": 962,
+    "shared_or_unmatched": 490,
+    "fallback_missing_metadata": 119
+  },
+  "limits": [
+    "source_name_match does not certify exact artwork or animation",
+    "shared_or_unmatched requires human visual review; no attribution invented",
+    "cry/learnset/evolution/ability pointers do not certify complete mechanics",
+    "terminal species may legitimately have no evolution or form table"
+  ]
+}

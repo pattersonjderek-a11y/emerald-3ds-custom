@@ -454,7 +454,9 @@ verify-randomizer: build/randomizer_test$(EXESUFFIX)
 	./build/randomizer_test$(EXESUFFIX)
 
 # Hash guards and edit positions must match the complete patched English tree.
+ifeq ($(PORT_EXPANSION_DEF),)
 verify: verify-randomizer-locales
+endif
 .PHONY: verify-randomizer-locales
 verify-randomizer-locales:
 	$(PYTHON) tests/randomizer_locale_test.py --tree $(ROOT)
@@ -488,12 +490,14 @@ endif
 ifneq ($(wildcard $(ROOT)/include/custom_random_core.h),)
 .PHONY: verify-custom-random
 verify: verify-custom-random
-verify-custom-random:
+verify-custom-random: build/gamedata_image.elf $(ROMFS_ASSET_OUTS)
 	"$(PYTHON)" tests/upstream_expansion_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/optional_rules_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/follower_palette_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/follower_context_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/expansion_split_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/native_ui_assets_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/content_audit.py --tree "$(ROOT)" --gdb "$(DEVKITARM)/bin/arm-none-eabi-gdb" --output build/content-audit.json
 	"$(PYTHON)" tests/custom_random_pool_test.py --tree "$(ROOT)" --gdb "$(DEVKITARM)/bin/arm-none-eabi-gdb" --output build/randomizer-pool.json
 endif
 

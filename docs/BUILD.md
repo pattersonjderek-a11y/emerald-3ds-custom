@@ -41,9 +41,9 @@ python3 tools/verify_expansion_bootstrap.py
 ```
 
 Actual native iterations use `make -C build/stage-e/3ds_port -j6 PYTHON=python3`
-in the SDK image. Logs: `work/native-build-*.log`. The latest combined build
-is still generating/verifying voxel assets at this documentation checkpoint;
-no final native or package pass is claimed here. The linked audit reads
+in the SDK image. Logs: `work/native-build-*.log`. Native compilation completed and full make verify passed; the separate
+private package helper repeats the gating audits before writing a ZIP.
+The final artifact manifest records the exact clean checkpoint and hashes. The linked audit reads
 `build/stage-e/3ds_port/build/gamedata_image.elf` (PROGBITS), not the NOBITS
 placeholder in the shipped ELF.
 
@@ -491,3 +491,21 @@ release generators pin Python 3.13/Pillow 12.3.0 while the existing SDK remains
 frozen as documented above. Stock release packs are incompatible substitutes
 for audited custom expansion output. Existing build commands describe their
 historical source branches; they have not built the requested refresh.
+
+## Stage E final verification notes
+
+`work/verify-e-4.log` includes the final native/UI palette fixes. The original
+symbol requirement CustomRandom_Starter was retired: v0.5.0's actual native
+GetStarterPokemon hook is now required and its production body is host-tested.
+Twenty-seven short native monster palettes are valid; the UI zero-pads unused
+entries and refuses unresolved stubs. Stock localization hash fixtures are gated
+to the original engine, while expansion default-English tests remain active.
+The frontier flag fixture reads native generated PNG-based tile paths.
+
+Final output locations under `build/stage-e/3ds_port/`:
+`emerald3ds.3dsx` (private embedded app), `emerald3ds.elf`,
+`build/gamedata_image.elf` (private audit image), `build/emerald3ds.pak`
+(private generated pack), and `dist/Emerald3DS.3dsx` / `.smdh` (engine-only).
+The engine-only release needs a matching custom expansion data recipe; the
+upstream public builder is not the custom test workflow. Only the private
+embedded ZIP is intended for this console smoke test.

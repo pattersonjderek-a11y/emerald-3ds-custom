@@ -114,13 +114,13 @@ def main():
     assert not missing, 'Gen 9 starter/DLC examples missing from linked pool'
     for g in range(1, 10):
         assert sum(e['generation']==g and e['first_attack_level']<=5 and not e['legendary_or_ultra'] for e in entries)>=3
-    report = {'evidence': 'linked ARM data and indexed graphics; no emulator/console execution',
+    report = {'evidence': 'historical C-style art/attack/form coverage subset, not current v0.5.0 eligibility; no emulator/console execution',
               'eligible': len(entries), 'by_generation': dict(sorted(counts.items())),
               'excluded': dict(excluded), 'entries': entries}
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2)+'\n')
-    print('PASS linked species pool:',len(entries),'eligible;',dict(sorted(counts.items())), '; exclusions',dict(excluded))
+    print('PASS historical C coverage subset (v0.5.0 core uses 1025 bases):',len(entries),'eligible;',dict(sorted(counts.items())), '; exclusions',dict(excluded))
     print('PASS Gen 9 starters, Ogerpon, Terapagos, Pecharunt and at least three nonlegendary starters per generation')
 
 

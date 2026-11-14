@@ -55,7 +55,7 @@ def main():
         required += ['CustomRunMenu_Setup', 'CustomRunMenu_View', 'CustomRun_Read',
                      'CustomRun_CommitNewSave', 'CR_Decode', 'CR_MenuInput', 'CR_MenuLines']
     if args.full and args.expansion and (root.parent / 'include/custom_random_core.h').is_file():
-        required += ['CustomRandom_Starter', 'CustomRandom_Header', 'CustomRandom_TrainerMon',
+        required += ['GetStarterPokemon', 'CustomRandom_Header', 'CustomRandom_TrainerMon',
                      'CustomRandom_EnsureMoves', 'CtrRandomizer_Species', 'CtrRandomizer_Build',
                      'CtrOptional_Ability', 'CtrOptional_Field', 'CtrOptional_Held', 'CtrOptional_BeginBattle']
     if args.full and args.expansion and (root.parent / 'include/custom_difficulty.h').is_file():
@@ -84,6 +84,10 @@ def main():
         if args.stage >= stage:
             required.extend(functions)
     assert set(required) <= names, f'Missing actual game symbols: {set(required) - names}'
+
+    if args.full and args.expansion:
+        starter=(root.parent/'src/starter_choose.c').read_text()
+        assert 'CtrRandomizer_Species(CTR_RANDOMIZE_STARTERS, sStarterMon[chosenStarterId])' in starter
 
     # The game's INCBIN stubs are RomFS lookup keys: validate their index.
     subprocess.check_call([sys.executable, str(root / 'scripts/verify_assets.py')])

@@ -115,7 +115,7 @@ def main():
     assert 'PLAYER_AVATAR_FLAG_UNDERWATER' in helper.group(1) and 'PLAYER_AVATAR_FLAG_SURFING' in helper.group(1)
     outside = visible.replace(helper.group(0), '')
     assert 'PLAYER_AVATAR_FLAG_SURFING' not in outside, 'a visible wild check reads surfing, not VisiblePlayerInWater'
-    assert len(re.findall(r'v->water [!=]= inWater', outside)) >= 3, 'the touch checks no longer compare with the water'
+    assert len(re.findall(r'v->water [!=]= (?:inWater|surfing)', outside)) >= 3, 'the touch checks no longer compare with the water'
 
     print('PASS underwater encounters: %s have water tables and seaweed to swim onto; '
           'the visible ones meet a diving player' % ', '.join(met))

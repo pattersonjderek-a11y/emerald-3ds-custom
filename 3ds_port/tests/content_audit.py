@@ -23,6 +23,9 @@ while $i<NUM_SPECIES
   output (enum Species)$i
   printf "\n"
   printf "MON,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",$i,$p->natDexNum,$b,$p->baseHP,$p->frontPic,$p->backPic,$p->iconSprite,$p->palette,$p->shinyPalette,$p->cryId,$p->levelUpLearnset,$p->evolutions,$p->formChangeTable
+  printf "STAT,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",$i,$p->baseAttack,$p->baseDefense,$p->baseSpAttack,$p->baseSpDefense,$p->baseSpeed,$p->types[0],$p->types[1],$p->abilities[1],$p->abilities[2]
+  set $cry=((struct ToneData*)&gCryTable)[$p->cryId].wav
+  printf "CRY,%u,%u,%u\n",$i,$cry,$cry->size
   printf "OW,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",$i,$p->overworldData.images,$p->overworldData.oam,$p->overworldData.anims,$p->overworldData.paletteTag,$p->overworldPalette,$p->overworldShinyPalette,$p->overworldDataFemale.images,$p->overworldDataFemale.paletteTag,$p->overworldPaletteFemale,$p->overworldShinyPaletteFemale,$p->abilities[0],$p->teachableLearnset
  end
  set $i=$i+1
@@ -46,12 +49,12 @@ def main():
    ptr,base,offset=map(lambda v:int(v,16),line.split());aliases[ptr]=(base,offset)
  def asset(ptr):
   base,off=aliases.get(ptr,(ptr,0));size,path=assets.get(base,(0,''));return max(0,size-off),path,off
- raw=gdb(SCRIPT);names={};mons={};ows={};frame_size=0
+ raw=gdb(SCRIPT);names={};mons={};ows={};cries={};stats={};frame_size=0
  for line in raw.splitlines():
   if line.startswith('NAME,'):
    _,sid,name=line.split(',',2);names[int(sid)]=name.removeprefix('SPECIES_')
-  if line.startswith(('MON,','OW,')):
-   k,*nums=line.split(',');vals=list(map(int,nums));(mons if k=='MON' else ows)[vals[0]]=vals[1:]
+  if line.startswith(('MON,','OW,','CRY,','STAT,')):
+   k,*nums=line.split(',');vals=list(map(int,nums));(mons if k=='MON' else ows if k=='OW' else cries if k=='CRY' else stats)[vals[0]]=vals[1:]
   if line.startswith('FRAME_SIZE,'):frame_size=int(line.split(',')[1])
  nm=Path(a.gdb).with_name('arm-none-eabi-nm');symbols={}
  for line in subprocess.check_output([str(nm),'-S','--defined-only',str(elf)],text=True).splitlines():
@@ -89,16 +92,22 @@ def main():
   nat,b,hp,*rest=v;front,back,icon,pal,shiny,cry,learn,evo,form=rest
   art={key:asset(ptr)[1] for key,ptr in zip(('front','back','icon','normal','shiny'),(front,back,icon,pal,shiny))}
   row={'species_id':sid,'name':names[sid],'national':nat,'base':b,'core_eligible':sid==b and nat<=1025,'hp':hp,
-       'art':art,'cry_id':cry,'levelup_present':bool(learn),'teachable_present':bool(ows[sid][11]),
+       'stats':[hp,*stats[sid][:5]],'types':stats[sid][5:7],'ability_slots':[ows[sid][10],*stats[sid][7:9]],
+       'art':art,'art_bytes':[asset(ptr)[0] for ptr in (front,back,icon,pal,shiny)],'cry_id':cry,'cry_wave_pointer':cries[sid][0],'cry_samples':cries[sid][1],'levelup_present':bool(learn),'teachable_present':bool(ows[sid][11]),
        'evolution_table_present':bool(evo),'form_rules_present':bool(form),'ability_0':ows[sid][10],
        'follower':follower(sid,ows[sid]),'female_follower':follower(sid,ows[sid],True)}
   entries.append(row)
   if row['core_eligible']:base.append(row)
  assert len(base)==1025 and {v['national'] for v in base}==set(range(1,1026)),len(base)
- for row in base:assert all(row['art'].values()) and row['ability_0'] and row['levelup_present'],row['name']
+ for row in base:
+  assert all(row['art'].values()) and row['ability_0'] and row['levelup_present'] and row['cry_samples']>0,row['name']
+  assert all(size>=limit for size,limit in zip(row['art_bytes'],(5,5,512,2,2))),row['name']
  summary={'evidence':'linked ARM data / indexed files; no ARM, emulator, GPU or console execution',
           'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'enabled_forms':len(entries),'core_base_species':len(base),
           'generation_9_base_species':sum(v['national']>=906 for v in base),
+          'base_cries_with_samples':sum(v['cry_samples']>0 for v in base),
+          'base_unique_cry_wave_pointers':len({v['cry_wave_pointer'] for v in base}),
+          'base_short_palettes':sum(any(n<32 for n in v['art_bytes'][3:]) for v in base),
           'base_followers':dict(Counter(v['follower']['kind'] for v in base)),
           'all_form_followers':dict(Counter(v['follower']['kind'] for v in entries)),
           'limits':['source_name_match does not certify exact artwork or animation',
@@ -108,7 +117,7 @@ def main():
  a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps({'summary':summary,'entries':entries},indent=2)+'\n')
  a.output.with_suffix('.summary.json').write_text(json.dumps(summary,indent=2)+'\n')
  with a.output.with_suffix('.csv').open('w') as f:
-  w=csv.writer(f);w.writerow(['species_id','name','national','core_base','front','back','icon','normal','shiny','cry','levelup','teachable','evolution_table','form_rules','ability_0','follower_kind','frames','follower_assets','female_specific'])
-  for v in entries:w.writerow([v['species_id'],v['name'],v['national'],v['core_eligible'],*v['art'].values(),v['cry_id'],v['levelup_present'],v['teachable_present'],v['evolution_table_present'],v['form_rules_present'],v['ability_0'],v['follower']['kind'],v['follower']['frame_entries'],';'.join(v['follower']['paths']),v['female_follower']['female_specific']])
+  w=csv.writer(f);w.writerow(['species_id','name','national','core_base','stats_hp_atk_def_spatk_spdef_speed','type_ids','ability_slots','front','back','icon','normal','shiny','cry','levelup','teachable','evolution_table','form_rules','ability_0','follower_kind','frames','follower_assets','female_specific'])
+  for v in entries:w.writerow([v['species_id'],v['name'],v['national'],v['core_eligible'],';'.join(map(str,v['stats'])),';'.join(map(str,v['types'])),';'.join(map(str,v['ability_slots'])),*v['art'].values(),v['cry_id'],v['levelup_present'],v['teachable_present'],v['evolution_table_present'],v['form_rules_present'],v['ability_0'],v['follower']['kind'],v['follower']['frame_entries'],';'.join(v['follower']['paths']),v['female_follower']['female_specific']])
  print(json.dumps(summary,indent=2))
 if __name__=='__main__':main()

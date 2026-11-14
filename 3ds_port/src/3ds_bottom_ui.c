@@ -548,10 +548,19 @@ static bool8 PalFile(const char *path, Pal *dst, int count, bool8 compressed)
 /* An uncompressed game palette; the pointer may be an asset stub. */
 static void PalSymbol(const void *src, Pal *dst, int count)
 {
+#ifdef PORT_EXPANSION
+    if(count<=0 || count>16)return;
+    u32 size=Port_GetAssetSizeSized(src,0),capacity=count*32;
+    if(!size || (size&1))return;
+    if(size>capacity)size=capacity;
+    const u16 *res=Port_ResolveAssetPointerSized(src,size);
+    if(!res || Port_IsAssetStub(res))return;
+    u16 raw[count*16];memset(raw,0,capacity);memcpy(raw,res,size);
+    ToPals(dst,raw,count);
+#else
     const u16 *res = src ? Port_ResolveAssetPointer(src) : NULL;
-
-    if (res)
-        ToPals(dst, res, count);
+    if (res)ToPals(dst, res, count);
+#endif
 }
 
 #ifdef PORT_EXPANSION
@@ -911,11 +920,6 @@ static u32 sIconClock;
 
 /* Mon icons, one of their two 32x32 frames each: the party (SAVE,
  * NUZLOCKE, the party menu's, which move) and the wild list's page. */
-#ifdef PORT_EXPANSION
-#define CTR_UI_SPECIES_LIMIT (SPECIES_EGG+1)
-#else
-#define CTR_UI_SPECIES_LIMIT (NUM_SPECIES+28)
-#endif
 #define MON_ICON_SLOTS 20
 static struct
 {
@@ -1055,7 +1059,12 @@ static int FrontPic(u16 species, bool8 shiny)
         return -1;
     sIconBudget = FALSE;
     tiles = Unlz(CtrFrontPic(species), &size);
+#ifdef PORT_EXPANSION
+    pal=malloc(32);
+    if(pal && !CtrUI_ReadPalette(shiny ? CtrShinyPal(species) : CtrNormalPal(species),pal)){free(pal);pal=NULL;}
+#else
     pal = Unlz((shiny ? CtrShinyPal(species) : CtrNormalPal(species)), NULL);
+#endif
     sFronts[victim].valid = tiles && pal && size >= sizeof(sFronts[victim].tiles);
     if (sFronts[victim].valid)
     {
@@ -1092,7 +1101,12 @@ static int BagPic(bool8 female, u8 frame)
         return -1;
     sIconBudget = FALSE;
     tiles = Unlz(female ? gBagFemaleTiles : gBagMaleTiles, &size);
+#ifdef PORT_EXPANSION
+    pal=malloc(32);
+    if(pal && !CtrUI_ReadPalette(gBagPalette,pal)){free(pal);pal=NULL;}
+#else
     pal = Unlz(gBagPalette, NULL);
+#endif
     sBagPic.valid = tiles && pal && size >= (frame + 1) * sizeof(sBagPic.tiles);
     if (sBagPic.valid)
     {

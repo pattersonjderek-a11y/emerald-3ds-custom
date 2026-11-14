@@ -31,6 +31,8 @@ static const char *const sKindKeys[CTR_RANDOMIZE_KINDS]={"rand_wild","rand_start
 static CtrRandomizerTable sTable;static bool sTableBuilt;
 '''
  for signature in ['static u16 ToNational(','static u16 ToSpecies(','bool CtrRandomizer_Enabled(','uint32_t CtrRandomizer_Seed(','uint16_t CtrRandomizer_Species(']:code+=function(actual,signature)
+ code+='\n#define PLATFORM_3DS 1\n#define PORT_BRIDGE 1\n#define STARTER_MON_COUNT 3\nstatic const u16 sStarterMon[]={252,255,258};\n'
+ code+=function((a.tree/'src/starter_choose.c').read_text(),'u16 GetStarterPokemon(')
  code+=r'''
 int main(void){
  for(unsigned i=1;i<NUM_SPECIES;++i){bases[i]=i;gSpeciesInfo[i].baseHP=50;}
@@ -48,7 +50,10 @@ int main(void){
  }
  assert(!CtrRandomizer_MapNational(NULL,1)&&!CtrRandomizer_MapNational(&first,1026));
  seed=42;assert(CtrRandomizer_Species(CTR_RANDOMIZE_WILD,252)==252);
+ assert(GetStarterPokemon(1)==255);
  settings[0]=settings[1]=settings[2]=1;
+ for(unsigned i=0;i<3;++i)assert(GetStarterPokemon(i)==first.map[sStarterMon[i]]);
+ assert(GetStarterPokemon(65535)==first.map[252]);
  for(unsigned i=1;i<=1025;++i){
   u16 expected=first.map[i];
   assert(CtrRandomizer_Species(CTR_RANDOMIZE_WILD,i)==expected);

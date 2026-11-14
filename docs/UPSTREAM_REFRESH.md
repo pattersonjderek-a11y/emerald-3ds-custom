@@ -1,3 +1,8 @@
+> Historical audit: its earlier workspace/write blockers predate the user's
+> authorization to rebuild from preserved Stage D. v0.5.0 is now merged on
+> `project/stage-e-v050`; see STATUS.md/BUILD.md for current verification.
+> Earlier audit findings are retained below as history.
+
 # Emerald 3DS v0.5.0 refresh and Stage E recovery
 
 Source inspection: 13 November 2026 (America/Los_Angeles).

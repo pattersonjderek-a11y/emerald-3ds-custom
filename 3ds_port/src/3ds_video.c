@@ -12228,7 +12228,7 @@ bool CtrVideo_TopHeld(void) { return sHoldTop; }
 
 #ifdef CTR_FRAME_DUMP
 #define CTR_DUMP_SLIDER CtrDumpSlider()
-/* Measurement builds: the 3D slider from sdmc:/3ds/emerald3ds/slider.txt. */
+/* Measurement builds read slider.txt through the isolated project data path. */
 static __attribute__((unused)) float CtrDumpSlider(void)
 {
     static int read;

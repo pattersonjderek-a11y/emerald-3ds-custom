@@ -1,68 +1,85 @@
-# Stage E + Emerald 3DS v0.5.0 (implementation in progress)
+# Stage E + Emerald 3DS v0.5.0 — engineering implemented; device testing pending
 
-Branch: `project/stage-e-v050`, based on saved Stage D `b2e8116` plus the
-upstream audit checkpoint. Derek explicitly requested rebuilding from D and
-making v0.5.0 authoritative over clashing implemented/planned/future features.
-The previous local E implementation and build artifacts were absent in the
-restored workspace; E is being implemented again. Historical D evidence is in
-[STAGE_D_STATUS.md](STAGE_D_STATUS.md). Historical packages are not present on
-this restored machine and cannot be claimed hash-verified here.
+Branch: `project/stage-e-v050` in `/workspace/emerald-3ds-stage-e`.
+The original `/workspace/emerald-3ds-custom` work checkout is unchanged.
+Graphics history is merged at v0.5.0 `bcae4b70dac61419fc933084084469f6cfbe344b`;
+expansion stays at `dfb0f84374230f4d462191601179b742f9f077df`.
+Derek explicitly makes v0.5.0 authoritative over overlapping current/future
+features. Prior Stage D source/history remains preserved. Historical D evidence
+is in STAGE_D_STATUS.md; its private package was absent locally and was not
+re-downloaded or hash-verified in this session.
 
-The full upstream source/history at `bcae4b70dac61419fc933084084469f6cfbe344b`
-(v0.5.0) is merged. Its menus, renderer, editable global core randomizer and
-Nuzlocke tracker win feature conflicts. Existing expansion engine pins/data
-remain. Expansion C/API/graphics/save adapters are being reconciled with the
-new platform. Upstream's species permutation is extended to the 1,025 National
-Dex range with native ID converters; its SplitMix64/Fisher-Yates policy,
-editable global settings and 31-bit seed remain authoritative. Prior custom
-per-area/per-trainer core rules and generation/BST filters are superseded.
+## Blueprint progress
 
-New E code: independent ability/field/held domains, conservative native ability
-and item pools, form/progression protections, actual native ability accessors,
-field/hidden item acquisition hooks and wild/trainer held-item hooks. Optional
-choices are appended to the upstream randomizer page and default OFF. Native
-follower bounds, palette identity and allocation safety fixes are included.
-New runtime namespace: `/3ds/emerald3ds-custom-stage-e-v050/`; no save import.
+A–D source is carried forward: native build workflow, transactional difficulty
+record/new-game setup, core species hooks, caps/AI/item policies and prepared
+bosses. Conflicting B/C immutable species settings/generation/BST filters are
+superseded by the v0.5.0 global editable randomizer and upstream UI. Difficulty
+remains save-bound. The original-XL reports confirmed earlier C general play,
+then visual defects; they do not establish D/E hardware acceptance.
 
-Host production optional-rule and follower-palette suites pass ASan/UBSan
-(`work/optional-host.log`, `work/follower-host.log`). **Native compilation is
-not complete**: iterative builds are resolving original-engine versus expansion
-API differences. Logs are `work/native-build*.log`. No emulator/device result
-and no new SD package are claimed. Original-XL hardware acceptance remains
-pending for Derek. Source checkpoints during development are not releases.
+E now implements three independent OFF-by-default switches in OPTIONS → MODES
+→ OPTIONAL RULES: abilities, ordinary field/hidden items, occupied wild/enemy
+held-item slots. Form/signature/progression dependencies are protected. Ability
+reads share the native resolver, with battle-entry snapshots; owned abilities
+can change after global seed edits outside battle. Global settings semantics,
+including their limits, are explicit in SAVE_FORMAT.md and RULES.md.
 
-The ARM SDK image is unchanged. The rebuild now separately uses upstream's
-Python 3.13.17/Pillow 12.3.0 generator environment (`tools/stage_e.Dockerfile`).
-Build setup succeeded; SDK logs are `work/sdk-build.log`, `work/sdk-e-build.log`.
-All engine changes are captured in the canonical expansion patch (currently
-310 paths), reverse-checked. Fresh bootstrap/full regression/native/output
-checks, roster/follower audit, final documentation, private packaging and source
-sync remain finish work. No ROM/save/firmware/generated game-data artifact is
-committed. See SOURCES.md and the amended blueprint for precedence/provenance.
+The v0.5.0 renderer, menus, tracker and global species permutation are retained
+with native expansion APIs/compression. The permutation includes all 1,025
+National Dex bases, including 120 Gen 9 species. Native encounter methods/times
+and previews agree, including timed projections and phase-cache invalidation.
+The upstream physical/special split switch now controls actual native categories.
+Follower bounds/palette/allocation/slot-pressure protections and native border
+adapters are included. Raw/short palette support fixes native UI/Dex/bag decoding.
 
-## 14 November checkpoint (not a release)
+## Actual evidence
 
-Production configuration/sector recovery, difficulty/factory composition,
-optional rules, follower palette/bounds and 1,025-entry upstream randomizer host
-checks pass under ASan/UBSan. Native compilation reached final linking; API
-reconciliation continues (logs through work/native-build-35.log). No playable
-Stage E artifact or hardware result is claimed at this checkpoint. Canonical
-expansion patch includes the engine fixes; new platform adapters are tracked.
-The v0.5.0 physical/special split switch now drives the native category accessor.
-Next: finish native output, complete linked content/follower inventory, fresh
-bootstrap and regression checks, then prepare a separate private test package.
+- **Native compilation:** full ARM11 hard-float `.3dsx` produced. Current outputs
+  are `build/stage-e/3ds_port/emerald3ds.3dsx`, `emerald3ds.elf` and
+  `build/gamedata_image.elf` beneath that port directory. Native commands:
+  `make -C build/stage-e/3ds_port -j6 PYTHON=python3`, then `make ... verify`.
+  `work/native-build-36.log`, `work/verify-e-3.log` and subsequent final gates
+  distinguish compilation from host checks. No strong undefined symbols.
+- **Host/data checks:** production save/CRC/two-slot recovery, cancellation,
+  new-save initialization, global core/starter resolution, all encounter tables,
+  optional rules, follower policy/palettes, native picture/Dex/bag palette paths,
+  difficulty, 49 linked boss variants/238 party entries, and existing regressions.
+  ASan/UBSan are enabled in production-rule fixtures. Full builder suite:
+  254 tests, four skips; nine enhancement tests executed and passed separately.
+  Skips: absent optional private follower copy, two Tk GUI tests without libtk,
+  and a stock source-language test without its default tree. Stock translation
+  hash fixtures remain original-engine-only; expanded gameplay is English.
+- **Fresh source:** 306 patched engine files and canonical overlays reproduce
+  and compare in a separate clean bootstrap. Production save/difficulty/optional/
+  follower checks pass there. This is source reproduction, not a second complete
+  fresh native build. A stale container proxy prevented one network fetch;
+  the exact locally available pinned object supplied the clean checkout.
+- **Assets:** 17,534 linked assets and 1,451 pointer aliases; 698 linked sprite
+  animation tables/1,818 valid pointers. Coverage reports are CONTENT_AUDIT.md,
+  STAGE_E_CONTENT.csv, STAGE_E_CONTENT_SUMMARY.json and STAGE_E_ABILITY_ACCESS.json.
+  Generated voxel checks: 188 interiors, zero failures, 77 upstream allowances,
+  zero console approvals. No new artwork is claimed.
+- **Storage:** actual filesystem/save tests preserve original/A/B/C/D sentinels;
+  mutable state/data paths use `/3ds/emerald3ds-custom-stage-e-v050/`.
+  No save migration. Source and engine-only publication audits run separately
+  from private content-bearing packaging. No ROM/save/firmware/data pack is committed.
+- **Emulator / physical console / campaign:** NOT performed for this integration.
 
-## Second 14 November checkpoint
+## Remaining acceptance and next task
 
-Fresh bootstrap reproduced 306 engine paths and all canonical overlays. It
-caught an omitted src/item_ball.c change; regeneration now requires new/previously
-unlisted edited paths explicitly and fails if they would be omitted. Production
-configuration/difficulty/optional/follower checks pass on the fresh tree.
-Full 254 builder tests pass with four documented optional/environment skips.
-Native UI/Dex objects also compile for the original engine; full stock build is
-not claimed. New tests cover native linked-list text printers and native palette
-fade holding (28 cases). Wild table adapters now apply timed substitutions before
-the same upstream permutation as the preview and invalidate their cache by phase.
-The native voxel build has completed model verification: 188 rooms, zero failures,
-77 existing upstream allowances, zero console approvals. buildings.bin is emitted;
-relief/terrace generation continues. Final native .3dsx and SD package still pending.
+Package the verified clean source checkpoint privately, preserving older test
+packages. The intended ZIP is
+`work/stage-e-private/Emerald3DS-Custom-StageE-private.zip`; the package manifest
+and STAGE_E_BUILD_OUTPUTS.json record its exact revision/hashes once created.
+Use DEVICE_TESTS.md on the original XL. Seed 1 predicts Floragato (#907) in
+Torchic's ball, providing an easy Gen 9 device check without a developer grant.
+
+119 extra form mappings use the native fallback because their raw follower
+metadata is incomplete; 490 are shared/unmatched by source name. Base art
+metadata is present but not visually certified. Expansion local multiplayer/
+trade UI, localized expansion builds and full original-engine application build
+are outside current verification; some screens retain native pixel controls.
+Original-XL frame pacing, memory, scenic/follower transitions and complete campaign
+stability remain pending. The next blueprint milestone is Stage F campaign/
+packaging acceptance after device feedback; no new Stage F gameplay is implemented.

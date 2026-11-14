@@ -115,7 +115,7 @@ void CtrCycle_Input(CtrInputSample *sample)
  * turns play (FIGHT, the first move, the messages). A is pressed through the
  * title too, CONTINUE being the default.
  *
- * sdmc:/3ds/emerald3ds/battletest.txt, optional, one key=value a line, for
+ * battletest.txt in the isolated project data directory, optional, one key=value a line, for
  * measuring one battle over and over: species= level= (the wild one), move=
  * (the lead's first move, its PP and both sides' HP kept full so the battle
  * never ends), trainer= (that trainer's battle instead, a double one for a

@@ -1,0 +1,1619 @@
+{
+  "evidence": "source access-path audit; production resolver tests and native compilation are separate evidence",
+  "raw_species_reads": [
+    {
+      "file": "src/battle_frontier.c",
+      "line": 348,
+      "role": "converts protected facility template IDs to stored slots",
+      "source": "u32 maxAbilities = ARRAY_COUNT(speciesInfo->abilities);"
+    },
+    {
+      "file": "src/battle_frontier.c",
+      "line": 351,
+      "role": "converts protected facility template IDs to stored slots",
+      "source": "if (speciesInfo->abilities[ability] == fmon->ability)"
+    },
+    {
+      "file": "src/custom_random.c",
+      "line": 120,
+      "role": "constructor stores a native ability ID for conversion to slot",
+      "source": "out->ability=gSpeciesInfo[species].abilities[0];"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3258,
+      "role": "central resolver native input / non-port fallback",
+      "source": "return CtrOptional_Ability(species,slot,gSpeciesInfo[species].abilities[slot]);"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3260,
+      "role": "central resolver native input / non-port fallback",
+      "source": "return gSpeciesInfo[species].abilities[slot];"
+    },
+    {
+      "file": "src/trainer_util.c",
+      "line": 83,
+      "role": "converts native trainer template IDs to stored ability slots",
+      "source": "u32 maxAbilityNum = ARRAY_COUNT(speciesInfo->abilities);"
+    },
+    {
+      "file": "src/trainer_util.c",
+      "line": 86,
+      "role": "converts native trainer template IDs to stored ability slots",
+      "source": "if (speciesInfo->abilities[abilityNum] == ability)"
+    }
+  ],
+  "accessor_calls": [
+    {
+      "file": "src/battle_ai_main.c",
+      "line": 666,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_ai_switch.c",
+      "line": 59,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_ai_util.c",
+      "line": 393,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_ai_util.c",
+      "line": 394,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_ai_util.c",
+      "line": 394,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_ai_util.c",
+      "line": 395,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_ai_util.c",
+      "line": 1790,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_ai_util.c",
+      "line": 3923,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_anim_effects_1.c",
+      "line": 6796,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_anim_effects_3.c",
+      "line": 5663,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_anim_new.c",
+      "line": 8245,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_controller_player.c",
+      "line": 2437,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_controller_player.c",
+      "line": 2438,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_dome.c",
+      "line": 2392,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_dome.c",
+      "line": 5133,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_dome.c",
+      "line": 5135,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_dynamax.c",
+      "line": 185,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_dynamax.c",
+      "line": 208,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_dynamax.c",
+      "line": 216,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_dynamax.c",
+      "line": 243,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 104,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 276,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 352,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 366,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 406,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 416,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 495,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 505,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 533,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 581,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 612,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 630,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 632,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 655,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 677,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 711,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 927,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 1289,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 1331,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 1367,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 1394,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_end_turn.c",
+      "line": 1619,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 78,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 95,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 107,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 168,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 210,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 311,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 314,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 334,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 337,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 358,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 374,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 455,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 470,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 476,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 504,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 521,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 536,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 556,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 570,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 587,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 621,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 799,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 834,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 895,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 917,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 945,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 959,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 998,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_hold_effects.c",
+      "line": 1044,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 3113,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 3166,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 3729,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 4202,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 4802,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 4991,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_main.c",
+      "line": 5642,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_message.c",
+      "line": 3701,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 63,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 270,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 815,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 1022,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 1027,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 1415,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 3158,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 4615,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 5364,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 5535,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 5787,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_move_resolution.c",
+      "line": 6047,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_pike.c",
+      "line": 802,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_pike.c",
+      "line": 1132,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_pike.c",
+      "line": 1612,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_pyramid.c",
+      "line": 1471,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_pyramid.c",
+      "line": 1532,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_pyramid.c",
+      "line": 1552,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_pyramid.c",
+      "line": 1618,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1085,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1086,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1195,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1620,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1673,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1686,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1800,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1803,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1819,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 1820,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 2002,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 2058,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 2956,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 3273,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 3687,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 3789,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 4223,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 4401,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5316,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5344,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5462,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5463,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5807,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5808,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 5842,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6005,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6472,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6492,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6523,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6525,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6528,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6638,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 6810,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7001,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7100,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7127,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7130,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7280,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7517,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7588,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7725,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7733,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7744,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7756,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 7836,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 8967,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9039,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9526,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9568,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9652,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9708,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9779,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9837,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9892,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9920,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 9929,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10027,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10047,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10157,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10165,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10165,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10173,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10375,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10427,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10568,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10884,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10908,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10943,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 10995,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11020,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11276,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11277,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11830,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11924,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11943,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 11958,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 12047,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 12119,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_script_commands.c",
+      "line": 12143,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_set_effect.c",
+      "line": 385,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_set_effect.c",
+      "line": 1465,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_switch_in.c",
+      "line": 26,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_terastal.c",
+      "line": 36,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_tv.c",
+      "line": 1319,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_tv.c",
+      "line": 1320,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 465,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 542,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 630,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 678,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 787,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 1042,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 1580,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 1682,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 1782,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 1789,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 1798,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 2988,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 2989,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 2990,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 3066,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 3958,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 3959,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 3981,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4032,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4065,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4067,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4086,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4121,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4168,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4191,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4213,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4214,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4233,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4234,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4283,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4350,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4369,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4370,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4371,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4387,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4447,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4536,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4784,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4828,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4872,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4926,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4969,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4971,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4981,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4993,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 4999,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 5001,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 5512,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 5515,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 5535,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 5713,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 5733,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 8443,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 8586,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 8623,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 8635,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 8653,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 8935,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 9265,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 9475,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 9543,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 9734,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 9993,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 10070,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 10159,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 10734,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 10761,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util.c",
+      "line": 10784,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/battle_util2.c",
+      "line": 192,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3248,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3248,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3248,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3250,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3259,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3261,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3261,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3263,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3266,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3268,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3283,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3283,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 3283,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 4631,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 4632,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/debug.c",
+      "line": 4633,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/dexnav.c",
+      "line": 489,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/dexnav.c",
+      "line": 1360,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/dexnav.c",
+      "line": 1369,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/dexnav.c",
+      "line": 2130,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/dexnav.c",
+      "line": 2131,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/event_object_movement.c",
+      "line": 2667,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/event_object_movement.c",
+      "line": 5529,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/fishing.c",
+      "line": 492,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/fldeff_cut.c",
+      "line": 166,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/item_use.c",
+      "line": 1333,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/item_use.c",
+      "line": 1379,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/match_call.c",
+      "line": 1061,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/overworld.c",
+      "line": 1589,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/ow_abilities.c",
+      "line": 89,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/ow_abilities.c",
+      "line": 104,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/party_menu.c",
+      "line": 5438,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/party_menu.c",
+      "line": 5438,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/party_menu.c",
+      "line": 5439,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/party_menu.c",
+      "line": 5452,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/party_menu.c",
+      "line": 5524,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/party_menu.c",
+      "line": 5537,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokedex_plus_hgss.c",
+      "line": 1947,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokedex_plus_hgss.c",
+      "line": 1948,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokedex_plus_hgss.c",
+      "line": 1949,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 1040,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3115,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3120,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3128,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3134,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3140,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3144,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3253,
+      "accessor": "GetSpeciesAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 3446,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 5447,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 5980,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 6631,
+      "accessor": "GetBattlerAbility"
+    },
+    {
+      "file": "src/pokemon.c",
+      "line": 6804,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon_summary_screen.c",
+      "line": 2362,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon_summary_screen.c",
+      "line": 4370,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/pokemon_summary_screen.c",
+      "line": 4376,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/trainer_util.c",
+      "line": 167,
+      "accessor": "GetAbilityBySpecies"
+    },
+    {
+      "file": "src/wild_encounter.c",
+      "line": 400,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/wild_encounter.c",
+      "line": 625,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/wild_encounter.c",
+      "line": 1959,
+      "accessor": "GetMonAbility"
+    },
+    {
+      "file": "src/wild_encounter.c",
+      "line": 2031,
+      "accessor": "GetMonAbility"
+    }
+  ],
+  "notes": [
+    "battle ability state can intentionally change through Trace, Skill Swap, etc.",
+    "optional resolver preserves native stored ability slot ABI and protected signature/form species",
+    "this audit does not certify every ability mechanic or a campaign playthrough"
+  ]
+}

@@ -77,13 +77,18 @@ static u32 Unlz(const void *src, void *dst, u32 capacity)
  * 0 = transparent): the first two of its frames (Castform has four). */
 static unsigned DecodePicture(u16 species, u16 *out)
 {
+    if(species==SPECIES_NONE || species>=CTR_UI_SPECIES_LIMIT)return 0;
     static u8 tiles[4 * FRAME_BYTES];
     static u16 pal[16];
     unsigned frames;
     u32 size = Unlz(CtrFrontPic(species), tiles, sizeof(tiles));
 
-    if (size < FRAME_BYTES || Unlz(CtrNormalPal(species), pal, sizeof(pal)) != sizeof(pal))
-        return 0;
+    if (size < FRAME_BYTES)return 0;
+#ifdef PORT_EXPANSION
+    if(!CtrUI_ReadPalette(CtrNormalPal(species),pal))return 0;
+#else
+    if(Unlz(CtrNormalPal(species),pal,sizeof(pal))!=sizeof(pal))return 0;
+#endif
     frames = size >= 2 * FRAME_BYTES ? 2 : 1;
     for (unsigned f = 0; f < frames; ++f)
         for (unsigned y = 0; y < CTR_DEX_TOP_DIM; ++y)

@@ -70,7 +70,13 @@ def test_flags(built):
     bad = []
     for m in flags:
         layout = m.layout
-        frames = [vb.anim_frame(FLAG_ANIM[layout.id] % k, FLAG_FIRST_TILE) for k in range(4)]
+        def frame(k):
+            path=FLAG_ANIM[layout.id] % k
+            if not os.path.exists(os.path.join(vb.ROOT,path)):
+                # Native INCGFX generates by the PNG source filename.
+                path="build/assets/"+path.removesuffix(".4bpp")+".png.4bpp"
+            return vb.anim_frame(path,FLAG_FIRST_TILE)
+        frames = [frame(k) for k in range(4)]
         x0, y0 = m.spec["rect"][:2]
         for (lid, cx, cy) in m.spec["at"]:
             for (u, v, tile, pixel, colours, bg) in m.live:
