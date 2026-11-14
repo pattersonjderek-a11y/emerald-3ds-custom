@@ -7282,10 +7282,43 @@ index d7a02311..87412c3f 100644
  #define FLAG_REGISTERED_BRAWLY               (TRAINER_REGISTERED_FLAGS_START + REMATCH_BRAWLY)
  #define FLAG_REGISTERED_WATTSON              (TRAINER_REGISTERED_FLAGS_START + REMATCH_WATTSON)
 diff --git c/include/constants/global.h w/include/constants/global.h
-index 26090949..eeae9e26 100644
+index 26090949..96da2885 100644
 --- c/include/constants/global.h
 +++ w/include/constants/global.h
-@@ -166,8 +166,13 @@ enum ContestCategories
+@@ -51,6 +51,13 @@ enum __attribute__((packed)) GameVersion
+     VERSION_GAMECUBE = 15,
+     NUM_VERSIONS = VERSION_GAMECUBE,
+ };
++#ifdef PORT_BRIDGE
++#define VERSION_SAPPHIRE 1
++#define VERSION_RUBY 2
++#define VERSION_EMERALD 3
++#define VERSION_FIRE_RED 4
++#define VERSION_LEAF_GREEN 5
++#endif
+ 
+ enum Language
+ {
+@@ -63,6 +70,18 @@ enum Language
+     LANGUAGE_SPANISH = 7,
+     NUM_LANGUAGES = LANGUAGE_SPANISH,
+ };
++#ifdef PORT_BRIDGE
++/* Expansion language IDs are enum values; upstream platform #if branches
++ * require preprocessor constants too. Keep numeric values identical. */
++#define LANGUAGE_JAPANESE 1
++#define LANGUAGE_ENGLISH 2
++#define LANGUAGE_FRENCH 3
++#define LANGUAGE_ITALIAN 4
++#define LANGUAGE_GERMAN 5
++#define LANGUAGE_KOREAN 6
++#define LANGUAGE_SPANISH 7
++#endif
++
+ 
+ #ifdef FIRERED
+     #define GAME_VERSION (VERSION_FIRE_RED)
+@@ -166,8 +185,13 @@ enum ContestCategories
  #define WONDER_NEWS_TEXT_LENGTH 40
  #define WONDER_CARD_BODY_TEXT_LINES 4
  #define WONDER_NEWS_BODY_TEXT_LINES 10
@@ -8418,6 +8451,29 @@ index d1bd3302..e8931de4 100644
 +bool32 CheckHeap(void);
  
  #endif // GUARD_ALLOC_H
+diff --git c/include/move.h w/include/move.h
+index 0e61bb09..5c3e198d 100644
+--- c/include/move.h
++++ w/include/move.h
+@@ -1,3 +1,6 @@
++#ifdef PORT_BRIDGE
++#include "3ds_expansion.h"
++#endif
+ #ifndef GUARD_MOVES_H
+ #define GUARD_MOVES_H
+ 
+@@ -276,7 +279,11 @@ static inline enum Type GetMoveType(enum Move moveId)
+ 
+ static inline enum DamageCategory GetMoveCategory(enum Move moveId)
+ {
++#ifdef PORT_BRIDGE
++    return CtrExpansion_MoveCategory(moveId,gMovesInfo[SanitizeMoveId(moveId)].category);
++#else
+     return gMovesInfo[SanitizeMoveId(moveId)].category;
++#endif
+ }
+ 
+ static inline u32 GetMovePower(enum Move moveId)
 diff --git c/include/mp2k_common.h w/include/mp2k_common.h
 new file mode 100644
 index 00000000..73dddaa4
@@ -12067,7 +12123,7 @@ index f3a1186d..1d6f19ad 100644
  {
      DestroyTask(taskId);
 diff --git c/src/battle_main.c w/src/battle_main.c
-index 46af80f3..d5407730 100644
+index 46af80f3..7f4c21af 100644
 --- c/src/battle_main.c
 +++ w/src/battle_main.c
 @@ -1,4 +1,13 @@
@@ -12103,7 +12159,17 @@ index 46af80f3..d5407730 100644
  COMMON_DATA void (*gBattleMainFunc)(void) = NULL;
  COMMON_DATA struct BattleResults gBattleResults = {0};
  COMMON_DATA u8 gLeveledUpInBattle = 0;
-@@ -602,6 +614,9 @@ static void CB2_InitBattleInternal(void)
+@@ -587,6 +599,9 @@ static void CB2_InitBattleInternal(void)
+         SetMainCallback2(CB2_HandleStartBattle);
+ 
+     gMain.inBattle = TRUE;
++#ifdef PORT_BRIDGE
++    CtrOptional_BeginBattle();
++#endif
+     gSaveBlock2Ptr->frontier.disableRecordBattle = FALSE;
+ 
+     for (i = 0; i < PARTY_SIZE; i++)
+@@ -602,6 +617,9 @@ static void CB2_InitBattleInternal(void)
      {
          if (!(gBattleTypeFlags & (BATTLE_TYPE_LEGENDARY | BATTLE_TYPE_PYRAMID | BATTLE_TYPE_PIKE)))
              SetWildMonHeldItem();
@@ -12113,7 +12179,7 @@ index 46af80f3..d5407730 100644
          TryFormChange(&gParties[B_TRAINER_OPPONENT_A][0], FORM_CHANGE_BEGIN_WILD_ENCOUNTER, B_TRAINER_OPPONENT_A);
          if (IsDoubleBattle())
              TryFormChange(&gParties[B_TRAINER_OPPONENT_A][1], FORM_CHANGE_BEGIN_WILD_ENCOUNTER, B_TRAINER_OPPONENT_A);
-@@ -2745,10 +2760,17 @@ static void ClearSetBScriptingStruct(void)
+@@ -2745,10 +2763,17 @@ static void ClearSetBScriptingStruct(void)
  
      gBattleScripting.windowsType = temp;
      gBattleScripting.battleStyle = gSaveBlock2Ptr->optionsBattleStyle;
@@ -12131,7 +12197,7 @@ index 46af80f3..d5407730 100644
      gBattleScripting.specialTrainerBattleType = specialBattleType;
  }
  
-@@ -3786,9 +3808,53 @@ enum
+@@ -3786,9 +3811,53 @@ enum
      STATE_SELECTION_SCRIPT_MAY_RUN
  };
  
@@ -12185,7 +12251,7 @@ index 46af80f3..d5407730 100644
  
      gBattleCommunication[ACTIONS_CONFIRMED_COUNT] = 0;
      for (enum BattlerId battlerIndex = 0; battlerIndex < gBattlersCount; battlerIndex++)
-@@ -3908,6 +3974,15 @@ static void HandleTurnActionSelectionState(void)
+@@ -3908,6 +3977,15 @@ static void HandleTurnActionSelectionState(void)
                                                              i);
                          }
  
@@ -12201,7 +12267,7 @@ index 46af80f3..d5407730 100644
                          BtlController_EmitChooseMove(battler, B_COMM_TO_CONTROLLER, IsDoubleBattle() != 0, FALSE, &moveInfo);
                          MarkBattlerForControllerExec(battler);
                      }
-@@ -4144,6 +4219,14 @@ static void HandleTurnActionSelectionState(void)
+@@ -4144,6 +4222,14 @@ static void HandleTurnActionSelectionState(void)
                                      gimmick = gBattleStruct->gimmick.usableGimmick[battler];
                                  TestRunner_Battle_CheckChosenMove(battler, gChosenMoveByBattler[battler], gBattleStruct->moveTarget[battler], gimmick);
                              }
@@ -12216,7 +12282,7 @@ index 46af80f3..d5407730 100644
                          }
                          break;
                      }
-@@ -5317,6 +5400,15 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
+@@ -5317,6 +5403,15 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
  {
      if (!gPaletteFade.active)
      {
@@ -12232,7 +12298,7 @@ index 46af80f3..d5407730 100644
          memset(&gBattleMons, 0, sizeof(struct BattlePokemon) * MAX_BATTLERS_COUNT);
          gIsFishingEncounter = FALSE;
          gIsSurfingEncounter = FALSE;
-@@ -5351,6 +5443,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
+@@ -5351,6 +5446,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
          }
      }
  
@@ -12240,7 +12306,7 @@ index 46af80f3..d5407730 100644
      FreeAllWindowBuffers();
      if (!(gBattleTypeFlags & BATTLE_TYPE_LINK))
      {
-@@ -5365,6 +5458,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
+@@ -5365,6 +5461,7 @@ static void FreeResetData_ReturnToOvOrDoEvolutions(void)
          FreeBattleResources();
          FreeBattleSpritesData();
      }
@@ -13411,7 +13477,7 @@ index 00000000..27aab04b
 +#endif
 diff --git c/src/custom_random.c w/src/custom_random.c
 new file mode 100644
-index 00000000..a46a001b
+index 00000000..2b97fb0b
 --- /dev/null
 +++ w/src/custom_random.c
 @@ -0,0 +1,114 @@
@@ -13507,7 +13573,7 @@ index 00000000..a46a001b
 +void CustomRandom_BeginTrainer(u16 id)
 +{
 +    sTrainerId=id;
-+    sTrainerContext=id<TRAINERS_COUNT && !(gBattleTypeFlags & (BATTLE_TYPE_LINK|BATTLE_TYPE_RECORDED|BATTLE_TYPE_FRONTIER|BATTLE_TYPE_TRAINER_HILL|BATTLE_TYPE_SECRET_BASE));
++    sTrainerContext=id<TRAINERS_COUNT && !(gBattleTypeFlags & (BATTLE_TYPE_LINK|BATTLE_TYPE_RECORDED|BATTLE_TYPE_FRONTIER|BATTLE_TYPE_TRAINER_HILL|BATTLE_TYPE_SECRET_BASE|BATTLE_TYPE_FIRST_BATTLE|BATTLE_TYPE_CATCH_TUTORIAL|BATTLE_TYPE_EREADER_TRAINER|BATTLE_TYPE_POKEDUDE));
 +}
 +void CustomRandom_EndTrainer(void) { sTrainerContext=false; }
 +bool CustomRandom_TrainerActive(void) { return sTrainerContext && CustomRandom_Enabled(CR_RANDOM_TRAINERS); }
@@ -13587,7 +13653,7 @@ index 00000000..5e4dcecf
 +}
 diff --git c/src/custom_run.c w/src/custom_run.c
 new file mode 100644
-index 00000000..cb2c4786
+index 00000000..d96237b0
 --- /dev/null
 +++ w/src/custom_run.c
 @@ -0,0 +1,205 @@
@@ -13713,7 +13779,7 @@ index 00000000..cb2c4786
 +        }
 +        strcpy(lines[11],"A RULES / OVERVIEW - B RETURN");
 +    } else CR_MenuLines(&sMenu,lines);
-+    if ((sReadOnly && !sDifficultyPage) || (!sReadOnly && sMenu.page==CR_PAGE_SUMMARY && !sMenu.summaryRules)) {
++    if ((sReadOnly && !sDifficultyPage && CustomRun_CanPlay()) || (!sReadOnly && sMenu.page==CR_PAGE_SUMMARY && !sMenu.summaryRules)) {
 +        strcpy(lines[3],"RANDOMIZER: OPTIONS - MODES");
 +        snprintf(lines[4],36,"DIFFICULTY IS SAVE-BOUND");
 +        snprintf(lines[5],36,"UPSTREAM SEED: %lu",(unsigned long)CtrRandomizer_Seed());
@@ -13798,10 +13864,10 @@ index 00000000..cb2c4786
 +#endif
 diff --git c/src/custom_run_config.c w/src/custom_run_config.c
 new file mode 100644
-index 00000000..d136f15e
+index 00000000..ca51bca5
 --- /dev/null
 +++ w/src/custom_run_config.c
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,141 @@
 +/* Versioned, explicitly little-endian data in SaveBlock1's reserved 52 bytes.
 + * No sidecar, event flag, variable, global options file or native RNG access. */
 +#include "custom_run_config.h"
@@ -13835,7 +13901,6 @@ index 00000000..d136f15e
 +        if (c->randomOptions || c->balanceFlags || c->generations != CR_GENERATIONS) return CR_RULES;
 +        if (c->algorithm != 0) return CR_VERSION;
 +    } else if (c->mode == CR_RANDOMIZED) {
-+        return CR_CONTENT; /* v0.5.0 global randomizer supersedes old run-key policies */
 +        if (!c->randomOptions || (c->randomOptions & ~CR_CORE_OPTIONS)
 +            || !c->generations || (c->generations & ~CR_GENERATIONS)
 +            || (c->balanceFlags & ~(CR_BALANCE_NO_LEGENDS | CR_BALANCE_SIMILAR))) return CR_RULES;
@@ -13946,166 +14011,79 @@ index 00000000..d136f15e
 +}
 diff --git c/src/custom_run_menu_model.c w/src/custom_run_menu_model.c
 new file mode 100644
-index 00000000..982ebe2b
+index 00000000..78c964ff
 --- /dev/null
 +++ w/src/custom_run_menu_model.c
-@@ -0,0 +1,171 @@
+@@ -0,0 +1,84 @@
++/* Difficulty-only setup. v0.5.0 OPTIONS owns global species/optional settings. */
 +#include "custom_run_menu_model.h"
-+#include "custom_random_core.h"
 +#include <stdio.h>
 +#include <string.h>
++static void Page(struct CRMenu *m,enum CRPage page){m->page=page;m->selected=0;m->notice=false;}
 +void CR_MenuBegin(struct CRMenu *m,uint32_t seed,uint32_t runId)
 +{
-+    memset(m,0,sizeof(*m)); CR_Begin(&m->draft,seed,runId);
++    memset(m,0,sizeof(*m));CR_Begin(&m->draft,seed,runId);Page(m,CR_PAGE_DIFFICULTY);
 +}
-+static void Page(struct CRMenu *m,enum CRPage p) { m->page=p; m->selected=0; m->notice=false; }
 +enum CROutcome CR_MenuInput(struct CRMenu *m,unsigned keys,uint32_t newSeed)
 +{
-+    static const unsigned counts[]={2,3,10,4,1,2,10,3,7};
++    (void)newSeed;
++    if(m->draft.confirmed||!m->draft.editing)return CR_STAY;
++    if(keys&CR_B){
++        if(m->page==CR_PAGE_DIFFICULTY){CR_Cancel(&m->draft);return CR_CANCELLED;}
++        Page(m,CR_PAGE_DIFFICULTY);return CR_STAY;
++    }
++    if(m->page==CR_PAGE_SUMMARY&&(keys&(CR_LEFT|CR_RIGHT))){m->summaryRules=!m->summaryRules;return CR_STAY;}
++    unsigned count=m->page==CR_PAGE_DIFFICULTY?3:m->page==CR_PAGE_DIFFICULTY_CUSTOM?7:2;
++    if(keys&CR_UP)m->selected=(m->selected+count-1)%count;
++    if(keys&CR_DOWN)m->selected=(m->selected+1)%count;
++    if(!(keys&CR_A))return CR_STAY;
 +    struct CRConfig *c=&m->draft.config;
-+    if(m->draft.confirmed || !m->draft.editing) return CR_STAY;
-+    if(m->page==CR_PAGE_DIGITS) {
-+        if(keys&CR_B) { Page(m,CR_PAGE_SEED); return CR_STAY; }
-+        if(keys&CR_LEFT) m->digit=(m->digit+9)%10;
-+        if(keys&CR_RIGHT) m->digit=(m->digit+1)%10;
-+        if(keys&CR_UP) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+1)%10;
-+        if(keys&CR_DOWN) m->digits[m->digit]='0'+(m->digits[m->digit]-'0'+9)%10;
-+        if(keys&CR_A) {
-+            uint32_t seed;
-+            if(CR_ParseSeed(m->digits,&seed)) { c->seed=seed; m->draft.manualSeed=true; Page(m,CR_PAGE_SEED); }
-+            else m->notice=true;
-+        }
-+        return CR_STAY;
-+    }
-+    if(keys&CR_B) {
-+        enum CRPage back;
-+        if(m->page==CR_PAGE_MODE) { CR_Cancel(&m->draft); return CR_CANCELLED; }
-+        back=m->page==CR_PAGE_DIFFICULTY_CUSTOM ? CR_PAGE_DIFFICULTY : m->page==CR_PAGE_DIFFICULTY ? CR_PAGE_MODE : m->page==CR_PAGE_CUSTOM || m->page==CR_PAGE_SUMMARY ? CR_PAGE_SEED
-+            : m->page==CR_PAGE_GENERATIONS || m->page==CR_PAGE_BALANCE ? CR_PAGE_CUSTOM : CR_PAGE_DIFFICULTY;
-+        Page(m,back); return CR_STAY;
-+    }
-+    if(m->page==CR_PAGE_SUMMARY && (keys&(CR_LEFT|CR_RIGHT))) { m->summaryRules=!m->summaryRules; return CR_STAY; }
-+    if(keys&CR_UP) m->selected=(m->selected+counts[m->page]-1)%counts[m->page];
-+    if(keys&CR_DOWN) m->selected=(m->selected+1)%counts[m->page];
-+    if(!(keys&CR_A)) return CR_STAY;
-+    switch(m->page) {
-+    case CR_PAGE_MODE:
-+        c->mode=m->selected;
-+        c->randomOptions=c->mode==CR_RANDOMIZED ? CR_CORE_OPTIONS : 0;
-+        c->algorithm=c->mode==CR_RANDOMIZED ? CR_ALGORITHM : 0;
-+        c->contentRules=CR_CONTENT_RULES; c->generations=CR_GENERATIONS; c->balanceFlags=0;
-+        Page(m,CR_PAGE_DIFFICULTY); break;
++    switch(m->page){
 +    case CR_PAGE_DIFFICULTY:
-+        CR_SetDifficulty(c,m->selected);
-+        Page(m,c->difficulty==CR_CUSTOM ? CR_PAGE_DIFFICULTY_CUSTOM : CR_PAGE_SEED);
-+        break;
++        CR_SetDifficulty(c,m->selected);Page(m,c->difficulty==CR_CUSTOM?CR_PAGE_DIFFICULTY_CUSTOM:CR_PAGE_SUMMARY);break;
 +    case CR_PAGE_DIFFICULTY_CUSTOM:
-+        if(m->selected==0) c->capMode=(c->capMode+1)%3;
-+        else if(m->selected==4) c->aiPolicy^=1;
-+        else if(m->selected==6) Page(m,CR_PAGE_SEED);
-+        else c->difficultyOptions^=m->selected==5 ? CR_BOSS_PREP : 1u<<(m->selected-1);
-+        break;
-+    case CR_PAGE_CUSTOM:
-+        if(m->selected<3) {
-+            uint32_t options=c->randomOptions^(1u<<m->selected);
-+            if(options) { c->randomOptions=options; m->notice=false; } else m->notice=true;
-+        } else if(m->selected==6) Page(m,CR_PAGE_GENERATIONS);
-+        else if(m->selected==7) Page(m,CR_PAGE_BALANCE);
-+        else if(m->selected==8) Page(m,CR_PAGE_DIFFICULTY);
-+        else if(m->selected==9) Page(m,CR_PAGE_SEED);
-+        else m->notice=true;
-+        break;
-+    case CR_PAGE_GENERATIONS:
-+        if(m->selected==9) Page(m,CR_PAGE_CUSTOM);
-+        else if(c->generations^(1u<<m->selected)) { c->generations^=1u<<m->selected; m->notice=false; }
-+        else m->notice=true;
-+        break;
-+    case CR_PAGE_BALANCE:
-+        if(m->selected==2) Page(m,CR_PAGE_CUSTOM);
-+        else c->balanceFlags^=1u<<m->selected;
-+        break;
-+    case CR_PAGE_SEED:
-+        if(!m->selected) { c->seed=newSeed; m->draft.manualSeed=false; }
-+        else if(m->selected==1) { snprintf(m->digits,sizeof(m->digits),"%010lu",(unsigned long)c->seed); m->digit=0; Page(m,CR_PAGE_DIGITS); }
-+        else if(m->selected==2) { if(c->mode==CR_RANDOMIZED) Page(m,CR_PAGE_CUSTOM); else m->notice=true; }
-+        else Page(m,CR_PAGE_SUMMARY);
++        if(m->selected==0)c->capMode=(c->capMode+1)%3;
++        else if(m->selected==4)c->aiPolicy^=1;
++        else if(m->selected==6)Page(m,CR_PAGE_SUMMARY);
++        else c->difficultyOptions^=m->selected==5?CR_BOSS_PREP:1u<<(m->selected-1);
 +        break;
 +    case CR_PAGE_SUMMARY:
-+        if(m->selected) Page(m,CR_PAGE_SEED);
-+        else if(CR_Confirm(&m->draft)) return CR_ACCEPTED;
++        if(m->selected)Page(m,CR_PAGE_DIFFICULTY);
++        else if(CR_Confirm(&m->draft))return CR_ACCEPTED;
 +        break;
-+    default: break;
++    default:Page(m,CR_PAGE_DIFFICULTY);break;
 +    }
 +    return CR_STAY;
 +}
-+static const char *On(bool value) { return value ? "ON" : "OFF"; }
 +void CR_GenerationText(char out[36],uint16_t generations)
 +{
-+    unsigned i; size_t pos=6;
-+    strcpy(out,"GENS: ");
-+    for(i=0;i<9;++i) if(generations&(1u<<i)) { out[pos++]='1'+i; out[pos++]=' '; }
++    unsigned i;size_t pos=6;strcpy(out,"GENS: ");
++    for(i=0;i<9;++i) {
++        if(generations&(1u<<i)) {out[pos++]='1'+i;out[pos++]=' ';}
++    }
 +    out[pos]=0;
 +}
 +void CR_MenuLines(const struct CRMenu *m,char l[12][36])
 +{
-+    const struct CRConfig *c=&m->draft.config;
-+    unsigned i,first=2;
-+    memset(l,0,12*36);
-+    switch(m->page) {
-+    case CR_PAGE_MODE:
-+        strcpy(l[0],"NEW GAME - MODE"); strcpy(l[2],"STANDARD - FIXED CAMPAIGN"); strcpy(l[3],"RANDOMIZED - CORE SPECIES"); break;
-+    case CR_PAGE_DIFFICULTY:
-+        strcpy(l[0],"NEW GAME - DIFFICULTY"); strcpy(l[2],"NORMAL"); strcpy(l[3],"HARD");
-+        strcpy(l[4],"CUSTOM"); strcpy(l[6],"HARD: CAPS / SET / LIMITED BAG");
-+        strcpy(l[7],"TACTICAL AI / PREPARED BOSSES"); strcpy(l[8],"NORMAL EXP BELOW THE CAP"); break;
-+    case CR_PAGE_DIFFICULTY_CUSTOM:
-+        first=2; CR_DifficultyLines(c,l); strcpy(l[0],"CUSTOM DIFFICULTY"); strcpy(l[8],"DONE - CONTINUE TO SEED"); break;
-+    case CR_PAGE_CUSTOM:
-+        first=1; strcpy(l[0],"CUSTOMIZE RANDOMIZER");
-+        snprintf(l[1],36,"STARTERS: %s",On(c->randomOptions&CR_RANDOM_STARTERS));
-+        snprintf(l[2],36,"WILD: %s",On(c->randomOptions&CR_RANDOM_WILD));
-+        snprintf(l[3],36,"TRAINERS: %s",On(c->randomOptions&CR_RANDOM_TRAINERS));
-+        strcpy(l[4],"ABILITIES - OFF / LOCKED"); strcpy(l[5],"FIELD ITEMS - OFF / LOCKED"); strcpy(l[6],"HELD ITEMS - OFF / LOCKED");
-+        strcpy(l[7],"ELIGIBLE GENERATIONS"); strcpy(l[8],"OPTIONAL BALANCE RULES"); strcpy(l[9],"CHOOSE DIFFICULTY"); strcpy(l[10],"BACK TO SEED"); break;
-+    case CR_PAGE_GENERATIONS:
-+        first=1; strcpy(l[0],"ELIGIBLE GENERATIONS");
-+        for(i=0;i<9;++i) snprintf(l[i+1],36,"GEN %u: %s",i+1,On(c->generations&(1u<<i)));
-+        strcpy(l[10],"BACK"); break;
-+    case CR_PAGE_BALANCE:
-+        strcpy(l[0],"OPTIONAL BALANCE RULES"); snprintf(l[2],36,"NO LEGENDARIES: %s",On(c->balanceFlags&CR_BALANCE_NO_LEGENDS));
-+        snprintf(l[3],36,"SIMILAR STRENGTH: %s",On(c->balanceFlags&CR_BALANCE_SIMILAR)); strcpy(l[4],"BACK");
-+        strcpy(l[7],"BOTH OFF MEANS UNRESTRICTED"); strcpy(l[8],"SIMILAR BST BAND: 80 TO 120 PCT"); break;
-+    case CR_PAGE_SEED:
-+        strcpy(l[0],"NEW GAME - RUN SEED"); strcpy(l[2],"GENERATE AUTOMATIC SEED"); strcpy(l[3],"ENTER MANUAL SEED");
-+        strcpy(l[4],c->mode==CR_RANDOMIZED ? "CUSTOMIZE RANDOMIZER" : "CUSTOMIZE - RANDOMIZED ONLY"); strcpy(l[5],"REVIEW AND CONFIRM");
-+        snprintf(l[7],36,"SEED: %lu",(unsigned long)c->seed); strcpy(l[8],"SAVED RULES CONTROL THIS RUN"); break;
-+    case CR_PAGE_DIGITS:
-+        strcpy(l[0],"MANUAL SEED - DECIMAL"); strcpy(l[2],m->digits);
-+        for(i=0;i<10;++i) l[3][i]=i==m->digit ? '>' : ' ';
-+        l[3][10]=0;
-+        strcpy(l[5],"LEFT/RIGHT SELECT A DIGIT"); strcpy(l[6],"UP/DOWN CHANGE THE DIGIT"); strcpy(l[7],"A ACCEPT - B DISCARD EDIT");
-+        strcpy(l[8],"RANGE 0 TO 4294967295"); if(m->notice) strcpy(l[10],"SEED EXCEEDS 4294967295"); return;
-+    case CR_PAGE_SUMMARY:
-+        strcpy(l[0],"CONFIRM NEW RUN"); strcpy(l[2],"START THIS RUN"); strcpy(l[3],"BACK TO SEED");
-+        snprintf(l[4],36,"%s / %s",c->mode==CR_RANDOMIZED ? "RANDOMIZED" : "STANDARD",CR_DifficultyName(c->difficulty));
-+        snprintf(l[5],36,"SEED: %lu",(unsigned long)c->seed);
-+        snprintf(l[6],36,"STARTERS %s / WILD %s",On(c->randomOptions&CR_RANDOM_STARTERS),On(c->randomOptions&CR_RANDOM_WILD));
-+        snprintf(l[7],36,"TRAINERS %s / ALG %u",On(c->randomOptions&CR_RANDOM_TRAINERS),c->algorithm);
-+        CR_GenerationText(l[8],c->generations);
-+        snprintf(l[9],36,"NO LEGENDS %s / SIMILAR %s",On(c->balanceFlags&1),On(c->balanceFlags&2)); snprintf(l[10],36,"LEFT/RIGHT: READ DIFFICULTY RULES"); break;
++    memset(l,0,12*36);unsigned first=2;
++    if(m->page==CR_PAGE_DIFFICULTY){
++        strcpy(l[0],"NEW GAME - DIFFICULTY");strcpy(l[2],"NORMAL");strcpy(l[3],"HARD");strcpy(l[4],"CUSTOM");
++        strcpy(l[6],"HARD: CAPS / SET / LIMITED BAG");strcpy(l[7],"TACTICAL AI / PREPARED BOSSES");
++        strcpy(l[9],"RANDOMIZER: OPTIONS - MODES");
++    }else if(m->page==CR_PAGE_DIFFICULTY_CUSTOM){
++        CR_DifficultyLines(&m->draft.config,l);strcpy(l[0],"CUSTOM DIFFICULTY");strcpy(l[8],"REVIEW AND CONFIRM");
++    }else if(m->page==CR_PAGE_SUMMARY){
++        strcpy(l[0],"CONFIRM NEW DIFFICULTY");strcpy(l[2],"START THIS RUN");strcpy(l[3],"CHANGE DIFFICULTY");
++        snprintf(l[4],36,"PRESET: %s",CR_DifficultyName(m->draft.config.difficulty));
++        strcpy(l[5],"RANDOMIZER: OPTIONS - MODES");strcpy(l[6],"V0.5.0 GLOBAL SETTINGS");
++        strcpy(l[7],"DIFFICULTY REMAINS SAVE-BOUND");strcpy(l[10],"LEFT/RIGHT: DIFFICULTY RULES");
++        if(m->summaryRules){char rules[12][36];CR_DifficultyLines(&m->draft.config,rules);
++            for(unsigned i=0;i<6;++i)strcpy(l[4+i],rules[2+i]);}
 +    }
-+    if(m->page==CR_PAGE_SUMMARY && m->summaryRules) {
-+        char rules[12][36]; CR_DifficultyLines(c,rules);
-+        for(i=0;i<6;++i) strcpy(l[4+i],rules[2+i]);
-+        strcpy(l[10],"LEFT/RIGHT: READ RUN OVERVIEW");
-+    }
-+    {
-+        unsigned row=m->selected+first;
-+        size_t len=strlen(l[row]); memmove(l[row]+2,l[row],len+1); l[row][0]='>'; l[row][1]=' ';
-+    }
-+    strcpy(l[11],m->notice ? "UNAVAILABLE OR LAST CHOICE" : "A SELECT - B BACK / CANCEL");
++    unsigned row=m->selected+first;
++    if(row<11){size_t len=strlen(l[row]);memmove(l[row]+2,l[row],len+1);l[row][0]='>';l[row][1]=' ';}
++    strcpy(l[11],"A SELECT - B BACK / CANCEL");
 +}
-+
 +void CR_DifficultyLines(const struct CRConfig *c,char l[12][36])
 +{
 +    static const char *caps[]={"OFF","HARD","SOFT"};
@@ -18993,18 +18971,19 @@ index 54a558fd..79a72c7a 100644
      {
          return FALSE;
 diff --git c/src/event_object_movement.c w/src/event_object_movement.c
-index 29286bdf..a187efd1 100644
+index 29286bdf..c0e78f71 100644
 --- c/src/event_object_movement.c
 +++ w/src/event_object_movement.c
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,8 @@
  #include "global.h"
++#include "3ds_field_view.h"
 +#ifdef PLATFORM_3DS
 +#include "3ds_extras.h"
 +#endif
  #include "malloc.h"
  #include "battle_anim.h"
  #include "battle_pyramid.h"
-@@ -42,6 +45,9 @@
+@@ -42,6 +46,9 @@
  #include "util.h"
  #include "wild_encounter.h"
  #include "wild_encounter_ow.h"
@@ -19014,7 +18993,7 @@ index 29286bdf..a187efd1 100644
  #include "constants/event_object_movement.h"
  #include "constants/abilities.h"
  #include "constants/battle.h"
-@@ -1693,7 +1699,7 @@ void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
+@@ -1693,7 +1700,7 @@ void RemoveObjectEventByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroup)
  
  static void RemoveObjectEventInternal(struct ObjectEvent *objectEvent)
  {
@@ -19023,7 +19002,7 @@ index 29286bdf..a187efd1 100644
      image.size = GetObjectEventGraphicsInfo(objectEvent->graphicsId)->size;
      gSprites[objectEvent->spriteId].images = &image;
      // It's possible that this function is called while the sprite pointed to `== sDummySprite`, i.e during map resume;
-@@ -1887,7 +1893,7 @@ u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemp
+@@ -1887,7 +1894,7 @@ u8 TrySpawnObjectEventTemplate(const struct ObjectEventTemplate *objectEventTemp
  {
      u8 objectEventId;
      struct SpriteTemplate spriteTemplate;
@@ -19032,7 +19011,7 @@ index 29286bdf..a187efd1 100644
      const struct ObjectEventGraphicsInfo *graphicsInfo;
      const struct SubspriteTable *subspriteTables = NULL;
      const struct ObjectEventTemplate objectEventTemplateLocal = TryGetObjectEventTemplateForOWE(objectEventTemplate);
-@@ -2137,6 +2143,8 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
+@@ -2137,6 +2144,8 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
  {
      const struct ObjectEventGraphicsInfo *graphicsInfo = NULL;
  #if OW_POKEMON_OBJECT_EVENTS
@@ -19041,7 +19020,7 @@ index 29286bdf..a187efd1 100644
      switch (species)
      {
      case SPECIES_UNOWN: // Deal with Unown forms later
-@@ -2157,7 +2165,7 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
+@@ -2157,7 +2166,7 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
      }
  
      // Try to avoid OOB or undefined access
@@ -19050,7 +19029,7 @@ index 29286bdf..a187efd1 100644
      {
          if (OW_SUBSTITUTE_PLACEHOLDER)
              return &gSpeciesInfo[SPECIES_NONE].overworldData;
-@@ -2170,58 +2178,31 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
+@@ -2170,58 +2179,31 @@ const struct ObjectEventGraphicsInfo *SpeciesToGraphicsInfo(enum Species species
  // Find, or load, the palette for the specified Pokémon info
  static u32 LoadDynamicFollowerPalette(enum Species species, bool32 shiny, bool32 female)
  {
@@ -19131,7 +19110,7 @@ index 29286bdf..a187efd1 100644
      return paletteNum;
  }
  
-@@ -2352,13 +2333,14 @@ void UpdateFollowingPokemon(void)
+@@ -2352,13 +2334,14 @@ void UpdateFollowingPokemon(void)
      // 3. flag is set
      // 4. a follower NPC is present
      if (OW_POKEMON_OBJECT_EVENTS == FALSE
@@ -19147,39 +19126,101 @@ index 29286bdf..a187efd1 100644
       )
      {
          RemoveFollowingPokemon();
-@@ -2882,10 +2864,10 @@ void TrySpawnObjectEvents(s16 cameraX, s16 cameraY)
+@@ -2875,93 +2858,8 @@ void TrySpawnLightSprites(s16 camX, s16 camY)
+     }
+ }
  
-     if (gMapHeader.events != NULL)
-     {
+-void TrySpawnObjectEvents(s16 cameraX, s16 cameraY)
+-{
+-    u8 i;
+-    u8 objectCount;
+-
+-    if (gMapHeader.events != NULL)
+-    {
 -        s16 left = gSaveBlock1Ptr->pos.x - 2;
 -        s16 right = gSaveBlock1Ptr->pos.x + MAP_OFFSET_W + 2;
 -        s16 top = gSaveBlock1Ptr->pos.y;
 -        s16 bottom = gSaveBlock1Ptr->pos.y + MAP_OFFSET_H + 2;
-+        s16 left = gSaveBlock1Ptr->pos.x - OBJECT_EVENT_VIEW_LEFT;
-+        s16 right = gSaveBlock1Ptr->pos.x + OBJECT_EVENT_VIEW_RIGHT;
-+        s16 top = gSaveBlock1Ptr->pos.y - OBJECT_EVENT_VIEW_TOP;
-+        s16 bottom = gSaveBlock1Ptr->pos.y + OBJECT_EVENT_VIEW_BOTTOM;
- 
-         if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
-             objectCount = GetNumBattlePyramidObjectEvents();
-@@ -2945,10 +2927,12 @@ void RemoveObjectEventsOutsideView(void)
- 
- static void RemoveObjectEventIfOutsideView(struct ObjectEvent *objectEvent)
- {
+-
+-        if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+-            objectCount = GetNumBattlePyramidObjectEvents();
+-        else if (InTrainerHill())
+-            objectCount = HILL_TRAINERS_PER_FLOOR;
+-        else
+-            objectCount = gMapHeader.events->objectEventCount;
+-
+-        for (i = 0; i < objectCount; i++)
+-        {
+-            struct ObjectEventTemplate *template = &gSaveBlock1Ptr->objectEventTemplates[i];
+-            s16 npcX = template->x + MAP_OFFSET;
+-            s16 npcY = template->y + MAP_OFFSET;
+-
+-            if (top <= npcY && bottom >= npcY && left <= npcX && right >= npcX && !FlagGet(template->flagId))
+-            {
+-                if (template->graphicsId == OBJ_EVENT_GFX_LIGHT_SPRITE)
+-                    SpawnLightSprite(npcX, npcY, cameraX, cameraY, template->trainerRange_berryTreeId); // light sprite instead
+-                else
+-                    TrySpawnObjectEventTemplate(template, gSaveBlock1Ptr->location.mapNum, gSaveBlock1Ptr->location.mapGroup, cameraX, cameraY);
+-            }
+-        }
+-    }
+-}
+-
+-void RemoveObjectEventsOutsideView(void)
+-{
+-    u8 i, j;
+-    bool8 isActiveLinkPlayer;
+-
+-    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+-    {
+-        for (j = 0, isActiveLinkPlayer = FALSE; j < ARRAY_COUNT(gLinkPlayerObjectEvents); j++)
+-        {
+-            if (gLinkPlayerObjectEvents[j].active && i == gLinkPlayerObjectEvents[j].objEventId)
+-                isActiveLinkPlayer = TRUE;
+-        }
+-        if (!isActiveLinkPlayer)
+-        {
+-            struct ObjectEvent *objectEvent = &gObjectEvents[i];
+-
+-            // Followers should not go OOB, or their sprites may be freed early during a cross-map scripting event,
+-            // such as Wally's Ralts catch sequence
+-            if (!objectEvent->active)
+-                continue;
+-            if (objectEvent->isPlayer)
+-                continue;
+-            if (objectEvent->localId == OBJ_EVENT_ID_NPC_FOLLOWER || objectEvent->localId == OBJ_EVENT_ID_FOLLOWER)
+-                continue;
+-            if (IsOWEDespawnExempt(objectEvent))
+-                continue;
+-
+-            RemoveObjectEventIfOutsideView(objectEvent);
+-        }
+-    }
+-}
+-
+-static void RemoveObjectEventIfOutsideView(struct ObjectEvent *objectEvent)
+-{
 -    s16 left =   gSaveBlock1Ptr->pos.x - 2;
 -    s16 right =  gSaveBlock1Ptr->pos.x + 17;
 -    s16 top =    gSaveBlock1Ptr->pos.y;
 -    s16 bottom = gSaveBlock1Ptr->pos.y + 16;
-+    // Matching the spawn window, or an object would be created and dropped
-+    // again on the same frame.
-+    s16 left =   gSaveBlock1Ptr->pos.x - OBJECT_EVENT_VIEW_LEFT;
-+    s16 right =  gSaveBlock1Ptr->pos.x + OBJECT_EVENT_VIEW_RIGHT;
-+    s16 top =    gSaveBlock1Ptr->pos.y - OBJECT_EVENT_VIEW_TOP;
-+    s16 bottom = gSaveBlock1Ptr->pos.y + OBJECT_EVENT_VIEW_BOTTOM;
  
-     if (objectEvent->currentCoords.x >= left && objectEvent->currentCoords.x <= right
-      && objectEvent->currentCoords.y >= top && objectEvent->currentCoords.y <= bottom)
-@@ -2983,7 +2967,7 @@ static void SpawnObjectEventOnReturnToField(u8 objectEventId, s16 x, s16 y)
+-    if (objectEvent->currentCoords.x >= left && objectEvent->currentCoords.x <= right
+-     && objectEvent->currentCoords.y >= top && objectEvent->currentCoords.y <= bottom)
+-        return;
+-    if (objectEvent->initialCoords.x >= left && objectEvent->initialCoords.x <= right
+-     && objectEvent->initialCoords.y >= top && objectEvent->initialCoords.y <= bottom)
+-        return;
+ 
+-    // Overworld Wild Ecnounters need to be set as offscreen in order to determine whether
+-    // their despawn animation should play.
+-    objectEvent->offScreen = TRUE;
+-    RemoveObjectEvent(objectEvent);
+-}
+ 
+ void SpawnObjectEventsOnReturnToField(s16 x, s16 y)
+ {
+@@ -2983,7 +2881,7 @@ static void SpawnObjectEventOnReturnToField(u8 objectEventId, s16 x, s16 y)
      struct Sprite *sprite;
      struct ObjectEvent *objectEvent;
      struct SpriteTemplate spriteTemplate;
@@ -19188,7 +19229,7 @@ index 29286bdf..a187efd1 100644
      const struct SubspriteTable *subspriteTables;
      const struct ObjectEventGraphicsInfo *graphicsInfo;
  
-@@ -3455,6 +3439,12 @@ void UpdateObjectEventCoordsForCameraUpdate(void)
+@@ -3455,6 +3353,12 @@ void UpdateObjectEventCoordsForCameraUpdate(void)
                  gObjectEvents[i].previousCoords.y -= dy;
              }
          }
@@ -19201,7 +19242,7 @@ index 29286bdf..a187efd1 100644
      }
  }
  
-@@ -6919,6 +6909,13 @@ static enum Direction GetCopyDirection(u8 copyInitDir, enum Direction playerInit
+@@ -6919,6 +6823,13 @@ static enum Direction GetCopyDirection(u8 copyInitDir, enum Direction playerInit
  
  static void ObjectEventExecHeldMovementAction(struct ObjectEvent *objectEvent, struct Sprite *sprite)
  {
@@ -19215,7 +19256,7 @@ index 29286bdf..a187efd1 100644
      objectEvent->movementActionId = TryUpdateMovementActionOnStairs(objectEvent, objectEvent->movementActionId);
      if (gMovementActionFuncs[objectEvent->movementActionId][sprite->sActionFuncId](objectEvent, sprite))
          objectEvent->heldMovementFinished = TRUE;
-@@ -9572,14 +9569,16 @@ static void UpdateObjectEventOffscreen(struct ObjectEvent *objectEvent, struct S
+@@ -9572,14 +9483,16 @@ static void UpdateObjectEventOffscreen(struct ObjectEvent *objectEvent, struct S
      x2 = x + graphicsInfo->width;
      y2 = y + graphicsInfo->height;
  
@@ -19236,7 +19277,7 @@ index 29286bdf..a187efd1 100644
          objectEvent->offScreen = TRUE;
  }
  
-@@ -10946,9 +10945,11 @@ void UpdateObjectEventSpriteInvisibility(struct Sprite *sprite, bool8 invisible)
+@@ -10946,9 +10859,11 @@ void UpdateObjectEventSpriteInvisibility(struct Sprite *sprite, bool8 invisible)
      x2 = x - (sprite->centerToCornerVecX >> 1);
      y2 = y - (sprite->centerToCornerVecY >> 1);
  
@@ -19250,7 +19291,7 @@ index 29286bdf..a187efd1 100644
          sprite->invisible = TRUE;
  }
  
-@@ -11139,6 +11140,13 @@ static void DoShadowFieldEffect(struct ObjectEvent *objectEvent)
+@@ -11139,6 +11054,13 @@ static void DoShadowFieldEffect(struct ObjectEvent *objectEvent)
  {
      if (objectEvent->noShadow)
      {
@@ -19264,6 +19305,233 @@ index 29286bdf..a187efd1 100644
          objectEvent->noShadow = FALSE;
          StartFieldEffectForObjectEvent(FLDEFF_SHADOW, objectEvent);
      }
+@@ -12125,3 +12047,226 @@ bool8 MovementType_OverworldWildEncounter_Despawn_Step11(struct ObjectEvent *obj
+ }
+ 
+ #undef sDespawnTimer
++
++#define OBJECT_EVENT_VIEW_MARGIN 2
++// How much further off a person has to be than one waiting for room to give
++// its room up: without a gap, two at about the same distance would trade
++// places step after step, both flickering in and out.
++#define OBJECT_EVENT_EVICT_GAP 4
++
++static void GetObjectEventWindow(s16 *left, s16 *right, s16 *top, s16 *bottom)
++{
++    s16 playerX = gSaveBlock1Ptr->pos.x + MAP_OFFSET;
++    s16 playerY = gSaveBlock1Ptr->pos.y + MAP_OFFSET;
++    int west, east, north, south;
++
++    CtrFieldView_Window(CtrFieldView_Current(), OBJECT_EVENT_VIEW_MARGIN, &west, &east, &north, &south);
++    *left = playerX - west;
++    *right = playerX + east;
++    *top = playerY - north;
++    *bottom = playerY + south;
++}
++
++// Smaller comes first: tiles out of sight count double, then the distance.
++static float ObjectEventViewScore(s16 x, s16 y)
++{
++    return CtrFieldView_Score(CtrFieldView_Current(),
++                              x - (gSaveBlock1Ptr->pos.x + MAP_OFFSET),
++                              y - (gSaveBlock1Ptr->pos.y + MAP_OFFSET));
++}
++
++static bool8 IsLinkPlayerObjectEvent(u8 objectEventId)
++{
++    u8 j;
++
++    for (j = 0; j < ARRAY_COUNT(gLinkPlayerObjectEvents); j++)
++    {
++        if (gLinkPlayerObjectEvents[j].active && objectEventId == gLinkPlayerObjectEvents[j].objEventId)
++            return TRUE;
++    }
++    return FALSE;
++}
++
++static u8 GetSpawnableObjectEventCount(void)
++{
++    if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
++        return GetNumBattlePyramidObjectEvents();
++    else if (InTrainerHill())
++        return HILL_TRAINERS_PER_FLOOR;
++    else
++        return gMapHeader.events->objectEventCount;
++}
++
++static bool8 IsInObjectEventWindow(s16 x, s16 y, s16 left, s16 right, s16 top, s16 bottom)
++{
++    return x >= left && x <= right && y >= top && y <= bottom;
++}
++
++// Can this object give its room up? Not the player or a link partner, and not
++// one a script or a trainer's approach is moving or holding: anything else is
++// spawned again from its template once it comes back into view, as when it
++// leaves the window. An object spawned without one (a special object) can
++// only go once it is outside the window, where it would be removed anyway.
++static bool8 CanEvictObjectEvent(u8 objectEventId, s16 left, s16 right, s16 top, s16 bottom)
++{
++    struct ObjectEvent *objectEvent = &gObjectEvents[objectEventId];
++    u8 count;
++
++    if (!objectEvent->active || objectEvent->isPlayer || objectEvent->frozen
++     || objectEvent->heldMovementActive || IsLinkPlayerObjectEvent(objectEventId)
++     || objectEvent->localId==OBJ_EVENT_ID_FOLLOWER || objectEvent->localId==OBJ_EVENT_ID_NPC_FOLLOWER
++     || IsOWEDespawnExempt(objectEvent))
++        return FALSE;
++    if (!IsInObjectEventWindow(objectEvent->currentCoords.x, objectEvent->currentCoords.y, left, right, top, bottom)
++     && !IsInObjectEventWindow(objectEvent->initialCoords.x, objectEvent->initialCoords.y, left, right, top, bottom))
++        return TRUE;
++    if (objectEvent->mapNum != gSaveBlock1Ptr->location.mapNum
++     || objectEvent->mapGroup != gSaveBlock1Ptr->location.mapGroup)
++        return FALSE;
++    count = GetSpawnableObjectEventCount();
++    return FindObjectEventTemplateByLocalId(objectEvent->localId, gSaveBlock1Ptr->objectEventTemplates, count) != NULL;
++}
++
++static bool8 HasFreeObjectEventSlot(void)
++{
++    u8 i;
++
++    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
++    {
++        if (!gObjectEvents[i].active)
++            return TRUE;
++    }
++    return FALSE;
++}
++
++// Frees the room of the object furthest off, if it is further off than a
++// person scored `score` by more than the gap.
++static bool8 EvictFurthestObjectEvent(float score, s16 left, s16 right, s16 top, s16 bottom)
++{
++    u8 i, furthest = OBJECT_EVENTS_COUNT;
++    float furthestScore = score + OBJECT_EVENT_EVICT_GAP;
++
++    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
++    {
++        float objectScore;
++
++        if (!CanEvictObjectEvent(i, left, right, top, bottom))
++            continue;
++        objectScore = ObjectEventViewScore(gObjectEvents[i].currentCoords.x, gObjectEvents[i].currentCoords.y);
++        if (objectScore > furthestScore)
++        {
++            furthestScore = objectScore;
++            furthest = i;
++        }
++    }
++    if (furthest == OBJECT_EVENTS_COUNT)
++        return FALSE;
++    RemoveObjectEvent(&gObjectEvents[furthest]);
++    return TRUE;
++}
++
++void TrySpawnObjectEvents(s16 cameraX, s16 cameraY)
++{
++    u8 i, j, objectCount, waiting = 0;
++    u8 order[OBJECT_EVENT_TEMPLATES_COUNT];
++    float score[OBJECT_EVENT_TEMPLATES_COUNT];
++    s16 left, right, top, bottom;
++    u8 mapNum = gSaveBlock1Ptr->location.mapNum;
++    u8 mapGroup = gSaveBlock1Ptr->location.mapGroup;
++
++    if (gMapHeader.events == NULL)
++        return;
++
++    GetObjectEventWindow(&left, &right, &top, &bottom);
++    objectCount = GetSpawnableObjectEventCount();
++    if (objectCount > OBJECT_EVENT_TEMPLATES_COUNT)
++        objectCount = OBJECT_EVENT_TEMPLATES_COUNT;
++
++    // The people in the window not yet spawned, nearest the view first.
++    for (i = 0; i < objectCount; i++)
++    {
++        struct ObjectEventTemplate *template = &gSaveBlock1Ptr->objectEventTemplates[i];
++        s16 npcX = template->x + MAP_OFFSET;
++        s16 npcY = template->y + MAP_OFFSET;
++        float npcScore;
++
++        if (template->graphicsId==OBJ_EVENT_GFX_LIGHT_SPRITE || !IsInObjectEventWindow(npcX, npcY, left, right, top, bottom) || FlagGet(template->flagId)
++         || GetObjectEventIdByLocalIdAndMap(template->localId, mapNum, mapGroup) != OBJECT_EVENTS_COUNT)
++            continue;
++        npcScore = ObjectEventViewScore(npcX, npcY);
++        for (j = waiting; j > 0 && score[j - 1] > npcScore; j--)
++        {
++            order[j] = order[j - 1];
++            score[j] = score[j - 1];
++        }
++        order[j] = i;
++        score[j] = npcScore;
++        waiting++;
++    }
++
++    for (i = 0; i < waiting; i++)
++    {
++        // The rest are further off still: none of them would take a room.
++        if (!HasFreeObjectEventSlot() && !EvictFurthestObjectEvent(score[i], left, right, top, bottom))
++            break;
++        struct ObjectEventTemplate *template=&gSaveBlock1Ptr->objectEventTemplates[order[i]];
++        if(template->graphicsId==OBJ_EVENT_GFX_LIGHT_SPRITE)
++            SpawnLightSprite(template->x+MAP_OFFSET,template->y+MAP_OFFSET,cameraX,cameraY,template->trainerRange_berryTreeId);
++        else TrySpawnObjectEventTemplate(template,mapNum,mapGroup,cameraX,cameraY);
++    }
++}
++
++// Room for an object made at the player's side (the follower, follower_mon.c):
++// with every room taken, the person furthest off gives its room up, as it
++// would for a person standing there.
++bool8 FreeObjectEventSlotNearPlayer(void)
++{
++    s16 left, right, top, bottom;
++
++    if (HasFreeObjectEventSlot())
++        return TRUE;
++    GetObjectEventWindow(&left, &right, &top, &bottom);
++    return EvictFurthestObjectEvent(ObjectEventViewScore(gSaveBlock1Ptr->pos.x + MAP_OFFSET, gSaveBlock1Ptr->pos.y + MAP_OFFSET),
++                                    left, right, top, bottom);
++}
++
++void RemoveObjectEventsOutsideView(void)
++{
++    u8 i;
++
++    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
++    {
++        struct ObjectEvent *objectEvent = &gObjectEvents[i];
++
++        if (objectEvent->active && !objectEvent->isPlayer && !IsLinkPlayerObjectEvent(i)
++         && objectEvent->localId!=OBJ_EVENT_ID_FOLLOWER && objectEvent->localId!=OBJ_EVENT_ID_NPC_FOLLOWER
++         && !IsOWEDespawnExempt(objectEvent))
++            RemoveObjectEventIfOutsideView(objectEvent);
++    }
++}
++
++static void RemoveObjectEventIfOutsideView(struct ObjectEvent *objectEvent)
++{
++    s16 left, right, top, bottom;
++
++    GetObjectEventWindow(&left, &right, &top, &bottom);
++    if (IsInObjectEventWindow(objectEvent->currentCoords.x, objectEvent->currentCoords.y, left, right, top, bottom)
++     || IsInObjectEventWindow(objectEvent->initialCoords.x, objectEvent->initialCoords.y, left, right, top, bottom))
++        return;
++    RemoveObjectEvent(objectEvent);
++}
++
++// The view changed under a still camera (the 2D/voxel option, the voxel
++// camera's pitch or zoom, the camera easing to or from a map's edge): the people it now reaches, or no longer does,
++// are brought in or let go as a step would (field_camera.c).
++void UpdateObjectEventsForViewChange(void)
++{
++    static unsigned sViewGeneration;
++    unsigned generation = CtrFieldView_Generation();
++
++    if (generation == sViewGeneration)
++        return;
++    sViewGeneration = generation;
++    RemoveObjectEventsOutsideView();
++    TrySpawnObjectEvents(0, 0);
++}
 diff --git c/src/evolution_scene.c w/src/evolution_scene.c
 index 3f1b9f8a..8b038b91 100644
 --- c/src/evolution_scene.c
@@ -20423,7 +20691,7 @@ index 508efc0f..bfcd3963 100644
  
  static void DrawOpenedDoor(const struct DoorGraphics *gfx, u32 x, u32 y)
 diff --git c/src/field_effect.c w/src/field_effect.c
-index 8e03db31..22ee3f99 100644
+index 8e03db31..11a5df30 100644
 --- c/src/field_effect.c
 +++ w/src/field_effect.c
 @@ -40,6 +40,9 @@
@@ -20615,103 +20883,27 @@ index 8e03db31..22ee3f99 100644
      sprite->y2 = Sin(sprite->data[2], 0x48);
      sprite->data[2] = (sprite->data[2] + 4) & 0xff;
      if (sprite->sPlayerSpriteId != MAX_SPRITES)
-@@ -4550,86 +4634,16 @@ bool8 IsRockClimbActive(void)
+@@ -4550,6 +4634,20 @@ bool8 IsRockClimbActive(void)
  #undef tMoveSteps
  #undef tObjEventId
  
--static void (*const sUseVsSeekerEffectFuncs[])(struct Task *task) = {
--    UseVsSeeker_StopPlayerMovement,
--    UseVsSeeker_DoPlayerAnimation,
--    UseVsSeeker_ResetPlayerGraphics,
--    UseVsSeeker_CleanUpFieldEffect
--};
--
--u32 FldEff_UseVsSeeker(void)
--{
--    CreateTask(Task_FldEffUseVsSeeker, 0xFF);
--    return 0;
--}
--
--static void Task_FldEffUseVsSeeker(u8 taskId)
--{
--    sUseVsSeekerEffectFuncs[gTasks[taskId].data[0]](&gTasks[taskId]);
--}
--
--static void UseVsSeeker_StopPlayerMovement(struct Task *task)
 +#ifdef PORT_BRIDGE
 +// FieldCallback_UseFly from the field as it is (the bottom screen's Fly map,
 +// party_menu.c's CtrParty_Fly): no fade to come in from, the player perhaps
 +// walking.
 +void CtrFly_Start(void)
- {
++{
 +    CreateTask(Task_UseFly, 0);
-     LockPlayerFieldControls();
--    FreezeObjectEvents();
--    gPlayerAvatar.preventStep = TRUE;
--    task->data[0]++;
--}
--
--static void UseVsSeeker_DoPlayerAnimation(struct Task *task)
--{
--    struct ObjectEvent * playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
--    if ((ObjectEventIsMovementOverridden(playerObj) && (!(ObjectEventClearHeldMovementIfFinished(playerObj)))))
--        return;
--
--    if (gMapHeader.mapType != MAP_TYPE_UNDERWATER)
--    {
--        SetPlayerAvatarFieldMove();
--        ObjectEventSetHeldMovement(playerObj, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
--    }
--    task->data[0]++;
--}
--
--static void UseVsSeeker_ResetPlayerGraphics(struct Task *task)
--{
--    struct ObjectEvent* playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
--
--    if (!ObjectEventClearHeldMovementIfFinished(playerObj))
--        return;
--
--    if (gMapHeader.mapType != MAP_TYPE_UNDERWATER)
--    {
--        ObjectEventSetGraphicsId(&gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByCurrentState());
--        ObjectEventForceSetHeldMovement(playerObj, GetFaceDirectionMovementAction(playerObj->facingDirection));
--    }
--    task->data[0]++;
--}
--
--static void UseVsSeeker_CleanUpFieldEffect(struct Task *task)
--{
--    struct ObjectEvent * playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
--    if (!ObjectEventClearHeldMovementIfFinished(playerObj))
--        return;
--
--    gPlayerAvatar.preventStep = FALSE;
--    FieldEffectActiveListRemove(FLDEFF_USE_VS_SEEKER);
--    DestroyTask(FindTaskIdByFunc(Task_FldEffUseVsSeeker));
--}
--
--static void Task_PhotoFlash(u8 taskId)
--{
--    if (!gPaletteFade.active)
--    {
--        FieldEffectActiveListRemove(FLDEFF_PHOTO_FLASH);
--        DestroyTask(taskId);
--    }
--}
--
--u32 FldEff_PhotoFlash(void)
--{
--    BlendPalettes(PALETTES_ALL, 0x10, RGB_WHITE);
--    BeginNormalPaletteFade(PALETTES_ALL, -1, 0x0F, 0x00, RGB_WHITE);
--    CreateTask(Task_PhotoFlash, 90);
--
--    return 0;
++    LockPlayerFieldControls();
 +    // The player may be mid-step: it ends it (FlyOutFieldEffect_FieldMovePose
 +    // waits for that), held from taking another.
 +    FreezeObjectEventsExceptOne(gPlayerAvatar.objectEventId);
- }
++}
 +#endif
++
+ static void (*const sUseVsSeekerEffectFuncs[])(struct Task *task) = {
+     UseVsSeeker_StopPlayerMovement,
+     UseVsSeeker_DoPlayerAnimation,
 diff --git c/src/field_effect_helpers.c w/src/field_effect_helpers.c
 index 7e7e6e4c..7e9684b6 100755
 --- c/src/field_effect_helpers.c
@@ -20863,8 +21055,23 @@ index 9e1b1806..3e61677a 100644
      sFrontierExchangeCorner_NeverRead = 0;
      InitScrollableMultichoice();
  
+diff --git c/src/field_weather_effect.c w/src/field_weather_effect.c
+index ca0e9c7f..56a5476d 100644
+--- c/src/field_weather_effect.c
++++ w/src/field_weather_effect.c
+@@ -2705,3 +2705,10 @@ static void UpdateRainCounter(u8 newWeather, u8 oldWeather)
+      && (newWeather == WEATHER_RAIN || newWeather == WEATHER_RAIN_THUNDERSTORM))
+         IncrementGameStat(GAME_STAT_GOT_RAINED_ON);
+ }
++
++#ifdef PLATFORM_3DS
++bool8 Weather_IsFogSpriteTemplate(const struct SpriteTemplate *t)
++{ return t==&sFogHorizontalSpriteTemplate || t==&sFogDiagonalSpriteTemplate; }
++bool8 Weather_IsBubbleSpriteTemplate(const struct SpriteTemplate *t)
++{ return t==&sBubbleSpriteTemplate; }
++#endif
 diff --git c/src/fieldmap.c w/src/fieldmap.c
-index b3451193..7af6586d 100644
+index b3451193..4716063b 100644
 --- c/src/fieldmap.c
 +++ w/src/fieldmap.c
 @@ -1,4 +1,11 @@
@@ -20951,7 +21158,7 @@ index b3451193..7af6586d 100644
      dest = &gBackupMapLayout.map[gBackupMapLayout.width * y + x];
  
      for (i = 0; i < height; i++)
-@@ -422,9 +449,528 @@ u32 GetNumPalsInPrimary(struct MapLayout const *mapLayout)
+@@ -422,9 +449,549 @@ u32 GetNumPalsInPrimary(struct MapLayout const *mapLayout)
      return mapLayout->isFrlg ? NUM_PALS_IN_PRIMARY_FRLG : NUM_PALS_IN_PRIMARY;
  }
  
@@ -21007,20 +21214,30 @@ index b3451193..7af6586d 100644
 +        && layout->secondaryTileset == gMapHeader.mapLayout->secondaryTileset;
 +}
 +
++static unsigned CameraBorderWidth(const struct MapLayout *layout)
++{
++    return layout->isFrlg ? layout->borderWidth : 2;
++}
++
++static unsigned CameraBorderHeight(const struct MapLayout *layout)
++{
++    return layout->isFrlg ? layout->borderHeight : 2;
++}
 +static bool8 CameraBorderDrawable(const struct MapLayout *layout)
 +{
 +    const u16 *border;
 +    int i;
 +
-+    if (layout->border == NULL || layout->primaryTileset != gMapHeader.mapLayout->primaryTileset)
++    if (layout->border == NULL || !CameraBorderWidth(layout) || !CameraBorderHeight(layout)
++     || layout->primaryTileset != gMapHeader.mapLayout->primaryTileset)
 +        return FALSE;
 +    if (layout->secondaryTileset == gMapHeader.mapLayout->secondaryTileset)
 +        return TRUE;
 +    border = Port_ResolveAssetPointer(layout->border);
 +    if (border == NULL)
 +        return FALSE;
-+    for (i = 0; i < 4; i++)
-+        if (UNPACK_METATILE(border[i]) >= NUM_METATILES_IN_PRIMARY)
++    for (i = 0; i < CameraBorderWidth(layout) * CameraBorderHeight(layout); i++)
++        if (UNPACK_METATILE(border[i]) >= GetNumMetatilesInPrimary(gMapHeader.mapLayout))
 +            return FALSE;
 +    return TRUE;
 +}
@@ -21140,7 +21357,9 @@ index b3451193..7af6586d 100644
 +            const u16 *other = Port_ResolveAssetPointer(sCameraMaps[k].header->mapLayout->border);
 +
 +            if (sCameraMaps[k].id < anchor && other != NULL
-+             && memcmp(border, other, 4 * sizeof(u16)) == 0)
++             && CameraBorderWidth(sCameraMaps[k].header->mapLayout)==CameraBorderWidth(sCameraMaps[i].header->mapLayout)
++             && CameraBorderHeight(sCameraMaps[k].header->mapLayout)==CameraBorderHeight(sCameraMaps[i].header->mapLayout)
++             && memcmp(border,other,CameraBorderWidth(sCameraMaps[i].header->mapLayout)*CameraBorderHeight(sCameraMaps[i].header->mapLayout)*sizeof(u16))==0)
 +            {
 +                anchor = sCameraMaps[k].id;
 +                sCameraMaps[i].phaseX = sCameraMaps[k].x;
@@ -21191,9 +21410,15 @@ index b3451193..7af6586d 100644
 +    }
 +    if (best == NULL)
 +        best = &sCameraMaps[0];
-+    x += MAP_OFFSET - best->phaseX;
-+    y += MAP_OFFSET - best->phaseY;
-+    *index = ((x + 1) & 1) + ((y + 1) & 1) * 2;
++    x -= best->phaseX;
++    y -= best->phaseY;
++    {
++        unsigned w = CameraBorderWidth(best->header->mapLayout);
++        unsigned h = CameraBorderHeight(best->header->mapLayout);
++        if (w == 0 || h == 0)
++            return NULL;
++        *index = ((x % (int)w + w) % w) + ((y % (int)h + h) % h) * w;
++    }
 +    return best->header->mapLayout->border;
 +}
 +
@@ -21202,7 +21427,7 @@ index b3451193..7af6586d 100644
 +    u8 index;
 +    const u16 *border = Port_ResolveAssetPointer(MapGridGetCameraBorderAt(x, y, &index));
 +
-+    return border[index] | MAPGRID_IMPASSABLE;
++    return border ? border[index] | MAPGRID_IMPASSABLE : MAPGRID_IMPASSABLE;
 +}
 +
 +#ifdef PLATFORM_3DS
@@ -21390,18 +21615,21 @@ index b3451193..7af6586d 100644
 +
 +u16 GetMetatileAttributesFromLayout(const struct MapLayout *layout, u16 metatile)
 +{
-+    const struct Tileset *tileset = metatile < NUM_METATILES_IN_PRIMARY ? layout->primaryTileset
++    const struct Tileset *tileset = metatile < GetNumMetatilesInPrimary(layout) ? layout->primaryTileset
 +                                                                         : layout->secondaryTileset;
 +    const u16 *attributes;
 +
 +    if (metatile >= NUM_METATILES_TOTAL || tileset == NULL)
 +        return 0;
-+    if (metatile >= NUM_METATILES_IN_PRIMARY)
-+        metatile -= NUM_METATILES_IN_PRIMARY;
++    if (metatile >= GetNumMetatilesInPrimary(layout))
++        metatile -= GetNumMetatilesInPrimary(layout);
 +    attributes = Port_ResolveAssetPointer(tileset->metatileAttributes);
 +    return attributes != NULL ? attributes[metatile] : 0;
 +}
 +#endif
++
++u16 GetMetatileAttributesById(u16 metatile)
++{ return GetMetatileAttributesFromLayout(gMapHeader.mapLayout,metatile); }
 +
 +// x, y in backup-layout coordinates, outside the ground the backup holds.
 +// The camera draws a map with a bank of its own too (camera); the game's own
@@ -21480,7 +21708,7 @@ index b3451193..7af6586d 100644
  
      if (block == MAPGRID_UNDEFINED)
          return GetBorderBlockAt(x, y) & MAPGRID_METATILE_ID_MASK;
-@@ -435,6 +981,9 @@ u32 MapGridGetMetatileIdAt(s32 x, s32 y)
+@@ -435,6 +1002,9 @@ u32 MapGridGetMetatileIdAt(s32 x, s32 y)
  u32 MapGridGetMetatileAttributeAt(s16 x, s16 y, u8 attributeType)
  {
      u16 metatileId = MapGridGetMetatileIdAt(x, y);
@@ -21490,7 +21718,7 @@ index b3451193..7af6586d 100644
      return GetAttributeByMetatileIdAndMapLayout(metatileId, attributeType, gMapHeader.mapLayout->isFrlg);
  }
  
-@@ -483,11 +1032,43 @@ static u32 GetAttributeByMetatileIdAndMapLayoutFrlg(u16 metatile, u8 attributeTy
+@@ -483,11 +1053,43 @@ static u32 GetAttributeByMetatileIdAndMapLayoutFrlg(u16 metatile, u8 attributeTy
      if (metatile < GetNumMetatilesInPrimary(gMapHeader.mapLayout))
      {
          const u32 *attributes = (const u32*)gMapHeader.mapLayout->primaryTileset->metatileAttributes;
@@ -21534,7 +21762,7 @@ index b3451193..7af6586d 100644
          metatile -= GetNumMetatilesInPrimary(gMapHeader.mapLayout);
          attribute = attributes[metatile];
      }
-@@ -509,11 +1090,17 @@ u32 GetAttributeByMetatileIdAndMapLayout(u16 metatile, u8 attributeType, bool32
+@@ -509,11 +1111,17 @@ u32 GetAttributeByMetatileIdAndMapLayout(u16 metatile, u8 attributeType, bool32
      if (metatile < GetNumMetatilesInPrimary(gMapHeader.mapLayout))
      {
          const u16 *attributes = (const u16*)gMapHeader.mapLayout->primaryTileset->metatileAttributes;
@@ -21552,7 +21780,7 @@ index b3451193..7af6586d 100644
          metatile -= GetNumMetatilesInPrimary(gMapHeader.mapLayout);
          attribute = attributes[metatile];
      }
-@@ -959,10 +1546,22 @@ static void CopyTilesetToVramUsingHeap(struct Tileset const *tileset, u16 numTil
+@@ -959,10 +1567,22 @@ static void CopyTilesetToVramUsingHeap(struct Tileset const *tileset, u16 numTil
  {
      if (tileset)
      {
@@ -21575,7 +21803,7 @@ index b3451193..7af6586d 100644
      }
  }
  
-@@ -981,12 +1580,45 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
+@@ -981,12 +1601,45 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
  {
      if (tileset)
      {
@@ -21623,7 +21851,7 @@ index b3451193..7af6586d 100644
              gPlttBufferFaded[destOffset] = gPlttBufferUnfaded[destOffset] = RGB_BLACK;
              ApplyGlobalTintToPaletteEntries(destOffset + 1, (size - 2) >> 1);
          }
-@@ -995,13 +1627,13 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
+@@ -995,13 +1648,13 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
              // All 'gTilesetPalettes_' arrays should have ALIGNED(4) in them,
              // but we use SmartCopy here just in case they don't
              if (skipFaded)
@@ -21640,7 +21868,7 @@ index b3451193..7af6586d 100644
              ApplyGlobalTintToPaletteEntries(destOffset, size >> 1);
          }
      }
-@@ -1036,8 +1668,20 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
+@@ -1036,8 +1689,20 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
  {
      if (mapLayout)
      {
@@ -21661,7 +21889,7 @@ index b3451193..7af6586d 100644
      }
  }
  
-@@ -1071,3 +1715,4 @@ bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
+@@ -1071,3 +1736,4 @@ bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
  {
      return AreCoordsInsideMap(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, x, y);
  }
@@ -22225,7 +22453,7 @@ index 0187d4d2..0b47f97c 100644
 diff --git c/src/item_menu.c w/src/item_menu.c
 old mode 100755
 new mode 100644
-index d5acdfd9..8aba5161
+index d5acdfd9..65f9cabd
 --- c/src/item_menu.c
 +++ w/src/item_menu.c
 @@ -24,6 +24,7 @@
@@ -23093,9 +23321,9 @@ index d5acdfd9..8aba5161
 +        u16 index = view->scroll + i, item = ITEM_NONE;
 +
 +        if (gBagMenu->hideCloseBagText || index != view->total - 1)
-+            item = BagGetItemIdByPocketPosition(pocket + 1, index);
++            item = GetBagItemId(pocket + 1, index);
 +        view->items[i] = item;
-+        view->counts[i] = item != ITEM_NONE ? BagGetQuantityByPocketPosition(pocket + 1, index) : 0;
++        view->counts[i] = item != ITEM_NONE ? GetBagItemQuantity(pocket + 1, index) : 0;
 +        view->flags[i] = 0;
 +        if (item != ITEM_NONE)
 +        {
@@ -23198,7 +23426,7 @@ index d5acdfd9..8aba5161
 +    if (view->state == CTR_BAG_VIEW_LIST)
 +        view->item = view->cursor < view->numRows ? view->items[view->cursor] : ITEM_NONE;
 +    else if (view->state == CTR_BAG_VIEW_SWAP && gBagMenu->toSwapPos != NOT_SWAPPING)
-+        view->item = BagGetItemIdByPocketPosition(gBagPosition.pocket + 1, gBagMenu->toSwapPos);
++        view->item = GetBagItemId(gBagPosition.pocket + 1, gBagMenu->toSwapPos);
 +    return TRUE;
 +}
 +
@@ -23274,7 +23502,7 @@ index fbe882b9..6e16dccc 100644
      spriteId = CreateSprite(&newSprTemplate, x, y, 0);
      StoreWordInTwoHalfwords((u16 *) &gSprites[spriteId].data[BERRY_ICON_GFX_PTR_DATA_ID], (u32) dynamicGfx);
 diff --git c/src/item_use.c w/src/item_use.c
-index d6ab7971..289a209f 100644
+index d6ab7971..20036c93 100644
 --- c/src/item_use.c
 +++ w/src/item_use.c
 @@ -1,4 +1,14 @@
@@ -23451,6 +23679,20 @@ index d6ab7971..289a209f 100644
      // Embargo Check
      if (battlerTarget < MAX_POSITION_COUNT && GetItemType(itemId) != ITEM_USE_BAG_MENU)
      {
+@@ -1581,3 +1691,13 @@ void ItemUseOutOfBattle_TownMap(u8 taskId)
+ }
+ 
+ #undef tUsingRegisteredKeyItem
++
++void ItemUseOutOfBattle_Lure(u8 taskId)
++{
++    if (LURE_STEP_COUNT == 0)
++        gTasks[taskId].func = Task_StartUseLure;
++    else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
++        DisplayItemMessage(taskId, FONT_NORMAL, gText_LureEffectsLingered, CloseItemMessage);
++    else
++        DisplayItemMessageInBattlePyramid(taskId, gText_LureEffectsLingered, Task_CloseBattlePyramidBagMessage);
++}
 diff --git c/src/landmark.c w/src/landmark.c
 index c26e61f4..9d641d01 100644
 --- c/src/landmark.c
@@ -26392,62 +26634,6 @@ index baf14d9e..18d773ef 100644
      {
      case 0:
          PlaySE(SE_SELECT);
-diff --git c/src/menu_specialized.c w/src/menu_specialized.c
-index 1f8680d0..50b39ee2 100644
---- c/src/menu_specialized.c
-+++ w/src/menu_specialized.c
-@@ -49,7 +49,11 @@ static const struct WindowTemplate sWindowTemplates_MailboxMenu[MAILBOXWIN_COUNT
-         .bg = 0,
-         .tilemapLeft = 1,
-         .tilemapTop = 1,
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        .width = 24,
-+#else
-         .width = 8,
-+#endif
-         .height = 2,
-         .paletteNum = 15,
-         .baseBlock = 0x8
-@@ -61,7 +65,11 @@ static const struct WindowTemplate sWindowTemplates_MailboxMenu[MAILBOXWIN_COUNT
-         .width = 8,
-         .height = 18,
-         .paletteNum = 15,
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        .baseBlock = 0x38
-+#else
-         .baseBlock = 0x18
-+#endif
-     },
-     [MAILBOXWIN_OPTIONS] = {
-         .bg = 0,
-@@ -70,7 +78,11 @@ static const struct WindowTemplate sWindowTemplates_MailboxMenu[MAILBOXWIN_COUNT
-         .width = 11,
-         .height = 8,
-         .paletteNum = 15,
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        .baseBlock = 0x38
-+#else
-         .baseBlock = 0x18
-+#endif
-     }
- };
- 
-@@ -223,6 +235,15 @@ u8 MailboxMenu_AddWindow(u8 windowIdx)
-             template.width = GetMaxWidthInMenuTable(&gMailboxMailOptions[0], 4);
-             sMailboxWindowIds[windowIdx] = AddWindow(&template);
-         }
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        else if (windowIdx == MAILBOXWIN_TITLE)
-+        {
-+            struct WindowTemplate template = sWindowTemplates_MailboxMenu[windowIdx];
-+            s32 width = GetStringWidth(FONT_NORMAL, gText_Mailbox, 0) + 9;
-+            template.width = (width / 8) + 2;
-+            sMailboxWindowIds[windowIdx] = AddWindow(&template);
-+        }
-+#endif
-         else // MAILBOXWIN_TITLE or MAILBOXWIN_LIST
-         {
-             sMailboxWindowIds[windowIdx] = AddWindow(&sWindowTemplates_MailboxMenu[windowIdx]);
 diff --git c/src/mon_markings.c w/src/mon_markings.c
 index e2317c36..cd99f7a4 100644
 --- c/src/mon_markings.c
@@ -28316,10 +28502,19 @@ index 4d01b45e..ec6df5e8 100644
  
  static void SetCameraToTrackGuestPlayer(void)
 diff --git c/src/palette.c w/src/palette.c
-index f84336aa..023b2839 100644
+index f84336aa..5686ef80 100644
 --- c/src/palette.c
 +++ w/src/palette.c
-@@ -9,6 +9,10 @@
+@@ -1,4 +1,8 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++static bool8 sPortFadeStarting;
++bool8 __attribute__((weak)) Port_HoldPaletteFade(void){return FALSE;}
++#endif
+ #include "palette.h"
+ #include "util.h"
+ #include "decompress.h"
+@@ -9,6 +13,10 @@
  #include "task.h"
  #include "constants/field_weather.h"
  #include "constants/rgb.h"
@@ -28330,31 +28525,7 @@ index f84336aa..023b2839 100644
  
  enum
  {
-@@ -33,6 +37,23 @@ ALIGNED(4) EWRAM_DATA u16 gPlttBufferUnfaded[PLTT_BUFFER_SIZE] = {0};
- ALIGNED(4) EWRAM_DATA u16 gPlttBufferFaded[PLTT_BUFFER_SIZE] = {0};
- EWRAM_DATA struct PaletteFadeControl gPaletteFade = {0};
- static EWRAM_DATA u32 sPlttBufferTransferPending = 0;
-+EWRAM_DATA u8 ALIGNED(2) gPaletteDecompressionBuffer[PLTT_BUFFER_ALLOC_BYTES] = {0};
-+#ifdef PORT_BRIDGE
-+// Port: inside BeginNormalPaletteFade's own first step, which the port's
-+// hold never delays: that step blends the start of the fade, which goes to
-+// PLTT at once.
-+static bool8 sPortFadeStarting = FALSE;
-+
-+bool8 __attribute__((weak)) Port_HoldPaletteFade(void)
-+{
-+    return FALSE;
-+}
-+#endif
-+
-+static const struct PaletteStructTemplate sDummyPaletteStructTemplate = {
-+    .id = 0xFFFF,
-+    .state = 1
-+};
- 
- static const u8 sRoundedDownGrayscaleMap[] = {
-      0,  0,  0,  0,  0,
-@@ -46,8 +67,80 @@ static const u8 sRoundedDownGrayscaleMap[] = {
+@@ -46,8 +54,80 @@ static const u8 sRoundedDownGrayscaleMap[] = {
  
  void LoadPalette(const void *src, u32 offset, u32 size)
  {
@@ -28437,7 +28608,7 @@ index f84336aa..023b2839 100644
  }
  
  // Drop in replacement for LoadPalette, uses CpuFastCopy, size must be 0 % 32
-@@ -82,7 +175,14 @@ u32 UpdatePaletteFade(void)
+@@ -82,7 +162,14 @@ u32 UpdatePaletteFade(void)
      u32 result;
  
      if (sPlttBufferTransferPending)
@@ -28452,7 +28623,7 @@ index f84336aa..023b2839 100644
  
      if (gPaletteFade.mode == NORMAL_FADE)
          result = UpdateNormalPaletteFade();
-@@ -95,6 +195,11 @@ u32 UpdatePaletteFade(void)
+@@ -95,6 +182,11 @@ u32 UpdatePaletteFade(void)
  
      sPlttBufferTransferPending = gPaletteFade.multipurpose1;
  
@@ -28464,46 +28635,32 @@ index f84336aa..023b2839 100644
      return result;
  }
  
-@@ -135,7 +240,13 @@ bool32 BeginNormalPaletteFade(u32 selectedPalettes, s8 delay, u8 startY, u8 targ
+@@ -135,7 +227,13 @@ bool32 BeginNormalPaletteFade(u32 selectedPalettes, s8 delay, u8 startY, u8 targ
          else
              gPaletteFade.yDec = 1;
  
 +#ifdef PORT_BRIDGE
-+        sPortFadeStarting = TRUE;
-+        UpdatePaletteFade();
-+        sPortFadeStarting = FALSE;
-+#else
++        sPortFadeStarting=TRUE;
++#endif
          UpdatePaletteFade();
++#ifdef PORT_BRIDGE
++        sPortFadeStarting=FALSE;
 +#endif
  
          temp = gPaletteFade.bufferTransferDisabled;
          gPaletteFade.bufferTransferDisabled = FALSE;
-@@ -263,11 +374,19 @@ static u8 UpdateTimeOfDayPaletteFade(void)
-         u16 *dst1 = dst;
-         while (copyPalettes)
-         {
--            if (copyPalettes & 1)
--                CpuFastCopy(src1, dst1, 32);
--            copyPalettes >>= 1;
--            src1 += 16;
--            dst1 += 16;
-+#ifdef PORT_BRIDGE
-+            // Port: held as a delay frame, between two whole steps (BG and
-+            // OBJ blended alike). Under PORT_BRIDGE UpdatePaletteFade does
-+            // not wait for the last step's transfer, so this is the gate.
-+            if (!sPortFadeStarting && Port_HoldPaletteFade())
-+                return PALETTE_FADE_STATUS_DELAY;
-+#endif
-+            if (gPaletteFade.delayCounter < gPaletteFade_delay)
-+            {
-+                gPaletteFade.delayCounter++;
-+                return 2;
-+            }
-+            gPaletteFade.delayCounter = 0;
-         }
-     }
+@@ -448,6 +546,10 @@ static u32 UpdateNormalPaletteFade_Simultaneous(void)
  
-@@ -1193,7 +1312,7 @@ void BlendPalettesGradually(u32 selectedPalettes, s8 delay, u8 coeff, u8 coeffTa
+ static u32 UpdateNormalPaletteFade(void)
+ {
++#ifdef PORT_BRIDGE
++    if(gPaletteFade.active && !sPortFadeStarting && !gPaletteFade.objPaletteToggle && Port_HoldPaletteFade())
++        return PALETTE_FADE_STATUS_DELAY;
++#endif
+     if (!gPaletteFade.active)
+         return PALETTE_FADE_STATUS_DONE;
+ 
+@@ -1193,7 +1295,7 @@ void BlendPalettesGradually(u32 selectedPalettes, s8 delay, u8 coeff, u8 coeffTa
  {
      u8 taskId;
  
@@ -28513,7 +28670,7 @@ index f84336aa..023b2839 100644
      gTasks[taskId].tCoeffTarget = coeffTarget;
  
 diff --git c/src/party_menu.c w/src/party_menu.c
-index 7c6393d6..6e8dca91 100644
+index 7c6393d6..332d358b 100644
 --- c/src/party_menu.c
 +++ w/src/party_menu.c
 @@ -1,4 +1,7 @@
@@ -28528,7 +28685,7 @@ index 7c6393d6..6e8dca91 100644
  static void Task_HandleSelectionMenuInput(u8);
  static void CB2_ShowPokemonSummaryScreen(void);
  static void UpdatePartyToBattleOrder(void);
-+static void CB2_ReturnToPartyMenuFromSummaryScreen(void);
++void CB2_ReturnToPartyMenuFromSummaryScreen(void);
 +#ifdef PLATFORM_3DS
 +// The bottom screen's dock may have chosen another screen to open instead.
 +#define CTR_LEAVE_TO(cb) CtrBottom_LeaveTo(cb)
@@ -29069,13 +29226,11 @@ index 7c6393d6..6e8dca91 100644
          AddTextPrinterParameterized(*windowPtr, FONT_NORMAL, gStringVar4, 0, 1, 0, 0);
          ScheduleBgCopyTilemapToVram(2);
      }
-@@ -2906,8 +3343,17 @@ static u8 DisplaySelectionWindow(u8 windowType)
+@@ -2906,8 +3343,15 @@ static u8 DisplaySelectionWindow(u8 windowType)
      return sPartyMenuInternal->windowId[0];
  }
  
-+#ifdef PLATFORM_3DS
-+static const u8 *sCtrMessage;
-+#endif
++
 +
  static void PrintMessage(const u8 *text)
  {
@@ -29087,7 +29242,7 @@ index 7c6393d6..6e8dca91 100644
      DrawStdFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x4F, 13);
      gTextFlags.canABSpeedUpPrint = TRUE;
      AddTextPrinterParameterized2(WIN_MSG, FONT_NORMAL, text, GetPlayerTextSpeedDelay(), 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
-@@ -3094,10 +3540,25 @@ static void Task_HandleSelectionMenuInput(u8 taskId)
+@@ -3094,10 +3538,25 @@ static void Task_HandleSelectionMenuInput(u8 taskId)
          s8 input;
          s16 *data = gTasks[taskId].data;
  
@@ -29117,7 +29272,7 @@ index 7c6393d6..6e8dca91 100644
  
          data[0] = Menu_GetCursorPos();
          switch (input)
-@@ -3542,7 +4003,7 @@ static void Task_SwitchItemsYesNo(u8 taskId)
+@@ -3542,7 +4001,7 @@ static void Task_SwitchItemsYesNo(u8 taskId)
  
  static void Task_HandleSwitchItemsYesNoInput(u8 taskId)
  {
@@ -29126,7 +29281,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0: // Yes, switch items
          RemoveBagItem(gSpecialVar_ItemId, 1);
-@@ -3717,7 +4178,7 @@ static void Task_HandleTossHeldItemYesNoInput(u8 taskId)
+@@ -3717,7 +4176,7 @@ static void Task_HandleTossHeldItemYesNoInput(u8 taskId)
  {
      struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][gPartyMenu.slotId];
  
@@ -29135,7 +29290,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0:
          CopyItemName(GetMonData(mon, MON_DATA_HELD_ITEM), gStringVar1);
-@@ -3799,7 +4260,7 @@ static void Task_SendMailToPCYesNo(u8 taskId)
+@@ -3799,7 +4258,7 @@ static void Task_SendMailToPCYesNo(u8 taskId)
  
  static void Task_HandleSendMailToPCYesNoInput(u8 taskId)
  {
@@ -29144,7 +29299,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0: // Yes, send to PC
          if (TakeMailFromMonAndSave(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId]) != MAIL_NONE)
-@@ -3836,7 +4297,7 @@ static void Task_HandleLoseMailMessageYesNoInput(u8 taskId)
+@@ -3836,7 +4295,7 @@ static void Task_HandleLoseMailMessageYesNoInput(u8 taskId)
  {
      enum Item item;
  
@@ -29153,7 +29308,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0: // Yes, lose mail message
          item = GetMonData(&gParties[B_TRAINER_PLAYER][gPartyMenu.slotId], MON_DATA_HELD_ITEM);
-@@ -4071,7 +4532,7 @@ static void Task_SpinTradeYesNo(u8 taskId)
+@@ -4071,7 +4530,7 @@ static void Task_SpinTradeYesNo(u8 taskId)
  // See comment on CursorCb_Trade2. Because no callback is set, selecting YES (0) to spin trade just closes the party menu
  static void Task_HandleSpinTradeYesNoInput(u8 taskId)
  {
@@ -29162,7 +29317,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0:
          Task_ClosePartyMenu(taskId);
-@@ -4112,32 +4573,41 @@ static void CursorCb_FieldMove(u8 taskId)
+@@ -4112,32 +4571,41 @@ static void CursorCb_FieldMove(u8 taskId)
      {
          switch (fieldMove)
          {
@@ -29230,7 +29385,7 @@ index 7c6393d6..6e8dca91 100644
          }
      }
      // Cant use Field Move
-@@ -4176,7 +4646,7 @@ static void Task_FieldMoveExitAreaYesNo(u8 taskId)
+@@ -4176,7 +4644,7 @@ static void Task_FieldMoveExitAreaYesNo(u8 taskId)
  
  static void Task_HandleFieldMoveExitAreaYesNoInput(u8 taskId)
  {
@@ -29239,7 +29394,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0:
          gPartyMenu.exitCallback = CB2_ReturnToField;
-@@ -4264,7 +4734,7 @@ static enum Species GetFieldMoveMonSpecies(void)
+@@ -4264,7 +4732,7 @@ static enum Species GetFieldMoveMonSpecies(void)
  
  static void Task_CancelAfterAorBPress(u8 taskId)
  {
@@ -29248,7 +29403,7 @@ index 7c6393d6..6e8dca91 100644
          CursorCb_Cancel1(taskId);
  }
  
-@@ -4306,6 +4776,11 @@ static void DisplayCantUseSurfMessage(void)
+@@ -4306,6 +4774,11 @@ static void DisplayCantUseSurfMessage(void)
  
  bool32 SetUpFieldMove_Fly(void)
  {
@@ -29260,7 +29415,7 @@ index 7c6393d6..6e8dca91 100644
      if (!CheckFollowerNPCFlag(FOLLOWER_NPC_FLAG_CAN_LEAVE_ROUTE))
          return FALSE;
  
-@@ -4991,7 +5466,7 @@ void Task_AbilityCapsule(u8 taskId)
+@@ -4991,7 +5464,7 @@ void Task_AbilityCapsule(u8 taskId)
          }
          break;
      case 2:
@@ -29269,7 +29424,7 @@ index 7c6393d6..6e8dca91 100644
          {
          case 0:
              tState++;
-@@ -5076,7 +5551,7 @@ void Task_AbilityPatch(u8 taskId)
+@@ -5076,7 +5549,7 @@ void Task_AbilityPatch(u8 taskId)
          }
          break;
      case 2:
@@ -29278,7 +29433,7 @@ index 7c6393d6..6e8dca91 100644
          {
          case 0:
              tState++;
-@@ -5176,7 +5651,7 @@ void Task_Mint(u8 taskId)
+@@ -5176,7 +5649,7 @@ void Task_Mint(u8 taskId)
          }
          break;
      case 2:
@@ -29287,7 +29442,7 @@ index 7c6393d6..6e8dca91 100644
          {
          case 0:
              tState++;
-@@ -5401,7 +5876,14 @@ static void ShowMoveSelectWindow(u8 slot)
+@@ -5401,7 +5874,14 @@ static void ShowMoveSelectWindow(u8 slot)
  
  static void Task_HandleWhichMoveInput(u8 taskId)
  {
@@ -29302,7 +29457,7 @@ index 7c6393d6..6e8dca91 100644
  
      if (input != MENU_NOTHING_CHOSEN)
      {
-@@ -5607,7 +6089,7 @@ static void Task_LearnedMove(u8 taskId)
+@@ -5607,7 +6087,7 @@ static void Task_LearnedMove(u8 taskId)
      if (gPartyMenu.learnMoveState == 0)
      {
          AdjustFriendship(mon, FRIENDSHIP_EVENT_LEARN_TMHM);
@@ -29311,7 +29466,7 @@ index 7c6393d6..6e8dca91 100644
              RemoveBagItem(item, 1);
      }
      GetMonNickname(mon, gStringVar1);
-@@ -5629,7 +6111,7 @@ static void Task_DoLearnedMoveFanfareAfterText(u8 taskId)
+@@ -5629,7 +6109,7 @@ static void Task_DoLearnedMoveFanfareAfterText(u8 taskId)
  
  static void Task_LearnNextMoveOrClosePartyMenu(u8 taskId)
  {
@@ -29320,7 +29475,7 @@ index 7c6393d6..6e8dca91 100644
      {
          if (gPartyMenu.learnMoveState == 1)
          {
-@@ -5655,7 +6137,7 @@ static void Task_ReplaceMoveYesNo(u8 taskId)
+@@ -5655,7 +6135,7 @@ static void Task_ReplaceMoveYesNo(u8 taskId)
  
  static void Task_HandleReplaceMoveYesNoInput(u8 taskId)
  {
@@ -29329,7 +29484,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0:
          DisplayPartyMenuMessage(gText_WhichMoveToForget, TRUE);
-@@ -5770,7 +6252,7 @@ static void Task_HandleStopLearningMoveYesNoInput(u8 taskId)
+@@ -5770,7 +6250,7 @@ static void Task_HandleStopLearningMoveYesNoInput(u8 taskId)
  {
      struct Pokemon *mon = &gParties[B_TRAINER_PLAYER][gPartyMenu.slotId];
  
@@ -29338,7 +29493,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0:
          GetMonNickname(mon, gStringVar1);
-@@ -5927,7 +6409,7 @@ static void UpdateMonDisplayInfoAfterRareCandy(u8 slot, struct Pokemon *mon)
+@@ -5927,7 +6407,7 @@ static void UpdateMonDisplayInfoAfterRareCandy(u8 slot, struct Pokemon *mon)
  
  static void Task_DisplayLevelUpStatsPg1(u8 taskId)
  {
@@ -29347,7 +29502,7 @@ index 7c6393d6..6e8dca91 100644
      {
          PlaySE(SE_SELECT);
          DisplayLevelUpStatsPg1(taskId);
-@@ -5937,7 +6419,7 @@ static void Task_DisplayLevelUpStatsPg1(u8 taskId)
+@@ -5937,7 +6417,7 @@ static void Task_DisplayLevelUpStatsPg1(u8 taskId)
  
  static void Task_DisplayLevelUpStatsPg2(u8 taskId)
  {
@@ -29356,7 +29511,7 @@ index 7c6393d6..6e8dca91 100644
      {
          PlaySE(SE_SELECT);
          DisplayLevelUpStatsPg2(taskId);
-@@ -5969,7 +6451,7 @@ static void Task_TryLearnNewMoves(u8 taskId)
+@@ -5969,7 +6449,7 @@ static void Task_TryLearnNewMoves(u8 taskId)
  {
      u16 learnMove;
  
@@ -29365,7 +29520,7 @@ index 7c6393d6..6e8dca91 100644
      {
          RemoveLevelUpStatsWindow();
          for (; sInitialLevel <= sFinalLevel; sInitialLevel++)
-@@ -7208,7 +7690,7 @@ static void Task_HandleSwitchItemsFromBagYesNoInput(u8 taskId)
+@@ -7208,7 +7688,7 @@ static void Task_HandleSwitchItemsFromBagYesNoInput(u8 taskId)
  {
      enum Item item;
  
@@ -29374,7 +29529,7 @@ index 7c6393d6..6e8dca91 100644
      {
      case 0: // Yes, switch items
          item = gPartyMenu.bagItem;
-@@ -7403,7 +7885,7 @@ static void Task_ValidateChosenHalfParty(u8 taskId)
+@@ -7403,7 +7883,7 @@ static void Task_ValidateChosenHalfParty(u8 taskId)
  
  static void Task_ContinueChoosingHalfParty(u8 taskId)
  {
@@ -29383,7 +29538,7 @@ index 7c6393d6..6e8dca91 100644
      {
          PlaySE(SE_SELECT);
          DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
-@@ -8624,3 +9106,50 @@ s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 choose
+@@ -8624,3 +9104,50 @@ s8 Test_UpdatePartySelectionSingleLayout(s8 slotId, s8 movementDir, bool8 choose
      return slotId;
  }
  #endif
@@ -29415,7 +29570,7 @@ index 7c6393d6..6e8dca91 100644
 +const u8 *CtrPartyMenu_GetMessage(void)
 +{
 +    if (sPartyMenuInternal == NULL || FuncIsActiveTask(Task_HandleChooseMonInput))
-+        sCtrMessage = NULL;
++        return NULL;
 +    return sCtrMessage;
 +}
 +#endif
@@ -34180,18 +34335,17 @@ index 00000000..952b4169
 +#endif
 \ No newline at end of file
 diff --git c/src/player_pc.c w/src/player_pc.c
-index a4e1e11c..74cbe424 100644
+index a4e1e11c..2aec7899 100644
 --- c/src/player_pc.c
 +++ w/src/player_pc.c
 @@ -696,7 +696,11 @@ static void Mailbox_DrawMailboxMenu(u8 taskId)
  {
      u8 windowId = MailboxMenu_AddWindow(MAILBOXWIN_TITLE);
      MailboxMenu_AddWindow(MAILBOXWIN_LIST);
--    AddTextPrinterParameterized(windowId, FONT_NORMAL, sText_Mailbox, GetStringCenterAlignXOffset(FONT_NORMAL, sText_Mailbox, 0x40), 1, 0, NULL);
 +#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Mailbox, GetStringCenterAlignXOffset(FONT_NORMAL, gText_Mailbox, gWindows[windowId].window.width * 8), 1, 0, NULL);
++    AddTextPrinterParameterized(windowId, FONT_NORMAL, sText_Mailbox, GetStringCenterAlignXOffset(FONT_NORMAL, sText_Mailbox, gWindows[windowId].window.width * 8), 1, 0, NULL);
 +#else
-+    AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Mailbox, GetStringCenterAlignXOffset(FONT_NORMAL, gText_Mailbox, 0x40), 1, 0, NULL);
+     AddTextPrinterParameterized(windowId, FONT_NORMAL, sText_Mailbox, GetStringCenterAlignXOffset(FONT_NORMAL, sText_Mailbox, 0x40), 1, 0, NULL);
 +#endif
      ScheduleBgCopyTilemapToVram(0);
      gTasks[taskId].tListTaskId = MailboxMenu_CreateList(&gPlayerPCItemPageInfo);
@@ -34265,10 +34419,21 @@ index 2ab8f37b..7bb60ae5 100644
      u16 scrollOffset;
  };
 diff --git c/src/pokedex.c w/src/pokedex.c
-index d36708ff..ad6d5c47 100644
+index d36708ff..fc8a75f9 100644
 --- c/src/pokedex.c
 +++ w/src/pokedex.c
-@@ -161,6 +161,36 @@ static void PrintSelectorArrow(u32);
+@@ -1,4 +1,10 @@
+ #include "global.h"
++#include "port_platform.h"
++bool8 CtrBottom_NativeMenus(void);
++#ifdef PLATFORM_3DS
++#include "3ds_game_views.h"
++static u8 *sCtrCapture;
++#endif
+ #include "battle_main.h"
+ #include "battle_script_commands.h"
+ #include "bg.h"
+@@ -161,6 +167,36 @@ static void PrintSelectorArrow(u32);
  static void PrintSearchParameterTitle(u32, const u8 *);
  static void ClearSearchParameterBoxText(void);
  
@@ -34305,7 +34470,7 @@ index d36708ff..ad6d5c47 100644
  // const rom data
  #include "data/pokemon/pokedex_orders.h"
  
-@@ -1466,6 +1496,9 @@ void CB2_OpenPokedex(void)
+@@ -1466,6 +1502,9 @@ void CB2_OpenPokedex(void)
      case 2:
          sPokedexView = AllocZeroed(sizeof(struct PokedexView));
          ResetPokedexView(sPokedexView);
@@ -34315,7 +34480,7 @@ index d36708ff..ad6d5c47 100644
          CreateTask(Task_OpenPokedexMainPage, 0);
          sPokedexView->dexMode = gSaveBlock2Ptr->pokedex.mode;
          if (!IsNationalPokedexEnabled())
-@@ -1500,6 +1533,10 @@ void CB2_OpenPokedex(void)
+@@ -1500,6 +1539,10 @@ void CB2_OpenPokedex(void)
  static void CB2_Pokedex(void)
  {
      RunTasks();
@@ -34326,7 +34491,7 @@ index d36708ff..ad6d5c47 100644
      AnimateSprites();
      BuildOamBuffer();
      UpdatePaletteFade();
-@@ -1531,7 +1568,10 @@ void Task_HandlePokedexInput(u8 taskId)
+@@ -1531,7 +1574,10 @@ void Task_HandlePokedexInput(u8 taskId)
      }
      else
      {
@@ -34338,7 +34503,7 @@ index d36708ff..ad6d5c47 100644
          {
              HandleDestroyStatBars_HGSS();
              UpdateSelectedMonSpriteId();
-@@ -1541,7 +1581,7 @@ void Task_HandlePokedexInput(u8 taskId)
+@@ -1541,7 +1587,7 @@ void Task_HandlePokedexInput(u8 taskId)
              PlaySE(SE_PIN);
              FreeWindowAndBgBuffers();
          }
@@ -34347,7 +34512,7 @@ index d36708ff..ad6d5c47 100644
          {
              HandleDestroyStatBars_HGSS();
              HandleDestroyStatBarsBg_HGSS();
-@@ -1551,7 +1591,7 @@ void Task_HandlePokedexInput(u8 taskId)
+@@ -1551,7 +1597,7 @@ void Task_HandlePokedexInput(u8 taskId)
              gTasks[taskId].func = Task_HandlePokedexStartMenuInput;
              PlaySE(SE_SELECT);
          }
@@ -34356,7 +34521,7 @@ index d36708ff..ad6d5c47 100644
          {
              PlaySE(SE_SELECT);
              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-@@ -1565,7 +1605,7 @@ void Task_HandlePokedexInput(u8 taskId)
+@@ -1565,7 +1611,7 @@ void Task_HandlePokedexInput(u8 taskId)
              PlaySE(SE_PC_LOGIN);
              FreeWindowAndBgBuffers();
          }
@@ -34365,7 +34530,7 @@ index d36708ff..ad6d5c47 100644
          {
              HandleDestroyStatBars_HGSS();
              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-@@ -1601,7 +1641,10 @@ static void Task_HandlePokedexStartMenuInput(u8 taskId)
+@@ -1601,7 +1647,10 @@ static void Task_HandlePokedexStartMenuInput(u8 taskId)
      }
      else
      {
@@ -34377,7 +34542,7 @@ index d36708ff..ad6d5c47 100644
          {
              switch (sPokedexView->menuCursorPos)
              {
-@@ -1632,7 +1675,7 @@ static void Task_HandlePokedexStartMenuInput(u8 taskId)
+@@ -1632,7 +1681,7 @@ static void Task_HandlePokedexStartMenuInput(u8 taskId)
          }
  
          //Exit menu when Start or B is pressed
@@ -34386,7 +34551,7 @@ index d36708ff..ad6d5c47 100644
          {
              sPokedexView->menuIsOpen = FALSE;
              gTasks[taskId].func = Task_HandlePokedexInput;
-@@ -1721,7 +1764,9 @@ static void Task_ClosePokedex(u8 taskId)
+@@ -1721,7 +1770,9 @@ static void Task_ClosePokedex(u8 taskId)
          DestroyTask(taskId);
          SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
          m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100);
@@ -34397,7 +34562,7 @@ index d36708ff..ad6d5c47 100644
      }
  }
  
-@@ -1749,7 +1794,10 @@ static void Task_HandleSearchResultsInput(u8 taskId)
+@@ -1749,7 +1800,10 @@ static void Task_HandleSearchResultsInput(u8 taskId)
      }
      else
      {
@@ -34409,7 +34574,7 @@ index d36708ff..ad6d5c47 100644
          {
              u32 a;
  
-@@ -1762,7 +1810,7 @@ static void Task_HandleSearchResultsInput(u8 taskId)
+@@ -1762,7 +1816,7 @@ static void Task_HandleSearchResultsInput(u8 taskId)
              PlaySE(SE_PIN);
              FreeWindowAndBgBuffers();
          }
@@ -34418,7 +34583,7 @@ index d36708ff..ad6d5c47 100644
          {
              HandleDestroyStatBars_HGSS();
              HandleDestroyStatBarsBg_HGSS();
-@@ -1772,7 +1820,7 @@ static void Task_HandleSearchResultsInput(u8 taskId)
+@@ -1772,7 +1826,7 @@ static void Task_HandleSearchResultsInput(u8 taskId)
              gTasks[taskId].func = Task_HandleSearchResultsStartMenuInput;
              PlaySE(SE_SELECT);
          }
@@ -34427,7 +34592,7 @@ index d36708ff..ad6d5c47 100644
          {
              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
              gTasks[taskId].tLoadScreenTaskId = LoadSearchMenu();
-@@ -1781,7 +1829,7 @@ static void Task_HandleSearchResultsInput(u8 taskId)
+@@ -1781,7 +1835,7 @@ static void Task_HandleSearchResultsInput(u8 taskId)
              PlaySE(SE_PC_LOGIN);
              FreeWindowAndBgBuffers();
          }
@@ -34436,7 +34601,7 @@ index d36708ff..ad6d5c47 100644
          {
              HandleDestroyStatBars_HGSS();
              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-@@ -1816,7 +1864,10 @@ static void Task_HandleSearchResultsStartMenuInput(u8 taskId)
+@@ -1816,7 +1870,10 @@ static void Task_HandleSearchResultsStartMenuInput(u8 taskId)
      }
      else
      {
@@ -34448,7 +34613,7 @@ index d36708ff..ad6d5c47 100644
          {
              switch (sPokedexView->menuCursorPos)
              {
-@@ -1852,7 +1903,7 @@ static void Task_HandleSearchResultsStartMenuInput(u8 taskId)
+@@ -1852,7 +1909,7 @@ static void Task_HandleSearchResultsStartMenuInput(u8 taskId)
          }
  
          //Exit menu when Start or B is pressed
@@ -34457,7 +34622,7 @@ index d36708ff..ad6d5c47 100644
          {
              sPokedexView->menuIsOpen = FALSE;
              gTasks[taskId].func = Task_HandleSearchResultsInput;
-@@ -2030,11 +2081,11 @@ void LoadPokedexBgPalette(bool8 isSearchResults)
+@@ -2030,11 +2087,11 @@ void LoadPokedexBgPalette(bool8 isSearchResults)
          return;
  
      if (isSearchResults == TRUE)
@@ -34472,7 +34637,7 @@ index d36708ff..ad6d5c47 100644
      LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
  }
  
-@@ -2116,6 +2167,11 @@ void CreatePokedexList(u8 dexMode, u8 order)
+@@ -2116,6 +2173,11 @@ void CreatePokedexList(u8 dexMode, u8 order)
              if (temp_isHoennDex)
              {
                  temp_dexNum = RegionalToNationalOrder(i + 1);
@@ -34484,7 +34649,7 @@ index d36708ff..ad6d5c47 100644
              }
              else
              {
-@@ -2535,7 +2591,11 @@ static u16 TryDoPokedexScroll(u16 selectedMon, u16 ignored)
+@@ -2535,7 +2597,11 @@ static u16 TryDoPokedexScroll(u16 selectedMon, u16 ignored)
      u16 startingPos;
      u8 scrollDir = 0;
  
@@ -34496,7 +34661,7 @@ index d36708ff..ad6d5c47 100644
      {
          scrollDir = 1;
          selectedMon = GetNextPosition(1, selectedMon, 0, sPokedexView->pokemonListCount - 1);
-@@ -2544,7 +2604,11 @@ static u16 TryDoPokedexScroll(u16 selectedMon, u16 ignored)
+@@ -2544,7 +2610,11 @@ static u16 TryDoPokedexScroll(u16 selectedMon, u16 ignored)
          sPokedexView->justScrolled = TRUE;
          PlaySE(SE_DEX_SCROLL);
      }
@@ -34508,7 +34673,7 @@ index d36708ff..ad6d5c47 100644
      {
          scrollDir = 2;
          selectedMon = GetNextPosition(0, selectedMon, 0, sPokedexView->pokemonListCount - 1);
-@@ -2605,7 +2669,11 @@ static void UpdateSelectedMonSpriteId(void)
+@@ -2605,7 +2675,11 @@ static void UpdateSelectedMonSpriteId(void)
      {
          u16 spriteId = sPokedexView->monSpriteIds[i];
  
@@ -34520,7 +34685,7 @@ index d36708ff..ad6d5c47 100644
              sPokedexView->selectedMonSpriteId = spriteId;
      }
  }
-@@ -2618,7 +2686,11 @@ static bool8 TryDoInfoScreenScroll(void)
+@@ -2618,7 +2692,11 @@ static bool8 TryDoInfoScreenScroll(void)
      if (sPokedexView->sEvoScreenData.fromEvoPage)
          return FALSE;
  
@@ -34532,7 +34697,7 @@ index d36708ff..ad6d5c47 100644
      {
          nextPokemon = selectedPokemon;
          while (nextPokemon != 0)
-@@ -2643,7 +2715,11 @@ static bool8 TryDoInfoScreenScroll(void)
+@@ -2643,7 +2721,11 @@ static bool8 TryDoInfoScreenScroll(void)
              return TRUE;
          }
      }
@@ -34544,7 +34709,7 @@ index d36708ff..ad6d5c47 100644
      {
          nextPokemon = selectedPokemon;
          while (nextPokemon < sPokedexView->pokemonListCount - 1)
-@@ -3053,7 +3129,7 @@ static void SpriteCB_Scrollbar(struct Sprite *sprite)
+@@ -3053,7 +3135,7 @@ static void SpriteCB_Scrollbar(struct Sprite *sprite)
      if (sPokedexView->currentPage != PAGE_MAIN && sPokedexView->currentPage != PAGE_SEARCH_RESULTS)
          DestroySprite(sprite);
      else
@@ -34553,7 +34718,20 @@ index d36708ff..ad6d5c47 100644
  }
  
  static void SpriteCB_ScrollArrow(struct Sprite *sprite)
-@@ -3352,7 +3428,10 @@ void Task_HandleInfoScreenInput(u8 taskId)
+@@ -3148,6 +3230,12 @@ static void SpriteCB_DexListStartMenuCursor(struct Sprite *sprite)
+ 
+ void PrintInfoScreenText(const u8 *str, u8 left, u8 top)
+ {
++#ifdef PLATFORM_3DS
++    if(sCtrCapture) {
++        unsigned i=0;while(i<15 && str[i]!=EOS){sCtrCapture[i]=str[i];i++;}
++        sCtrCapture[i]=EOS;sCtrCapture=NULL;return;
++    }
++#endif
+     u8 color[3];
+     color[0] = TEXT_COLOR_TRANSPARENT;
+     color[1] = TEXT_DYNAMIC_COLOR_6;
+@@ -3352,7 +3440,10 @@ void Task_HandleInfoScreenInput(u8 taskId)
          PlaySE(SE_DEX_SCROLL);
          return;
      }
@@ -34565,7 +34743,7 @@ index d36708ff..ad6d5c47 100644
      {
          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
          gTasks[taskId].func = Task_ExitInfoScreen;
-@@ -3363,7 +3442,7 @@ void Task_HandleInfoScreenInput(u8 taskId)
+@@ -3363,7 +3454,7 @@ void Task_HandleInfoScreenInput(u8 taskId)
      if (TryHandleInfoScreenInput_HGSS(taskId))
          return;
  
@@ -34574,7 +34752,7 @@ index d36708ff..ad6d5c47 100644
      {
          switch (sPokedexView->selectedScreen)
          {
-@@ -3664,7 +3743,10 @@ void Task_HandleCryScreenInput(u8 taskId)
+@@ -3664,7 +3755,10 @@ void Task_HandleCryScreenInput(u8 taskId)
      else
          LoadPlayArrowPalette(FALSE);
  
@@ -34586,7 +34764,7 @@ index d36708ff..ad6d5c47 100644
      {
          LoadPlayArrowPalette(TRUE);
          CryScreenPlayButton(NationalPokedexNumToSpeciesForm(sPokedexListItem->dexNum));
-@@ -3672,7 +3754,7 @@ void Task_HandleCryScreenInput(u8 taskId)
+@@ -3672,7 +3766,7 @@ void Task_HandleCryScreenInput(u8 taskId)
      }
      else if (!gPaletteFade.active)
      {
@@ -34595,7 +34773,7 @@ index d36708ff..ad6d5c47 100644
          {
              BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
              m4aMPlayContinue(&gMPlayInfo_BGM);
-@@ -3681,7 +3763,7 @@ void Task_HandleCryScreenInput(u8 taskId)
+@@ -3681,7 +3775,7 @@ void Task_HandleCryScreenInput(u8 taskId)
              PlaySE(SE_PC_OFF);
              return;
          }
@@ -34604,7 +34782,7 @@ index d36708ff..ad6d5c47 100644
           || (JOY_NEW(L_BUTTON) && gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
          {
              BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
-@@ -3691,7 +3773,7 @@ void Task_HandleCryScreenInput(u8 taskId)
+@@ -3691,7 +3785,7 @@ void Task_HandleCryScreenInput(u8 taskId)
              PlaySE(SE_DEX_PAGE);
              return;
          }
@@ -34613,7 +34791,7 @@ index d36708ff..ad6d5c47 100644
           || (JOY_NEW(R_BUTTON) && gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
          {
              if (!sPokedexListItem->owned)
-@@ -3854,14 +3936,17 @@ void Task_LoadSizeScreen(u8 taskId)
+@@ -3854,14 +3948,17 @@ void Task_LoadSizeScreen(u8 taskId)
  
  void Task_HandleSizeScreenInput(u8 taskId)
  {
@@ -34633,7 +34811,7 @@ index d36708ff..ad6d5c47 100644
       || (JOY_NEW(L_BUTTON) && gSaveBlock2Ptr->optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
      {
          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
-@@ -3869,6 +3954,15 @@ void Task_HandleSizeScreenInput(u8 taskId)
+@@ -3869,6 +3966,15 @@ void Task_HandleSizeScreenInput(u8 taskId)
          gTasks[taskId].func = Task_SwitchScreensFromSizeScreen;
          PlaySE(SE_DEX_PAGE);
      }
@@ -34649,7 +34827,7 @@ index d36708ff..ad6d5c47 100644
  }
  
  static void Task_SwitchScreensFromSizeScreen(u8 taskId)
-@@ -3886,6 +3980,11 @@ static void Task_SwitchScreensFromSizeScreen(u8 taskId)
+@@ -3886,6 +3992,11 @@ static void Task_SwitchScreensFromSizeScreen(u8 taskId)
          case 2:
              gTasks[taskId].func = Task_LoadCryScreen;
              break;
@@ -34661,7 +34839,7 @@ index d36708ff..ad6d5c47 100644
          }
      }
  }
-@@ -4004,6 +4103,11 @@ u32 Pokedex_CreateCaughtMonSprite(enum Species species, s32 x, s32 y)
+@@ -4004,6 +4115,11 @@ u32 Pokedex_CreateCaughtMonSprite(enum Species species, s32 x, s32 y)
      return spriteId;
  }
  
@@ -34673,7 +34851,7 @@ index d36708ff..ad6d5c47 100644
  static void Task_DisplayCaughtMonDexPage(u8 taskId)
  {
      u8 spriteId;
-@@ -4057,7 +4161,11 @@ static void Task_DisplayCaughtMonDexPage(u8 taskId)
+@@ -4057,7 +4173,11 @@ static void Task_DisplayCaughtMonDexPage(u8 taskId)
          LoadDexMonPalette(taskId, FALSE);
          gSprites[spriteId].oam.priority = 0;
          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
@@ -34685,7 +34863,7 @@ index d36708ff..ad6d5c47 100644
          gTasks[taskId].tState++;
          break;
      case 5:
-@@ -4096,11 +4204,11 @@ void Task_HandleCaughtMonPageInput(u8 taskId)
+@@ -4096,11 +4216,11 @@ void Task_HandleCaughtMonPageInput(u8 taskId)
      // Flicker caught screen color
      else if (++gTasks[taskId].tPalTimer & 16)
      {
@@ -34699,7 +34877,7 @@ index d36708ff..ad6d5c47 100644
      }
  }
  
-@@ -5097,7 +5205,7 @@ static void Task_LoadSearchMenu(u8 taskId)
+@@ -5097,7 +5217,7 @@ static void Task_LoadSearchMenu(u8 taskId)
                  CopyToBgTilemapBuffer(3, gPokedexSearchMenuHoenn_Tilemap, 0, 0);
              else
                  CopyToBgTilemapBuffer(3, gPokedexSearchMenuNational_Tilemap, 0, 0);
@@ -34708,7 +34886,7 @@ index d36708ff..ad6d5c47 100644
              gMain.state = 1;
          }
          break;
-@@ -5171,13 +5279,16 @@ void Task_SwitchToSearchMenuTopBar(u8 taskId)
+@@ -5171,13 +5291,16 @@ void Task_SwitchToSearchMenuTopBar(u8 taskId)
  
  static void Task_HandleSearchTopBarInput(u8 taskId)
  {
@@ -34727,7 +34905,7 @@ index d36708ff..ad6d5c47 100644
      {
          switch (gTasks[taskId].tTopBarItem)
          {
-@@ -5230,6 +5341,9 @@ static void Task_HandleSearchMenuInput(u8 taskId)
+@@ -5230,6 +5353,9 @@ static void Task_HandleSearchMenuInput(u8 taskId)
  {
      const u8 (*movementMap)[4];
  
@@ -34737,7 +34915,7 @@ index d36708ff..ad6d5c47 100644
      if (gTasks[taskId].tTopBarItem != SEARCH_TOPBAR_SEARCH)
      {
          if (!IsNationalPokedexEnabled())
-@@ -5245,14 +5359,14 @@ static void Task_HandleSearchMenuInput(u8 taskId)
+@@ -5245,14 +5371,14 @@ static void Task_HandleSearchMenuInput(u8 taskId)
              movementMap = sSearchMovementMap_SearchNatDex;
      }
  
@@ -34754,7 +34932,7 @@ index d36708ff..ad6d5c47 100644
      {
          if (gTasks[taskId].tMenuItem == SEARCH_OK)
          {
-@@ -5355,7 +5469,10 @@ static void Task_WaitAndCompleteSearch(u8 taskId)
+@@ -5355,7 +5481,10 @@ static void Task_WaitAndCompleteSearch(u8 taskId)
  
  static void Task_SearchCompleteWaitForInput(u8 taskId)
  {
@@ -34766,7 +34944,7 @@ index d36708ff..ad6d5c47 100644
      {
          if (sPokedexView->pokemonListCount != 0)
          {
-@@ -5402,13 +5519,19 @@ static void Task_HandleSearchParameterInput(u8 taskId)
+@@ -5402,13 +5531,19 @@ static void Task_HandleSearchParameterInput(u8 taskId)
      s16 *scrollOffset;
      u16 maxOption;
      bool8 moved;
@@ -34787,7 +34965,7 @@ index d36708ff..ad6d5c47 100644
      {
          PlaySE(SE_PIN);
          ClearSearchParameterBoxText();
-@@ -5418,7 +5541,7 @@ static void Task_HandleSearchParameterInput(u8 taskId)
+@@ -5418,7 +5553,7 @@ static void Task_HandleSearchParameterInput(u8 taskId)
          CopyBgTilemapBufferToVram(3);
          return;
      }
@@ -34796,7 +34974,7 @@ index d36708ff..ad6d5c47 100644
      {
          PlaySE(SE_BALL);
          ClearSearchParameterBoxText();
-@@ -5913,3 +6036,1081 @@ void LoadSpriteSilhouettePalette(u32 spriteId)
+@@ -5913,3 +6048,1084 @@ void LoadSpriteSilhouettePalette(u32 spriteId)
  {
      LoadPalette(sSizeScreenSilhouette_Pal, OBJ_PLTT_ID2(gSprites[spriteId].oam.paletteNum), PLTT_SIZE_4BPP);
  }
@@ -35519,9 +35697,7 @@ index d36708ff..ad6d5c47 100644
 +    if (sPokedexView->dexMode == DEX_MODE_HOENN)
 +        dexNum = NationalToHoennOrder(dexNum);
 +    memcpy(dst, sText_No000, 6);
-+    dst[2] = CHAR_0 + dexNum / 100;
-+    dst[3] = CHAR_0 + (dexNum % 100) / 10;
-+    dst[4] = CHAR_0 + dexNum % 10;
++    ConvertIntToDecimalStringN(dst+2,dexNum,STR_CONV_MODE_LEADING_ZEROS,dexNum>=1000 ? 4 : 3);
 +}
 +
 +// The chosen mon's entry: its texts as the entry prints them, made once for
@@ -35542,9 +35718,9 @@ index d36708ff..ad6d5c47 100644
 +        {
 +            CopyMonCategoryText(NationalPokedexNumToSpecies(dexNum), sMade.category);
 +            sCtrCapture = sMade.height;
-+            PrintMonHeight(gSpeciesInfo[NationalPokedexNumToSpecies(dexNum)].height, 0, 0);
++            PrintOwnedMonHeight(NationalPokedexNumToSpecies(dexNum));
 +            sCtrCapture = sMade.weight;
-+            PrintMonWeight(gSpeciesInfo[NationalPokedexNumToSpecies(dexNum)].weight, 0, 0);
++            PrintOwnedMonWeight(NationalPokedexNumToSpecies(dexNum));
 +            sCtrCapture = NULL;
 +            sMade.description = gSpeciesInfo[NationalPokedexNumToSpecies(dexNum)].description;
 +            footprint = Port_ResolveAssetPointerSized(gSpeciesInfo[NationalPokedexNumToSpecies(dexNum)].footprint,
@@ -35555,8 +35731,8 @@ index d36708ff..ad6d5c47 100644
 +        else
 +        {
 +            StringCopy(sMade.category, gText_5MarksPokemon);
-+            StringCopy(sMade.height, gText_UnkHeight);
-+            StringCopy(sMade.weight, gText_UnkWeight);
++            StringCopy(sMade.height, sText_UnkHeight);
++            StringCopy(sMade.weight, sText_UnkWeight);
 +            sMade.description = sExpandedPlaceholder_PokedexDescription;
 +        }
 +    }
@@ -35878,17 +36054,23 @@ index d36708ff..ad6d5c47 100644
 +    return Port_ResolveAssetPointerSized(sCaughtBall_Gfx, 64);
 +}
 +#endif
++
++#ifdef PLATFORM_3DS
++bool8 CtrDex_FadeInstant(void)
++{ return CtrBottom_NativeMenus() && sPokedexView!=NULL && gMain.callback2==CB2_Pokedex; }
++#endif
 diff --git c/src/pokedex_area_screen.c w/src/pokedex_area_screen.c
-index 79201e93..3ab64f5c 100644
+index 79201e93..cc6b294e 100644
 --- c/src/pokedex_area_screen.c
 +++ w/src/pokedex_area_screen.c
-@@ -1,4 +1,5 @@
+@@ -1,4 +1,6 @@
  #include "global.h"
++#include "config/pokedex_plus_hgss.h"
 +#include "custom_random.h"
  #include "bg.h"
  #include "decompress.h"
  #include "event_data.h"
-@@ -27,7 +28,21 @@
+@@ -27,7 +29,21 @@
  #include "constants/region_map_sections.h"
  #include "constants/rgb.h"
  #include "constants/songs.h"
@@ -35911,12 +36093,14 @@ index 79201e93..3ab64f5c 100644
  
  // There are two types of indicators for the area screen to show where a Pokémon can occur:
  // - Area glows, which highlight any of the maps in MAP_GROUP_TOWNS_AND_ROUTES that have the species.
-@@ -110,8 +125,11 @@ struct
+@@ -110,8 +126,13 @@ struct
      /*0xF70*/ u8 charBuffer[64];
      /*0xFB0*/ struct Sprite *areaUnknownSprites[3];
      /*0xFBC*/ u8 areaUnknownGraphicsBuffer[0x600];
 -    /*0xFC0*/ u8 areaScreenLabelIds[NUM_LABEL_WINDOWS];
 -    /*0xFC8*/ u8 areaState;
++    u8 areaScreenLabelIds[NUM_LABEL_WINDOWS];
++    u8 areaState;
 +#ifdef PLATFORM_3DS
 +    // The bottom screen's cells where the mon lives, found once.
 +    bool8 ctrAreaRowsFound;
@@ -35925,7 +36109,7 @@ index 79201e93..3ab64f5c 100644
  } static EWRAM_DATA *sPokedexAreaScreen = NULL;
  
  EWRAM_DATA u8 gAreaTimeOfDay = 0;
-@@ -130,6 +148,9 @@ static void CreateAreaMarkerSprites(void);
+@@ -130,6 +151,9 @@ static void CreateAreaMarkerSprites(void);
  static void LoadAreaUnknownGraphics(void);
  static void CreateAreaUnknownSprites(void);
  static void Task_HandlePokedexAreaScreenInput(u8);
@@ -35935,7 +36119,7 @@ index 79201e93..3ab64f5c 100644
  static void ResetPokedexAreaMapBg(void);
  static void DestroyAreaScreenSprites(void);
  static void AddTimeOfDayLabels(void);
-@@ -340,7 +361,7 @@ static void FindMapsWithMon(enum Species species)
+@@ -340,7 +364,7 @@ static void FindMapsWithMon(enum Species species)
          if (GetRegionMapType(headerSectionId) != currentRegionMapType)
              continue;
  
@@ -35944,7 +36128,7 @@ index 79201e93..3ab64f5c 100644
          {
              switch (gWildMonHeaders[i].mapGroup)
              {
-@@ -865,6 +886,16 @@ static void Task_HandlePokedexAreaScreenInput(u8 taskId)
+@@ -865,6 +889,16 @@ static void Task_HandlePokedexAreaScreenInput(u8 taskId)
              return;
          break;
      case 1:
@@ -35961,7 +36145,7 @@ index 79201e93..3ab64f5c 100644
          if (JOY_NEW(B_BUTTON))
          {
              gTasks[taskId].data[1] = 1;
-@@ -1033,8 +1064,40 @@ static void CreateAreaUnknownSprites(void)
+@@ -1033,8 +1067,40 @@ static void CreateAreaUnknownSprites(void)
      }
  }
  
@@ -37240,7 +37424,7 @@ index 034c187e..4f5dfc97 100644
      {
          if (JOY_NEW(A_BUTTON))
 diff --git c/src/pokemon_summary_screen.c w/src/pokemon_summary_screen.c
-index 801dfe07..9a3332ed 100644
+index 801dfe07..e14dfcf5 100644
 --- c/src/pokemon_summary_screen.c
 +++ w/src/pokemon_summary_screen.c
 @@ -1,7 +1,13 @@
@@ -37360,10 +37544,10 @@ index 801dfe07..9a3332ed 100644
 +void ShowPokemonSummaryScreenHandleDeoxys(u8 mode, struct BoxPokemon *mons, u8 monIndex, u8 maxMonIndex, void (*callback)(void))
 +{
 +    ShowPokemonSummaryScreen(mode, mons, monIndex, maxMonIndex, callback);
-+    sMonSummaryScreen->handleDeoxys = TRUE;
++    /* Expansion stores the actual native form on the mon. */
 +}
 +
-+#ifdef PLATFORM_3DS
++#if defined(PLATFORM_3DS) && !defined(PORT_EXPANSION)
 +// The move's category (physical, special or status) as an icon in the Effect
 +// window's Category row, as from Diamond/Pearl on; only with the split on
 +// (sShowCategory).
@@ -37594,7 +37778,7 @@ index 801dfe07..9a3332ed 100644
  static void MainCB2(void)
  {
      RunTasks();
-+#ifdef PLATFORM_3DS
++#if defined(PLATFORM_3DS) && !defined(PORT_EXPANSION)
 +    // The tasks just run may have closed the summary (FreeSummaryScreen).
 +    if (sShowCategory && sMonSummaryScreen != NULL)
 +    {
@@ -37641,7 +37825,7 @@ index 801dfe07..9a3332ed 100644
          SetMainCallback2(sMonSummaryScreen->callback);
          gLastViewedMonIndex = sMonSummaryScreen->curMonIndex;
          SummaryScreen_DestroyAnimDelayTask();
-@@ -1736,10 +2050,426 @@ static void HandleMoveRelearnerInput(u8 taskId)
+@@ -1736,10 +2050,428 @@ static void HandleMoveRelearnerInput(u8 taskId)
      }
  }
  
@@ -37937,9 +38121,11 @@ index 801dfe07..9a3332ed 100644
 +    view->stats[2] = sum->spatk;
 +    view->stats[3] = sum->spdef;
 +    view->stats[4] = sum->speed;
-+    memcpy(view->ivs, sum->ivs, sizeof(view->ivs));
-+    memcpy(view->evs, sum->evs, sizeof(view->evs));
-+    view->statsMode = sMonSummaryScreen->statsMode;
++    for(i=0;i<NUM_STATS;++i) {
++        view->ivs[i]=GetMonData(mon,MON_DATA_HP_IV+i);
++        view->evs[i]=GetMonData(mon,MON_DATA_HP_EV+i);
++    }
++    view->statsMode = sMonSummaryScreen->skillsPageMode;
 +    view->ppBonuses = sum->ppBonuses;
 +    for (i = 0; i < MAX_MON_MOVES; i++)
 +    {
@@ -38068,7 +38254,7 @@ index 801dfe07..9a3332ed 100644
          if (JOY_NEW(DPAD_UP))
          {
              ChangeSummaryPokemon(taskId, -1);
-@@ -2183,6 +2913,56 @@ static void ChangePage(u8 taskId, s8 delta)
+@@ -2183,6 +2915,56 @@ static void ChangePage(u8 taskId, s8 delta)
      }
  }
  
@@ -38125,7 +38311,7 @@ index 801dfe07..9a3332ed 100644
  static void PssScrollRight(u8 taskId) // Scroll right
  {
      s16 *data = gTasks[taskId].data;
-@@ -2217,6 +2997,26 @@ static void PssScrollRightEnd(u8 taskId) // display right
+@@ -2217,6 +2999,26 @@ static void PssScrollRightEnd(u8 taskId) // display right
  {
      s16 *data = gTasks[taskId].data;
      sMonSummaryScreen->bgDisplayOrder ^= 1;
@@ -38152,7 +38338,7 @@ index 801dfe07..9a3332ed 100644
      data[1] = 0;
      data[0] = 0;
      DrawPagination();
-@@ -2325,6 +3125,17 @@ static void Task_HandleInput_MoveSelect(u8 taskId)
+@@ -2325,6 +3127,17 @@ static void Task_HandleInput_MoveSelect(u8 taskId)
  
      if (MenuHelpers_ShouldWaitForLinkRecv() != TRUE)
      {
@@ -38170,7 +38356,7 @@ index 801dfe07..9a3332ed 100644
          if (JOY_NEW(DPAD_UP))
          {
              data[0] = 4;
-@@ -2335,7 +3146,7 @@ static void Task_HandleInput_MoveSelect(u8 taskId)
+@@ -2335,7 +3148,7 @@ static void Task_HandleInput_MoveSelect(u8 taskId)
              data[0] = 4;
              ChangeSelectedMove(data, 1, &sMonSummaryScreen->firstMoveIndex);
          }
@@ -38179,7 +38365,7 @@ index 801dfe07..9a3332ed 100644
          {
              if (sMonSummaryScreen->lockMovesFlag == TRUE
                  || (sMonSummaryScreen->newMove == MOVE_NONE && sMonSummaryScreen->firstMoveIndex == MAX_MON_MOVES))
-@@ -2355,11 +3166,13 @@ static void Task_HandleInput_MoveSelect(u8 taskId)
+@@ -2355,11 +3168,13 @@ static void Task_HandleInput_MoveSelect(u8 taskId)
                  PlaySE(SE_FAILURE);
              }
          }
@@ -38194,7 +38380,7 @@ index 801dfe07..9a3332ed 100644
      }
  }
  
-@@ -2471,6 +3284,17 @@ static void Task_HandleInput_MovePositionSwitch(u8 taskId)
+@@ -2471,6 +3286,17 @@ static void Task_HandleInput_MovePositionSwitch(u8 taskId)
  
      if (MenuHelpers_ShouldWaitForLinkRecv() != TRUE)
      {
@@ -38212,7 +38398,7 @@ index 801dfe07..9a3332ed 100644
          if (JOY_NEW(DPAD_UP))
          {
              data[0] = 3;
-@@ -2481,17 +3305,19 @@ static void Task_HandleInput_MovePositionSwitch(u8 taskId)
+@@ -2481,17 +3307,19 @@ static void Task_HandleInput_MovePositionSwitch(u8 taskId)
              data[0] = 3;
              ChangeSelectedMove(&data[0], 1, &sMonSummaryScreen->secondMoveIndex);
          }
@@ -38234,7 +38420,7 @@ index 801dfe07..9a3332ed 100644
      }
  }
  
-@@ -2614,6 +3440,17 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
+@@ -2614,6 +3442,17 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
      {
          if (gPaletteFade.active != TRUE)
          {
@@ -38252,7 +38438,7 @@ index 801dfe07..9a3332ed 100644
              if (JOY_NEW(DPAD_UP))
              {
                  data[0] = 4;
-@@ -2632,7 +3469,7 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
+@@ -2632,7 +3471,7 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
              {
                  ChangePage(taskId, 1);
              }
@@ -38261,7 +38447,7 @@ index 801dfe07..9a3332ed 100644
              {
                  if (CanReplaceMove() == TRUE)
                  {
-@@ -2649,7 +3486,7 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
+@@ -2649,7 +3488,7 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
                      ShowCantForgetHMsWindow(taskId);
                  }
              }
@@ -38270,7 +38456,7 @@ index 801dfe07..9a3332ed 100644
              {
                  StopPokemonAnimations();
                  PlaySE(SE_SELECT);
-@@ -2658,6 +3495,8 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
+@@ -2658,6 +3497,8 @@ static void Task_HandleReplaceMoveInput(u8 taskId)
                  gSpecialVar_Result = FALSE;
                  BeginCloseSummaryScreen(taskId);
              }
@@ -38279,7 +38465,7 @@ index 801dfe07..9a3332ed 100644
          }
      }
  }
-@@ -2735,7 +3574,7 @@ static void Task_HandleInputCantForgetHMsMoves(u8 taskId)
+@@ -2735,7 +3576,7 @@ static void Task_HandleInputCantForgetHMsMoves(u8 taskId)
                  PositionAppealJamSlidingWindow(9, -2, move);
              }
          }
@@ -38288,7 +38474,7 @@ index 801dfe07..9a3332ed 100644
          {
              ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
              if (!gSprites[sMonSummaryScreen->spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-@@ -3590,6 +4429,9 @@ static void BufferMonTrainerMemo(void)
+@@ -3590,6 +4431,9 @@ static void BufferMonTrainerMemo(void)
  
  static void PrintMonTrainerMemo(void)
  {
@@ -38298,7 +38484,7 @@ index 801dfe07..9a3332ed 100644
      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), gStringVar4, 0, 1, 0, 0);
  }
  
-@@ -3702,6 +4544,9 @@ static void PrintEggState(void)
+@@ -3702,6 +4546,9 @@ static void PrintEggState(void)
      else
          text = gText_EggWillTakeALongTime;
  
@@ -38308,7 +38494,7 @@ index 801dfe07..9a3332ed 100644
      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), text, 0, 1, 0, 0);
  }
  
-@@ -3726,6 +4571,9 @@ static void PrintEggMemo(void)
+@@ -3726,6 +4573,9 @@ static void PrintEggMemo(void)
          text = gText_OddEggFoundByCouple;
      }
  
@@ -38318,7 +38504,7 @@ index 801dfe07..9a3332ed 100644
      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), text, 0, 1, 0, 0);
  }
  
-@@ -4230,7 +5078,11 @@ static void PrintNewMoveDetailsOrCancelText(void)
+@@ -4230,7 +5080,11 @@ static void PrintNewMoveDetailsOrCancelText(void)
  static void AddAndFillMoveNamesWindow(void)
  {
      u8 windowId = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
@@ -38330,7 +38516,7 @@ index 801dfe07..9a3332ed 100644
      CopyWindowToVram(windowId, COPYWIN_GFX);
  }
  
-@@ -4760,6 +5612,9 @@ static inline bool32 ShouldShowRename(void)
+@@ -4760,6 +5614,9 @@ static inline bool32 ShouldShowRename(void)
  
  static inline bool32 ShouldShowIvEvPrompt(void)
  {
@@ -38738,16 +38924,10 @@ index 3be451ad..05382c23 100644
      RequestDma3Copy(menu->leftHeaderSubMenuBuffer, (void *)OBJ_VRAM0 + 0x800 + (GetSpriteTileStartByTag(2) * 32), size, 1);
  }
 diff --git c/src/pokenav_match_call_data.c w/src/pokenav_match_call_data.c
-index 0b48fe4d..f17c0198 100644
+index 0b48fe4d..ed651aca 100644
 --- c/src/pokenav_match_call_data.c
 +++ w/src/pokenav_match_call_data.c
-@@ -1,4 +1,5 @@
- #include "global.h"
-+#include "international_string_util.h"
- #include "battle_setup.h"
- #include "data.h"
- #include "event_data.h"
-@@ -34,13 +35,13 @@ typedef struct MatchCallTextDataStruct {
+@@ -34,13 +34,13 @@ typedef struct MatchCallTextDataStruct {
  
  struct MatchCallStructCommon {
      u8 type;
@@ -38763,7 +38943,7 @@ index 0b48fe4d..f17c0198 100644
      u16 flag;
      const u8 *desc;
      const u8 *name;
-@@ -50,7 +51,7 @@ struct MatchCallStructNPC {
+@@ -50,7 +50,7 @@ struct MatchCallStructNPC {
  // Shared by MC_TYPE_TRAINER and MC_TYPE_LEADER
  struct MatchCallStructTrainer {
      u8 type;
@@ -38772,7 +38952,7 @@ index 0b48fe4d..f17c0198 100644
      u16 flag;
      u16 rematchTableIdx;
      const u8 *desc;
-@@ -60,12 +61,12 @@ struct MatchCallStructTrainer {
+@@ -60,12 +60,12 @@ struct MatchCallStructTrainer {
  
  struct MatchCallLocationOverride {
      u16 flag;
@@ -38787,7 +38967,7 @@ index 0b48fe4d..f17c0198 100644
      u16 flag;
      u16 rematchTableIdx;
      const u8 *desc;
-@@ -75,7 +76,7 @@ struct MatchCallWally {
+@@ -75,7 +75,7 @@ struct MatchCallWally {
  
  struct MatchCallBirch {
      u8 type;
@@ -38796,7 +38976,7 @@ index 0b48fe4d..f17c0198 100644
      u16 flag;
      const u8 *desc;
      const u8 *name;
-@@ -117,11 +118,11 @@ static bool32 MatchCall_GetEnabled_Wally(match_call_t);
+@@ -117,11 +117,11 @@ static bool32 MatchCall_GetEnabled_Wally(match_call_t);
  static bool32 MatchCall_GetEnabled_Birch(match_call_t);
  static bool32 MatchCall_GetEnabled_Rival(match_call_t);
  
@@ -38813,7 +38993,7 @@ index 0b48fe4d..f17c0198 100644
  
  static bool32 MatchCall_IsRematchable_NPC(match_call_t);
  static bool32 MatchCall_IsRematchable_Trainer(match_call_t);
-@@ -594,7 +595,7 @@ static bool32 (*const sMatchCallGetEnabledFuncs[])(match_call_t) = {
+@@ -594,7 +594,7 @@ static bool32 (*const sMatchCallGetEnabledFuncs[])(match_call_t) = {
      MatchCall_GetEnabled_Birch
  };
  
@@ -38822,7 +39002,7 @@ index 0b48fe4d..f17c0198 100644
      MatchCall_GetMapSec_NPC,
      MatchCall_GetMapSec_Trainer,
      MatchCall_GetMapSec_Wally,
-@@ -777,7 +778,7 @@ static bool32 MatchCall_GetEnabled_Birch(match_call_t matchCall)
+@@ -777,7 +777,7 @@ static bool32 MatchCall_GetEnabled_Birch(match_call_t matchCall)
      return FlagGet(matchCall.birch->flag);
  }
  
@@ -38831,7 +39011,7 @@ index 0b48fe4d..f17c0198 100644
  {
      match_call_t matchCall;
      u32 i;
-@@ -789,17 +790,17 @@ mapsec_u8_t MatchCall_GetMapSec(u32 idx)
+@@ -789,17 +789,17 @@ mapsec_u8_t MatchCall_GetMapSec(u32 idx)
      return sMatchCallGetMapSecFuncs[i](matchCall);
  }
  
@@ -38852,7 +39032,7 @@ index 0b48fe4d..f17c0198 100644
  {
      s32 i;
  
-@@ -811,12 +812,12 @@ static mapsec_u8_t MatchCall_GetMapSec_Wally(match_call_t matchCall)
+@@ -811,12 +811,12 @@ static mapsec_u8_t MatchCall_GetMapSec_Wally(match_call_t matchCall)
      return matchCall.wally->locationData[i].mapSec;
  }
  
@@ -38867,21 +39047,6 @@ index 0b48fe4d..f17c0198 100644
  {
      return MAPSEC_NONE;
  }
-@@ -1085,8 +1086,12 @@ static void MatchCall_GetNameAndDesc_Birch(match_call_t matchCall, const u8 **de
- 
- static void MatchCall_GetNameAndDescByRematchIdx(u32 idx, const u8 **desc, const u8 **name)
- {
--    const struct Trainer *trainer = GetTrainerStructFromId(GetTrainerIdxByRematchIdx(idx));
--    *desc = gTrainerClasses[trainer->trainerClass].name;
-+    const struct Trainer *trainer = gTrainers + GetTrainerIdxByRematchIdx(idx);
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+    *desc = GetTrainerClassNameGenderSpecific(trainer->trainerClass, trainer->encounterMusic_gender, trainer->trainerName);
-+#else
-+    *desc = gTrainerClassNames[trainer->trainerClass];
-+#endif
-     *name = trainer->trainerName;
- }
- 
 diff --git c/src/pokenav_match_call_gfx.c w/src/pokenav_match_call_gfx.c
 old mode 100755
 new mode 100644
@@ -38940,7 +39105,7 @@ index f7f08c03..08b3d981
 diff --git c/src/pokenav_match_call_list.c w/src/pokenav_match_call_list.c
 old mode 100755
 new mode 100644
-index 48640432..c2958a11
+index 48640432..f3f0d766
 --- c/src/pokenav_match_call_list.c
 +++ w/src/pokenav_match_call_list.c
 @@ -308,7 +308,7 @@ struct PokenavMatchCallEntry *GetMatchCallList(void)
@@ -38952,51 +39117,7 @@ index 48640432..c2958a11
  {
      struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);
      return state->matchCallEntries[index].mapSec;
-@@ -409,9 +409,14 @@ void BufferMatchCallNameAndDesc(struct PokenavMatchCallEntry *matchCallEntry, u8
-     if (!matchCallEntry->isSpecialTrainer)
-     {
-         int index = GetTrainerIdxByRematchIdx(matchCallEntry->headerId);
--        const struct Trainer *trainer = GetTrainerStructFromId(index);
--        enum TrainerClassID class = trainer->trainerClass;
--        className = gTrainerClasses[class].name;
-+        const struct Trainer *trainer = &gTrainers[index];
-+        int class = trainer->trainerClass;
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        int gender = trainer->encounterMusic_gender;
-+        className = GetTrainerClassNameGenderSpecific(class, gender, trainer->trainerName);
-+#else
-+        className = gTrainerClassNames[class];
-+#endif
-         trainerName = trainer->trainerName;
-     }
-     else
-@@ -422,15 +427,33 @@ void BufferMatchCallNameAndDesc(struct PokenavMatchCallEntry *matchCallEntry, u8
-     if (className && trainerName)
-     {
-         u8 *str2 = GetStringClearToWidth(str, FONT_NARROW, className, 69);
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        GetStringClearToWidth(
-+            str2,
-+            FONT_NARROW,
-+            trainerName,
-+            57
-+        );
-+#else
-         GetStringClearToWidth(str2, FONT_NARROW, trainerName, 51);
-+#endif
-     }
-     else
-     {
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_GERMAN
-+        GetStringClearToWidth(
-+            str,
-+            FONT_NARROW,
-+            NULL,
-+            126
-+        );
-+#else
-         GetStringClearToWidth(str, FONT_NARROW, NULL, 120);
-+#endif
+@@ -430,7 +430,7 @@ void BufferMatchCallNameAndDesc(struct PokenavMatchCallEntry *matchCallEntry, u8
      }
  }
  
@@ -39005,7 +39126,7 @@ index 48640432..c2958a11
  {
      int mapGroup = gRematchTable[rematchIndex].mapGroup;
      int mapNum = gRematchTable[rematchIndex].mapNum;
-@@ -524,3 +547,35 @@ static bool32 ShouldDoNearbyMessage(void)
+@@ -524,3 +524,35 @@ static bool32 ShouldDoNearbyMessage(void)
  #endif //FREE_MATCH_CALL
      return FALSE;
  }
@@ -39032,7 +39153,7 @@ index 48640432..c2958a11
 +    return 0xFF;
 +}
 +
-+// Puts the options' cursor on an option (NavNext, 3ds_bottom_ui.c).
++// Puts the options' cursor on an option (CtrPokenavMenu_SetCursor).
 +void CtrPokenavMatchCall_SetOption(u16 cursor)
 +{
 +    struct Pokenav_MatchCallMenu *state = GetSubstructPtr(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN);
@@ -39343,7 +39464,7 @@ index b8901c6e..ee4a7b01 100644
 diff --git c/src/pokenav_region_map.c w/src/pokenav_region_map.c
 old mode 100755
 new mode 100644
-index f5a91739..c9fb825a
+index f5a91739..8df7a84b
 --- c/src/pokenav_region_map.c
 +++ w/src/pokenav_region_map.c
 @@ -143,7 +143,11 @@ static const struct WindowTemplate sMapSecInfoWindowTemplate =
@@ -39466,44 +39587,33 @@ index f5a91739..c9fb825a
          AddTextPrinterParameterized(state->infoWindowId, FONT_NARROW, gStringVar1, 0, i * 16 + 17, TEXT_SKIP_DRAW, NULL);
          i++;
      }
-@@ -768,23 +837,22 @@ static void SetCityZoomTextInvisibility(bool32 invisible)
+@@ -768,6 +837,26 @@ static void SetCityZoomTextInvisibility(bool32 invisible)
          state->cityZoomTextSprites[i]->invisible = invisible;
  }
  
--void UpdateRegionMapHelpBarText(void)
 +#ifdef PORT_BRIDGE
 +// DrawCityMap's picture, for the bottom screen's map.
 +const u32 *CtrPokenav_CityMap(u16 mapSecId, u8 posWithinMapSec)
- {
--    struct RegionMap* regionMap = GetSubstructPtr(POKENAV_SUBSTRUCT_REGION_MAP);
++{
 +    int i;
- 
--    if (regionMap->mapSecType == MAPSECTYPE_CITY_CANFLY && FlagGet(OW_FLAG_POKE_RIDER)
--        && Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE)
--    {
--        if (IsRegionMapZoomed())
--            PrintHelpBarText(HELPBAR_MAP_ZOOMED_IN_CANFLY);
--        else
--            PrintHelpBarText(HELPBAR_MAP_ZOOMED_OUT_CANFLY);
--    }
--    else
++
 +    for (i = 0; i < NUM_CITY_MAPS; i++)
-     {
--        if (IsRegionMapZoomed())
--            PrintHelpBarText(HELPBAR_MAP_ZOOMED_IN);
--        else
--            PrintHelpBarText(HELPBAR_MAP_ZOOMED_OUT);
++    {
 +        if (sPokenavCityMaps[i].mapSecId == mapSecId && sPokenavCityMaps[i].index == posWithinMapSec)
 +            return sPokenavCityMaps[i].tilemap;
-     }
++    }
 +    return NULL;
 +}
 +
 +const u32 *CtrPokenav_CityZoomTiles(void)
 +{
 +    return sRegionMapCityZoomTiles_Gfx;
- }
++}
 +#endif
++
+ void UpdateRegionMapHelpBarText(void)
+ {
+     struct RegionMap* regionMap = GetSubstructPtr(POKENAV_SUBSTRUCT_REGION_MAP);
 diff --git c/src/pokenav_ribbons_list.c w/src/pokenav_ribbons_list.c
 index 2b8ada1d..8fdddf27 100644
 --- c/src/pokenav_ribbons_list.c
@@ -41772,19 +41882,22 @@ index 1a57e3fe..6645c543 100644
  }
  
 diff --git c/src/sprite.c w/src/sprite.c
-index 400ff93f..b9a6d374 100644
+index 400ff93f..a340929a 100644
 --- c/src/sprite.c
 +++ w/src/sprite.c
-@@ -7,6 +7,18 @@
+@@ -7,6 +7,21 @@
  #include "text.h"
  #include "battle_anim.h"
  #include "test/test.h"
 +#if defined(PLATFORM_3DS)
 +#include "3ds_video.h"
-+bool8 FieldEffect_IsMachineSprite(const struct Sprite *sprite);   /* field_effect.c */
-+bool8 FieldEffect_IsFlySprite(const struct Sprite *sprite);       /* field_effect.c */
++bool8 FieldEffect_IsFlySprite(const struct Sprite*);
++bool8 FieldEffect_IsMachineSprite(const struct Sprite*);
++bool8 Weather_IsFogSpriteTemplate(const struct SpriteTemplate*);
++bool8 Weather_IsBubbleSpriteTemplate(const struct SpriteTemplate*);
++bool8 CtrSprite_IsVoxelCloud(const struct Sprite*);
 +#endif
-+#if defined(PLATFORM_3DS) && CTR_VOXEL_ENABLED
++#if defined(PLATFORM_3DS)
 +#include "field_weather.h"
 +#include "constants/weather.h"
 +#endif
@@ -41794,17 +41907,17 @@ index 400ff93f..b9a6d374 100644
  
  #define MAX_SPRITE_COPY_REQUESTS 64
  
-@@ -51,6 +63,9 @@ struct OamDimensions32
+@@ -51,6 +66,9 @@ struct OamDimensions32
  };
  
  static void SortSprites(u32 *spritePriorities, s32 n);
-+#if defined(PLATFORM_3DS) && CTR_VOXEL_ENABLED
++#if defined(PLATFORM_3DS)
 +static bool8 IsVoxelWeatherSprite(const struct Sprite *sprite);
 +#endif
  static u32 CreateSpriteAt(u32 index, const struct SpriteTemplate *template, s16 x, s16 y, u32 subpriority);
  static void ResetOamMatrices(void);
  static void ResetSprite(struct Sprite *sprite);
-@@ -260,6 +275,11 @@ COMMON_DATA u32 gOamMatrixAllocBitmap = 0;
+@@ -260,6 +278,11 @@ COMMON_DATA u32 gOamMatrixAllocBitmap = 0;
  COMMON_DATA u8 gReservedSpritePaletteCount = 0;
  
  EWRAM_DATA struct Sprite gSprites[MAX_SPRITES + 1] = {0};
@@ -41816,7 +41929,7 @@ index 400ff93f..b9a6d374 100644
  EWRAM_DATA static u8 sSpriteOrder[MAX_SPRITES] = {0};
  EWRAM_DATA static bool8 sShouldProcessSpriteCopyRequests = 0;
  EWRAM_DATA static u8 sSpriteCopyRequestCount = 0;
-@@ -273,6 +293,22 @@ EWRAM_DATA s16 gSpriteCoordOffsetY = 0;
+@@ -273,6 +296,22 @@ EWRAM_DATA s16 gSpriteCoordOffsetY = 0;
  EWRAM_DATA struct OamMatrix gOamMatrices[OAM_MATRIX_COUNT] = {0};
  EWRAM_DATA bool8 gAffineAnimsDisabled = FALSE;
  
@@ -41839,15 +41952,17 @@ index 400ff93f..b9a6d374 100644
  void ResetSpriteData(void)
  {
      ResetOamRange(0, 128);
-@@ -383,9 +419,33 @@ void BuildOamBuffer(void)
+@@ -383,9 +422,41 @@ void BuildOamBuffer(void)
      oamLoadDisabled = gMain.oamLoadDisabled;
      gMain.oamLoadDisabled = TRUE;
  
 +#if defined(PLATFORM_3DS)
 +    CtrVideo_ClearOamAnchors();
 +    CtrVideo_ClearScreenOam();
++    CtrVideo_ClearFogOam();
++    CtrVideo_ClearExtPaletteOam();
 +#endif
-+#if defined(PLATFORM_3DS) && CTR_VOXEL_ENABLED
++#if defined(PLATFORM_3DS)
 +    CtrVideo_ClearVoxelWeatherOam();
 +#endif
      for (i = 0, oamIndex = 0; i < toSort; i++)
@@ -41864,7 +41979,13 @@ index 400ff93f..b9a6d374 100644
 +        if (!sprite->coordOffsetEnabled)
 +            CtrVideo_MarkScreenOam(first, oamIndex);
 +#endif
-+#if defined(PLATFORM_3DS) && CTR_VOXEL_ENABLED
++#if defined(PLATFORM_3DS)
++        if (Weather_IsFogSpriteTemplate(sprite->template))
++            CtrVideo_MarkFogOam(first,oamIndex);
++        if (FieldEffect_IsFlySprite(sprite))
++            CtrVideo_MarkFlyOam(first,oamIndex);
++        if (CtrSprite_IsVoxelCloud(sprite))
++            CtrVideo_MarkVoxelCloudOam(first,oamIndex);
 +        if (IsVoxelWeatherSprite(sprite))
 +            CtrVideo_MarkVoxelWeatherOam(first, oamIndex);
 +#else
@@ -41874,7 +41995,7 @@ index 400ff93f..b9a6d374 100644
              break;
      }
  
-@@ -409,17 +469,134 @@ void BuildOamBuffer(void)
+@@ -409,6 +480,61 @@ void BuildOamBuffer(void)
      sShouldProcessSpriteCopyRequests = TRUE;
  }
  
@@ -41920,7 +42041,7 @@ index 400ff93f..b9a6d374 100644
 +            if (gWeatherPtr->sprites.s2.fogDSprites[i] == sprite) return TRUE;
 +        break;
 +    case WEATHER_UNDERWATER_BUBBLES:
-+        return sprite->template != NULL && sprite->template->tileTag == GFXTAG_BUBBLE;
++        return Weather_IsBubbleSpriteTemplate(sprite->template);
 +    }
 +    return FALSE;
 +}
@@ -41931,89 +42052,12 @@ index 400ff93f..b9a6d374 100644
 +{
 +    return IsVoxelWeatherSprite(sprite);
 +}
-+
-+/* A cloud of WEATHER_SUNNY_CLOUDS: shown through the water only. */
-+bool8 CtrSprite_IsVoxelCloud(const struct Sprite *sprite)
-+{
-+    unsigned i;
-+
-+    if (gWeatherPtr->currWeather != WEATHER_SUNNY_CLOUDS)
-+        return FALSE;
-+    for (i = 0; i < NUM_CLOUD_SPRITES; ++i)
-+        if (gWeatherPtr->sprites.s1.cloudSprites[i] == sprite)
-+            return TRUE;
-+    return FALSE;
-+}
 +#endif
 +
  static inline void InsertionSort(u32 *spritePriorities, s32 n)
  {
--    s32 i = 1;
--    while (i < n)
-+    u8 i = 0;
-+    u8 oamIndex = 0;
-+
-+#if defined(PLATFORM_3DS)
-+    CtrVideo_ClearOamAnchors();
-+    CtrVideo_ClearScreenOam();
-+    CtrVideo_ClearFogOam();
-+    CtrVideo_ClearExtPaletteOam();
-+#endif
-+#if defined(PLATFORM_3DS)
-+    CtrVideo_ClearVoxelWeatherOam();
-+#endif
-+    while (i < MAX_SPRITES)
-     {
-         u32 x = spritePriorities[i];
-         s32 j = i - 1;
-         while (j >= 0 && spritePriorities[j] > x)
-         {
--            spritePriorities[j + 1] = spritePriorities[j];
--            j--;
-+            u8 first = oamIndex;
-+            bool8 full = AddSpriteToOamBuffer(sprite, &oamIndex);
-+#if defined(PLATFORM_3DS)
-+            CtrVideo_SetOamAnchor(first, oamIndex, sprite->y + sprite->y2 + sprite->centerToCornerVecY
-+                                  + (sprite->coordOffsetEnabled ? gSpriteCoordOffsetY : 0));
-+            // Placed on the screen, not on the map: a battle transition's
-+            // sprites, which the compositor draws with the transition.
-+            if (!sprite->coordOffsetEnabled)
-+            {
-+                CtrVideo_MarkScreenOam(first, oamIndex);
-+                if (FieldEffect_IsMachineSprite(sprite))
-+                    CtrVideo_MarkMachineOam(first, oamIndex);
-+                else if (FieldEffect_IsFlySprite(sprite))
-+                    CtrVideo_MarkFlyOam(first, oamIndex);
-+            }
-+            if (IsFogSprite(sprite))
-+                CtrVideo_MarkFogOam(first, oamIndex);
-+            // The rest of the weather, carried over the whole view too.
-+            switch (Weather_SpriteTiling(sprite))
-+            {
-+            case WEATHER_TILING_LATTICE:
-+                CtrVideo_MarkWeatherOam(first, oamIndex, TRUE);
-+                break;
-+            case WEATHER_TILING_PARTICLES:
-+                CtrVideo_MarkWeatherOam(first, oamIndex, FALSE);
-+                break;
-+            }
-+            // Drawn with an ext palette, which oam.paletteNum cannot name.
-+            if (sSpriteExtPalettes[sSpriteOrder[i]])
-+                CtrVideo_MarkExtPaletteOam(first, oamIndex, sSpriteExtPalettes[sSpriteOrder[i]] - 1);
-+#endif
-+#if defined(PLATFORM_3DS)
-+            if (IsVoxelWeatherSprite(sprite))
-+                CtrVideo_MarkVoxelWeatherOam(first, oamIndex);
-+            if (CtrSprite_IsVoxelCloud(sprite))
-+                CtrVideo_MarkVoxelCloudOam(first, oamIndex);
-+#else
-+            (void)first;
-+#endif
-+            if (full) return;
-         }
-         spritePriorities[j + 1] = x;
-         i++;
-@@ -494,6 +671,9 @@ u32 CreateSpriteAt(u32 index, const struct SpriteTemplate *template, s16 x, s16
+     s32 i = 1;
+@@ -494,6 +620,9 @@ u32 CreateSpriteAt(u32 index, const struct SpriteTemplate *template, s16 x, s16
      ResetSprite(sprite);
  
      sprite->inUse = TRUE;
@@ -42023,7 +42067,7 @@ index 400ff93f..b9a6d374 100644
      sprite->animBeginning = TRUE;
      sprite->affineAnimBeginning = TRUE;
      sprite->usingSheet = TRUE;
-@@ -512,8 +692,19 @@ u32 CreateSpriteAt(u32 index, const struct SpriteTemplate *template, s16 x, s16
+@@ -512,8 +641,19 @@ u32 CreateSpriteAt(u32 index, const struct SpriteTemplate *template, s16 x, s16
      if (template->tileTag == TAG_NONE)
      {
          s16 tileNum;
@@ -42044,7 +42088,7 @@ index 400ff93f..b9a6d374 100644
          if (tileNum == -1)
          {
              ResetSprite(sprite);
-@@ -572,7 +763,13 @@ void DestroySprite(struct Sprite *sprite)
+@@ -572,7 +712,13 @@ void DestroySprite(struct Sprite *sprite)
          if (!sprite->usingSheet)
          {
              u16 i;
@@ -42059,7 +42103,7 @@ index 400ff93f..b9a6d374 100644
              for (i = sprite->oam.tileNum; i < tileEnd; i++)
                  FREE_SPRITE_TILE(i);
          }
-@@ -779,6 +976,10 @@ void ProcessSpriteCopyRequests(void)
+@@ -779,6 +925,10 @@ void ProcessSpriteCopyRequests(void)
          while (sSpriteCopyRequestCount > 0)
          {
              CpuCopy16(sSpriteCopyRequests[i].src, sSpriteCopyRequests[i].dest, sSpriteCopyRequests[i].size);
@@ -42070,7 +42114,7 @@ index 400ff93f..b9a6d374 100644
              sSpriteCopyRequestCount--;
              i++;
          }
-@@ -791,16 +992,41 @@ void RequestSpriteFrameImageCopy(u16 index, u16 tileNum, const struct SpriteFram
+@@ -791,16 +941,41 @@ void RequestSpriteFrameImageCopy(u16 index, u16 tileNum, const struct SpriteFram
  {
      if (sSpriteCopyRequestCount < MAX_SPRITE_COPY_REQUESTS)
      {
@@ -42116,7 +42160,7 @@ index 400ff93f..b9a6d374 100644
          sSpriteCopyRequests[sSpriteCopyRequestCount].dest = (u8 *)OBJ_VRAM0 + TILE_SIZE_4BPP * tileNum;
          sSpriteCopyRequestCount++;
      }
-@@ -810,6 +1036,9 @@ void RequestSpriteCopy(const u8 *src, u8 *dest, u16 size)
+@@ -810,6 +985,9 @@ void RequestSpriteCopy(const u8 *src, u8 *dest, u16 size)
  {
      if (sSpriteCopyRequestCount < MAX_SPRITE_COPY_REQUESTS)
      {
@@ -42126,7 +42170,7 @@ index 400ff93f..b9a6d374 100644
          sSpriteCopyRequests[sSpriteCopyRequestCount].src = src;
          sSpriteCopyRequests[sSpriteCopyRequestCount].dest = dest;
          sSpriteCopyRequests[sSpriteCopyRequestCount].size = size;
-@@ -1507,7 +1736,19 @@ void SetOamMatrixRotationScaling(u8 matrixNum, s16 xScale, s16 yScale, u16 rotat
+@@ -1507,7 +1685,19 @@ void SetOamMatrixRotationScaling(u8 matrixNum, s16 xScale, s16 yScale, u16 rotat
  
  static u16 LoadSpriteSheetWithOffset(const struct SpriteSheet *sheet, u32 offset)
  {
@@ -42147,7 +42191,7 @@ index 400ff93f..b9a6d374 100644
  
      if (tileStart < 0)
      {
-@@ -1518,8 +1759,16 @@ static u16 LoadSpriteSheetWithOffset(const struct SpriteSheet *sheet, u32 offset
+@@ -1518,8 +1708,16 @@ static u16 LoadSpriteSheetWithOffset(const struct SpriteSheet *sheet, u32 offset
      }
      else
      {
@@ -42166,7 +42210,7 @@ index 400ff93f..b9a6d374 100644
          return (u16)tileStart;
      }
  }
-@@ -1695,6 +1944,9 @@ u8 LoadSpritePaletteInSlot(const struct SpritePalette *palette, u8 paletteNum)
+@@ -1695,6 +1893,9 @@ u8 LoadSpritePaletteInSlot(const struct SpritePalette *palette, u8 paletteNum)
  
  void DoLoadSpritePalette(const u16 *src, u16 paletteOffset)
  {
@@ -42176,8 +42220,27 @@ index 400ff93f..b9a6d374 100644
      LoadPaletteFast(src, OBJ_PLTT_OFFSET + paletteOffset, PLTT_SIZE_4BPP);
  }
  
+@@ -2202,3 +2403,18 @@ u32 CountFreePaletteSlots(void)
+ 
+     return count;
+ }
++
++#ifdef PLATFORM_3DS
++bool8 CtrSprite_IsVoxelCloud(const struct Sprite *sprite)
++{
++    unsigned i;
++
++    if (gWeatherPtr->currWeather != WEATHER_SUNNY_CLOUDS)
++        return FALSE;
++    for (i = 0; i < NUM_CLOUD_SPRITES; ++i)
++        if (gWeatherPtr->sprites.s1.cloudSprites[i] == sprite)
++            return TRUE;
++    return FALSE;
++}
++
++#endif
 diff --git c/src/start_menu.c w/src/start_menu.c
-index 648fa837..00db2283 100644
+index 648fa837..7874be6e 100644
 --- c/src/start_menu.c
 +++ w/src/start_menu.c
 @@ -1,4 +1,7 @@
@@ -42288,7 +42351,7 @@ index 648fa837..00db2283 100644
  static bool8 StartMenuOptionCallback(void)
  {
      if (!gPaletteFade.active)
-@@ -1511,3 +1561,184 @@ void Script_ForceSaveGame(struct ScriptContext *ctx)
+@@ -1511,3 +1561,180 @@ void Script_ForceSaveGame(struct ScriptContext *ctx)
      gMenuCallback = SaveCallback;
      sSaveDialogCallback = SaveSavingMessageCallback;
  }
@@ -42398,10 +42461,6 @@ index 648fa837..00db2283 100644
 +
 +    if (!CtrStartMenu_IsReplaced())
 +        return TRUE;
-+    // The bottom screen owns ordinary menu actions. A physical START press
-+    // with no queued action opens this run's read-only settings instead.
-+    if (action == MENU_ACTION_NONE_CTR)
-+        action = sCtrRequest = MENU_ACTION_RUN_SETTINGS;
 +    if ((action >= MENU_ACTION_EXIT && action != MENU_ACTION_RUN_SETTINGS)
 +     || (action == MENU_ACTION_POKEDEX && GetNationalPokedexCount(FLAG_GET_SEEN) == 0))
 +    {
@@ -43267,7 +43326,7 @@ index fab00724..fd819337 100644
  {
      if (dataElem < NUM_TASK_DATA - 1)
 diff --git c/src/text.c w/src/text.c
-index 6f512609..68b705be 100644
+index 6f512609..95e5826b 100644
 --- c/src/text.c
 +++ w/src/text.c
 @@ -17,6 +17,9 @@
@@ -43290,72 +43349,17 @@ index 6f512609..68b705be 100644
  
  static EWRAM_DATA struct TextPrinter *sFirstTextPrinter = NULL;
  
-@@ -485,6 +491,17 @@ bool32 AddTextPrinter(struct TextPrinterTemplate *printerTemplate, u8 speed, voi
+@@ -485,6 +491,9 @@ bool32 AddTextPrinter(struct TextPrinterTemplate *printerTemplate, u8 speed, voi
          sTempTextPrinter.printerTemplate.firstSpriteInRow = printerTemplate->spriteId;
      }
  
 +#ifdef PORT_BRIDGE
 +    sTempTextPrinter.printerTemplate.currentChar = ResolveTextString(printerTemplate->currentChar);
 +#endif
-+    sTempTextPrinter.callback = callback;
-+    sTempTextPrinter.minLetterSpacing = 0;
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+    // The Japanese game's text is all in the Japanese glyph set.
-+    sTempTextPrinter.japanese = TRUE;
-+#else
-+    sTempTextPrinter.japanese = 0;
-+#endif
  
      GenerateFontHalfRowLookupTable(printerTemplate->color);
      if (speed != TEXT_SKIP_DRAW && speed != 0)
-@@ -597,7 +614,45 @@ void RunTextPrinters(void)
-     FreeFinishedTextPrinters();
- }
- 
--bool32 IsTextPrinterActiveOnWindow(u32 windowId)
-+#ifdef PLATFORM_3DS
-+// For the 3DS bottom screen, which shows a message a page at a time: the page
-+// (counted by \p) the printer of windowId shows of str; -1 when it is not
-+// printing str.
-+s16 CtrText_PrinterPage(u8 windowId, const u8 *str)
-+{
-+    const struct TextPrinter *printer;
-+    const u8 *p;
-+    s16 page = 0;
-+
-+    if (windowId >= WINDOWS_MAX || str == NULL || !sTextPrinters[windowId].active)
-+        return -1;
-+    printer = &sTextPrinters[windowId];
-+    str = ResolveTextString(str);
-+    if (printer->printerTemplate.currentChar < str || printer->printerTemplate.currentChar - str > 0x400)
-+        return -1;
-+    for (p = str; p < printer->printerTemplate.currentChar; p++)
-+    {
-+        if (*p == EOS)
-+            return -1;
-+        if (*p == EXT_CTRL_CODE_BEGIN)
-+        {
-+            if (p[1] == EOS)
-+                return -1;
-+            p += GetExtCtrlCodeLength(p[1]);
-+        }
-+        else if (*p == CHAR_PROMPT_CLEAR)
-+        {
-+            page++;
-+        }
-+    }
-+    // Waiting at a \p, the page before it is still on show.
-+    if (printer->state == RENDER_STATE_CLEAR && page > 0)
-+        page--;
-+    return page;
-+}
-+#endif
-+
-+static u32 RenderFont(struct TextPrinter *textPrinter)
- {
-     struct TextPrinter *currentPrinter = sFirstTextPrinter;
- 
-@@ -694,11 +749,28 @@ void RestoreTextColors(union TextColor color)
+@@ -694,11 +703,28 @@ void RestoreTextColors(union TextColor color)
      GenerateFontHalfRowLookupTable(color);
  }
  
@@ -43385,20 +43389,7 @@ index 6f512609..68b705be 100644
  
      temp = *(src++);
      *(dest++) = (sFontHalfRowLookupTable[temp & 0xFF] << 16) | (sFontHalfRowLookupTable[temp >> 8]);
-@@ -1527,7 +1599,12 @@ static u16 RenderText(struct TextPrinter *textPrinter)
-                 textPrinter->japanese = TRUE;
-                 return RENDER_REPEAT;
-             case EXT_CTRL_CODE_ENG:
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+                // no English glyph set: names keep the Japanese one
-+                textPrinter->japanese = TRUE;
-+#else
-                 textPrinter->japanese = FALSE;
-+#endif
-                 return RENDER_REPEAT;
-             case EXT_CTRL_CODE_SPEAKER:
-                 {
-@@ -1713,7 +1790,11 @@ static u32 UNUSED GetStringWidthFixedWidthFont(const u8 *str, u8 fontId, u8 lett
+@@ -1713,7 +1739,11 @@ static u32 UNUSED GetStringWidthFixedWidthFont(const u8 *str, u8 fontId, u8 lett
  
      width = 0;
      line = 0;
@@ -43410,19 +43401,7 @@ index 6f512609..68b705be 100644
      strPos = 0;
  
      do
-@@ -1827,7 +1908,11 @@ s32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
-     int glyphWidth;
-     s32 width;
- 
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+    isJapanese = 1;
-+#else
-     isJapanese = 0;
-+#endif
-     minGlyphWidth = 0;
- 
-     func = GetFontWidthFunc(fontId);
-@@ -1843,6 +1928,10 @@ s32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
+@@ -1843,6 +1873,10 @@ s32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
      lineWidth = 0;
      bufferPointer = 0;
  
@@ -43433,7 +43412,7 @@ index 6f512609..68b705be 100644
      while (*str != EOS)
      {
          switch (*str)
-@@ -1870,6 +1959,9 @@ s32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
+@@ -1870,6 +1904,9 @@ s32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
          case CHAR_DYNAMIC:
              if (bufferPointer == NULL)
                  bufferPointer = DynamicPlaceholderTextUtil_GetPlaceholderPtr(*++str);
@@ -43443,19 +43422,7 @@ index 6f512609..68b705be 100644
              while (*bufferPointer != EOS)
              {
                  glyphWidth = func(*bufferPointer++, isJapanese);
-@@ -1935,7 +2027,11 @@ s32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
-                 isJapanese = 1;
-                 break;
-             case EXT_CTRL_CODE_ENG:
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+                isJapanese = 1;
-+#else
-                 isJapanese = 0;
-+#endif
-                 break;
-             case EXT_CTRL_CODE_RESET_FONT:
-             case EXT_CTRL_CODE_PAUSE_UNTIL_PRESS:
-@@ -2031,7 +2127,11 @@ u8 RenderTextHandleBold(u8 *pixels, u8 fontId, u8 *str)
+@@ -2031,7 +2068,11 @@ u8 RenderTextHandleBold(u8 *pixels, u8 fontId, u8 *str)
      };
  
      GenerateFontHalfRowLookupTable(textColor);
@@ -43467,7 +43434,7 @@ index 6f512609..68b705be 100644
      strPos = 0;
  
      do
-@@ -2141,7 +2241,7 @@ u8 DrawKeypadIcon(u8 windowId, u8 keypadIconId, u16 x, u16 y)
+@@ -2141,7 +2182,7 @@ u8 DrawKeypadIcon(u8 windowId, u8 keypadIconId, u16 x, u16 y)
  {
      BlitBitmapRectToWindow(
          windowId,
@@ -43476,7 +43443,7 @@ index 6f512609..68b705be 100644
          0,
          0,
          0x80,
-@@ -2207,7 +2307,12 @@ static void DecompressGlyph_Small(u16 glyphId, bool32 isJapanese)
+@@ -2207,7 +2248,12 @@ static void DecompressGlyph_Small(u16 glyphId, bool32 isJapanese)
  
      if (isJapanese)
      {
@@ -43490,7 +43457,7 @@ index 6f512609..68b705be 100644
          DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
          DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
          gCurGlyph.width = 8;
-@@ -2215,7 +2320,12 @@ static void DecompressGlyph_Small(u16 glyphId, bool32 isJapanese)
+@@ -2215,7 +2261,12 @@ static void DecompressGlyph_Small(u16 glyphId, bool32 isJapanese)
      }
      else
      {
@@ -43504,7 +43471,7 @@ index 6f512609..68b705be 100644
          gCurGlyph.width = gFontSmallLatinGlyphWidths[glyphId];
  
          if (gCurGlyph.width <= 8)
-@@ -2249,7 +2359,12 @@ static void DecompressGlyph_Narrow(u16 glyphId, bool32 isJapanese)
+@@ -2249,7 +2300,12 @@ static void DecompressGlyph_Narrow(u16 glyphId, bool32 isJapanese)
  
      if (isJapanese == TRUE)
      {
@@ -43518,7 +43485,7 @@ index 6f512609..68b705be 100644
          DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
          DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
          gCurGlyph.width = 8;
-@@ -2257,7 +2372,12 @@ static void DecompressGlyph_Narrow(u16 glyphId, bool32 isJapanese)
+@@ -2257,7 +2313,12 @@ static void DecompressGlyph_Narrow(u16 glyphId, bool32 isJapanese)
      }
      else
      {
@@ -43532,7 +43499,7 @@ index 6f512609..68b705be 100644
          gCurGlyph.width = gFontNarrowLatinGlyphWidths[glyphId];
  
          if (gCurGlyph.width <= 8)
-@@ -2291,7 +2411,12 @@ static void DecompressGlyph_SmallNarrow(u16 glyphId, bool32 isJapanese)
+@@ -2291,7 +2352,12 @@ static void DecompressGlyph_SmallNarrow(u16 glyphId, bool32 isJapanese)
  
      if (isJapanese == TRUE)
      {
@@ -43546,7 +43513,7 @@ index 6f512609..68b705be 100644
          DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
          DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
          gCurGlyph.width = 8;
-@@ -2299,7 +2424,12 @@ static void DecompressGlyph_SmallNarrow(u16 glyphId, bool32 isJapanese)
+@@ -2299,7 +2365,12 @@ static void DecompressGlyph_SmallNarrow(u16 glyphId, bool32 isJapanese)
      }
      else
      {
@@ -43560,7 +43527,7 @@ index 6f512609..68b705be 100644
          gCurGlyph.width = gFontSmallNarrowLatinGlyphWidths[glyphId];
  
          if (gCurGlyph.width <= 8)
-@@ -2333,7 +2463,12 @@ static void DecompressGlyph_Short(u16 glyphId, bool32 isJapanese)
+@@ -2333,7 +2404,12 @@ static void DecompressGlyph_Short(u16 glyphId, bool32 isJapanese)
  
      if (isJapanese == TRUE)
      {
@@ -43574,7 +43541,7 @@ index 6f512609..68b705be 100644
          DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
          DecompressGlyphTile(glyphs + 0x8, gCurGlyph.gfxBufferTop + 8);
          DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);    // gCurGlyph + 0x20
-@@ -2343,7 +2478,12 @@ static void DecompressGlyph_Short(u16 glyphId, bool32 isJapanese)
+@@ -2343,7 +2419,12 @@ static void DecompressGlyph_Short(u16 glyphId, bool32 isJapanese)
      }
      else
      {
@@ -43588,7 +43555,7 @@ index 6f512609..68b705be 100644
          gCurGlyph.width = gFontShortLatinGlyphWidths[glyphId];
  
          if (gCurGlyph.width <= 8)
-@@ -2377,7 +2517,12 @@ static void DecompressGlyph_Normal(u16 glyphId, bool32 isJapanese)
+@@ -2377,7 +2458,12 @@ static void DecompressGlyph_Normal(u16 glyphId, bool32 isJapanese)
  
      if (isJapanese == TRUE)
      {
@@ -43602,7 +43569,7 @@ index 6f512609..68b705be 100644
          DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
          DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
          gCurGlyph.width = 8;
-@@ -2385,7 +2530,12 @@ static void DecompressGlyph_Normal(u16 glyphId, bool32 isJapanese)
+@@ -2385,7 +2471,12 @@ static void DecompressGlyph_Normal(u16 glyphId, bool32 isJapanese)
      }
      else
      {
@@ -43616,7 +43583,7 @@ index 6f512609..68b705be 100644
          gCurGlyph.width = gFontNormalLatinGlyphWidths[glyphId];
  
          if (gCurGlyph.width <= 8)
-@@ -2417,7 +2567,12 @@ static void DecompressGlyph_Bold(u16 glyphId)
+@@ -2417,7 +2508,12 @@ static void DecompressGlyph_Bold(u16 glyphId)
  {
      const u16 *glyphs;
  
@@ -43630,6 +43597,48 @@ index 6f512609..68b705be 100644
      DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
      DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
      gCurGlyph.width = 8;
+@@ -2872,3 +2968,41 @@ void DeactivateSingleTextPrinter(u32 id, enum TextPrinterType type)
+     if (foundPrinter)
+         FreeFinishedTextPrinters();
+ }
++
++#ifdef PLATFORM_3DS
++s16 CtrText_PrinterPage(u8 windowId, const u8 *str)
++{
++    const struct TextPrinter *printer;
++    const u8 *p;
++    s16 page = 0;
++
++    if(windowId>=WINDOWS_MAX||str==NULL)return -1;
++    printer=sFirstTextPrinter;
++    while(printer && !(printer->active && printer->printerTemplate.type==WINDOW_TEXT_PRINTER
++            && printer->printerTemplate.windowId==windowId)) printer=printer->nextPrinter;
++    if(!printer)return -1;
++    str = ResolveTextString(str);
++    if (printer->printerTemplate.currentChar < str || printer->printerTemplate.currentChar - str > 0x400)
++        return -1;
++    for (p = str; p < printer->printerTemplate.currentChar; p++)
++    {
++        if (*p == EOS)
++            return -1;
++        if (*p == EXT_CTRL_CODE_BEGIN)
++        {
++            if (p[1] == EOS)
++                return -1;
++            p += GetExtCtrlCodeLength(p[1]);
++        }
++        else if (*p == CHAR_PROMPT_CLEAR)
++        {
++            page++;
++        }
++    }
++    // Waiting at a \p, the page before it is still on show.
++    if (printer->state == RENDER_STATE_CLEAR && page > 0)
++        page--;
++    return page;
++}
++
++#endif
 diff --git c/src/tileset_anims.c w/src/tileset_anims.c
 index bee91512..2211e05e 100644
 --- c/src/tileset_anims.c
@@ -44203,7 +44212,7 @@ index fd0208d6..8401eb63
 +}
 +#endif
 diff --git c/src/trainer_hill.c w/src/trainer_hill.c
-index b227cf5d..75044cfc 100644
+index b227cf5d..087cb10b 100644
 --- c/src/trainer_hill.c
 +++ w/src/trainer_hill.c
 @@ -1,4 +1,7 @@
@@ -44214,131 +44223,7 @@ index b227cf5d..75044cfc 100644
  #include "malloc.h"
  #include "battle.h"
  #include "battle_tower.h"
-@@ -205,6 +208,115 @@ static const enum Item *const *const sPrizeListSets[] =
- static const u16 sEReader_Pal[] = INCGFX_U16("graphics/trainer_hill/ereader.pal", ".gbapal");
- static const u8 sRecordWinColors[] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY};
- 
-+#ifdef PORT_BRIDGE
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+// The Japanese game's only challenge, in every mode.
-+static const struct TrainerHillFloor *const sFloorData[NUM_TRAINER_HILL_MODES] =
-+{
-+    [HILL_MODE_NORMAL]  = sFloors_JPDefault,
-+    [HILL_MODE_VARIETY] = sFloors_JPDefault,
-+    [HILL_MODE_UNIQUE]  = sFloors_JPDefault,
-+    [HILL_MODE_EXPERT]  = sFloors_JPDefault,
-+};
-+#else
-+static const struct TrainerHillFloor *const sFloorData[NUM_TRAINER_HILL_MODES] =
-+{
-+    [HILL_MODE_NORMAL]  = sFloors_Normal,
-+    [HILL_MODE_VARIETY] = sFloors_Variety,
-+    [HILL_MODE_UNIQUE]  = sFloors_Unique,
-+    [HILL_MODE_EXPERT]  = sFloors_Expert,
-+};
-+#endif
-+
-+#if GAME_LANGUAGE == LANGUAGE_ENGLISH || GAME_LANGUAGE == LANGUAGE_JAPANESE // the others: tools/localize_*.py put in the ROM's own floors, mazes included
-+// A floor's maze is an INCBIN in a field of its struct, which the port's asset
-+// table cannot map (it maps whole arrays): the field stayed zeros, a floor of
-+// one metatile with no walls. The same files again as arrays of their own.
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+static const u8 sFloorMetatiles_JP0[] = INCBIN_U8("graphics/trainer_hill/maps_jp/floor_0/metatiles.bin");
-+static const u16 sFloorCollision_JP0[] = INCBIN_U16("graphics/trainer_hill/maps_jp/floor_0/collision.bin");
-+static const u8 sFloorMetatiles_JP1[] = INCBIN_U8("graphics/trainer_hill/maps_jp/floor_1/metatiles.bin");
-+static const u16 sFloorCollision_JP1[] = INCBIN_U16("graphics/trainer_hill/maps_jp/floor_1/collision.bin");
-+
-+// Floors 2 and 3 are never reached (the challenge has two floors).
-+static const u8 *const sFloorMetatilesData[NUM_TRAINER_HILL_MODES][NUM_TRAINER_HILL_FLOORS] =
-+{
-+    [HILL_MODE_NORMAL] = {sFloorMetatiles_JP0, sFloorMetatiles_JP1, sFloorMetatiles_JP0, sFloorMetatiles_JP1},
-+    [HILL_MODE_VARIETY] = {sFloorMetatiles_JP0, sFloorMetatiles_JP1, sFloorMetatiles_JP0, sFloorMetatiles_JP1},
-+    [HILL_MODE_UNIQUE] = {sFloorMetatiles_JP0, sFloorMetatiles_JP1, sFloorMetatiles_JP0, sFloorMetatiles_JP1},
-+    [HILL_MODE_EXPERT] = {sFloorMetatiles_JP0, sFloorMetatiles_JP1, sFloorMetatiles_JP0, sFloorMetatiles_JP1},
-+};
-+
-+static const u16 *const sFloorCollisionData[NUM_TRAINER_HILL_MODES][NUM_TRAINER_HILL_FLOORS] =
-+{
-+    [HILL_MODE_NORMAL] = {sFloorCollision_JP0, sFloorCollision_JP1, sFloorCollision_JP0, sFloorCollision_JP1},
-+    [HILL_MODE_VARIETY] = {sFloorCollision_JP0, sFloorCollision_JP1, sFloorCollision_JP0, sFloorCollision_JP1},
-+    [HILL_MODE_UNIQUE] = {sFloorCollision_JP0, sFloorCollision_JP1, sFloorCollision_JP0, sFloorCollision_JP1},
-+    [HILL_MODE_EXPERT] = {sFloorCollision_JP0, sFloorCollision_JP1, sFloorCollision_JP0, sFloorCollision_JP1},
-+};
-+#else
-+static const u8 sFloorMetatiles_Normal0[] = INCBIN_U8("graphics/trainer_hill/maps_normal/floor_0/metatiles.bin");
-+static const u16 sFloorCollision_Normal0[] = INCBIN_U16("graphics/trainer_hill/maps_normal/floor_0/collision.bin");
-+static const u8 sFloorMetatiles_Normal1[] = INCBIN_U8("graphics/trainer_hill/maps_normal/floor_1/metatiles.bin");
-+static const u16 sFloorCollision_Normal1[] = INCBIN_U16("graphics/trainer_hill/maps_normal/floor_1/collision.bin");
-+static const u8 sFloorMetatiles_Normal2[] = INCBIN_U8("graphics/trainer_hill/maps_normal/floor_2/metatiles.bin");
-+static const u16 sFloorCollision_Normal2[] = INCBIN_U16("graphics/trainer_hill/maps_normal/floor_2/collision.bin");
-+static const u8 sFloorMetatiles_Normal3[] = INCBIN_U8("graphics/trainer_hill/maps_normal/floor_3/metatiles.bin");
-+static const u16 sFloorCollision_Normal3[] = INCBIN_U16("graphics/trainer_hill/maps_normal/floor_3/collision.bin");
-+static const u8 sFloorMetatiles_Variety0[] = INCBIN_U8("graphics/trainer_hill/maps_variety/floor_0/metatiles.bin");
-+static const u16 sFloorCollision_Variety0[] = INCBIN_U16("graphics/trainer_hill/maps_variety/floor_0/collision.bin");
-+static const u8 sFloorMetatiles_Variety1[] = INCBIN_U8("graphics/trainer_hill/maps_variety/floor_1/metatiles.bin");
-+static const u16 sFloorCollision_Variety1[] = INCBIN_U16("graphics/trainer_hill/maps_variety/floor_1/collision.bin");
-+static const u8 sFloorMetatiles_Variety2[] = INCBIN_U8("graphics/trainer_hill/maps_variety/floor_2/metatiles.bin");
-+static const u16 sFloorCollision_Variety2[] = INCBIN_U16("graphics/trainer_hill/maps_variety/floor_2/collision.bin");
-+static const u8 sFloorMetatiles_Variety3[] = INCBIN_U8("graphics/trainer_hill/maps_variety/floor_3/metatiles.bin");
-+static const u16 sFloorCollision_Variety3[] = INCBIN_U16("graphics/trainer_hill/maps_variety/floor_3/collision.bin");
-+static const u8 sFloorMetatiles_Unique0[] = INCBIN_U8("graphics/trainer_hill/maps_unique/floor_0/metatiles.bin");
-+static const u16 sFloorCollision_Unique0[] = INCBIN_U16("graphics/trainer_hill/maps_unique/floor_0/collision.bin");
-+static const u8 sFloorMetatiles_Unique1[] = INCBIN_U8("graphics/trainer_hill/maps_unique/floor_1/metatiles.bin");
-+static const u16 sFloorCollision_Unique1[] = INCBIN_U16("graphics/trainer_hill/maps_unique/floor_1/collision.bin");
-+static const u8 sFloorMetatiles_Unique2[] = INCBIN_U8("graphics/trainer_hill/maps_unique/floor_2/metatiles.bin");
-+static const u16 sFloorCollision_Unique2[] = INCBIN_U16("graphics/trainer_hill/maps_unique/floor_2/collision.bin");
-+static const u8 sFloorMetatiles_Unique3[] = INCBIN_U8("graphics/trainer_hill/maps_unique/floor_3/metatiles.bin");
-+static const u16 sFloorCollision_Unique3[] = INCBIN_U16("graphics/trainer_hill/maps_unique/floor_3/collision.bin");
-+static const u8 sFloorMetatiles_Expert0[] = INCBIN_U8("graphics/trainer_hill/maps_expert/floor_0/metatiles.bin");
-+static const u16 sFloorCollision_Expert0[] = INCBIN_U16("graphics/trainer_hill/maps_expert/floor_0/collision.bin");
-+static const u8 sFloorMetatiles_Expert1[] = INCBIN_U8("graphics/trainer_hill/maps_expert/floor_1/metatiles.bin");
-+static const u16 sFloorCollision_Expert1[] = INCBIN_U16("graphics/trainer_hill/maps_expert/floor_1/collision.bin");
-+static const u8 sFloorMetatiles_Expert2[] = INCBIN_U8("graphics/trainer_hill/maps_expert/floor_2/metatiles.bin");
-+static const u16 sFloorCollision_Expert2[] = INCBIN_U16("graphics/trainer_hill/maps_expert/floor_2/collision.bin");
-+static const u8 sFloorMetatiles_Expert3[] = INCBIN_U8("graphics/trainer_hill/maps_expert/floor_3/metatiles.bin");
-+static const u16 sFloorCollision_Expert3[] = INCBIN_U16("graphics/trainer_hill/maps_expert/floor_3/collision.bin");
-+
-+static const u8 *const sFloorMetatilesData[NUM_TRAINER_HILL_MODES][NUM_TRAINER_HILL_FLOORS] =
-+{
-+    [HILL_MODE_NORMAL] = {sFloorMetatiles_Normal0, sFloorMetatiles_Normal1, sFloorMetatiles_Normal2, sFloorMetatiles_Normal3},
-+    [HILL_MODE_VARIETY] = {sFloorMetatiles_Variety0, sFloorMetatiles_Variety1, sFloorMetatiles_Variety2, sFloorMetatiles_Variety3},
-+    [HILL_MODE_UNIQUE] = {sFloorMetatiles_Unique0, sFloorMetatiles_Unique1, sFloorMetatiles_Unique2, sFloorMetatiles_Unique3},
-+    [HILL_MODE_EXPERT] = {sFloorMetatiles_Expert0, sFloorMetatiles_Expert1, sFloorMetatiles_Expert2, sFloorMetatiles_Expert3},
-+};
-+
-+static const u16 *const sFloorCollisionData[NUM_TRAINER_HILL_MODES][NUM_TRAINER_HILL_FLOORS] =
-+{
-+    [HILL_MODE_NORMAL] = {sFloorCollision_Normal0, sFloorCollision_Normal1, sFloorCollision_Normal2, sFloorCollision_Normal3},
-+    [HILL_MODE_VARIETY] = {sFloorCollision_Variety0, sFloorCollision_Variety1, sFloorCollision_Variety2, sFloorCollision_Variety3},
-+    [HILL_MODE_UNIQUE] = {sFloorCollision_Unique0, sFloorCollision_Unique1, sFloorCollision_Unique2, sFloorCollision_Unique3},
-+    [HILL_MODE_EXPERT] = {sFloorCollision_Expert0, sFloorCollision_Expert1, sFloorCollision_Expert2, sFloorCollision_Expert3},
-+};
-+#endif // the Japanese game
-+#endif
-+
-+#endif
-+
-+#if defined(PORT_BRIDGE) && GAME_LANGUAGE == LANGUAGE_JAPANESE
-+static const struct TrainerHillChallenge *const sChallengeData[NUM_TRAINER_HILL_MODES] =
-+{
-+    [HILL_MODE_NORMAL]  = &sChallenge_JPDefault,
-+    [HILL_MODE_VARIETY] = &sChallenge_JPDefault,
-+    [HILL_MODE_UNIQUE]  = &sChallenge_JPDefault,
-+    [HILL_MODE_EXPERT]  = &sChallenge_JPDefault,
-+};
-+#else
- static const struct TrainerHillChallenge *const sChallengeData[NUM_TRAINER_HILL_MODES] =
- {
-     [HILL_MODE_NORMAL]  = &sChallenge_Normal,
-@@ -212,6 +324,7 @@ static const struct TrainerHillChallenge *const sChallengeData[NUM_TRAINER_HILL_
-     [HILL_MODE_UNIQUE]  = &sChallenge_Unique,
-     [HILL_MODE_EXPERT]  = &sChallenge_Expert,
- };
-+#endif
- 
- static const struct TrainerHillFloor *const sFloorData[NUM_TRAINER_HILL_MODES] =
- {
-@@ -739,6 +852,9 @@ void GenerateTrainerHillFloorLayout(u16 *mapArg)
+@@ -739,6 +742,9 @@ void GenerateTrainerHillFloorLayout(u16 *mapArg)
  
      mapId = GetFloorId();
      src = gMapHeader.mapLayout->map;
@@ -44589,29 +44474,24 @@ index e8ef8bde..4789b598 100644
  }
  
 diff --git c/src/wild_encounter.c w/src/wild_encounter.c
-index dd6a0c88..ff59e137 100644
+index dd6a0c88..5d8192ff 100644
 --- c/src/wild_encounter.c
 +++ w/src/wild_encounter.c
-@@ -1,8 +1,14 @@
+@@ -1,8 +1,9 @@
  #include "global.h"
 -#include "battle_setup.h"
 -#include "battle_pike.h"
 -#include "battle_pyramid.h"
 -#include "event_data.h"
-+#ifdef PLATFORM_3DS
-+#include "3ds_extras.h" // optional settings (OPTIONS pages)
-+#include "3ds_encounters.h"
-+#endif
-+#ifdef PORT_BRIDGE
-+#include "3ds_randomizer.h" // seeded species randomizer (off by default)
-+#endif
++#include "custom_random.h"
++#include "3ds_randomizer.h"
 +#include "wild_encounter.h"
 +#include "pokemon.h"
 +#include "metatile_behavior.h"
  #include "fieldmap.h"
  #include "fishing.h"
  #include "follower_npc.h"
-@@ -11,18 +17,16 @@
+@@ -11,18 +12,16 @@
  #include "field_player_avatar.h"
  #include "link.h"
  #include "mass_outbreak.h"
@@ -44634,7 +44514,7 @@ index dd6a0c88..ff59e137 100644
  #include "battle_pike.h"
  #include "battle_pyramid.h"
  #include "constants/abilities.h"
-@@ -48,6 +52,9 @@ extern const u8 EventScript_SprayWoreOff[];
+@@ -48,6 +47,9 @@ extern const u8 EventScript_SprayWoreOff[];
  static u16 FeebasRandom(void);
  static void FeebasSeedRng(u16 seed);
  static void ApplyFluteEncounterRateMod(u32 *encRate);
@@ -44644,32 +44524,7 @@ index dd6a0c88..ff59e137 100644
  static void ApplyCleanseTagEncounterRateMod(u32 *encRate);
  static u8 GetMaxLevelOfSpeciesInWildTable(const struct WildPokemon *wildMon, enum Species species, enum WildPokemonArea area);
  #ifdef BUGFIX
-@@ -62,6 +69,24 @@ EWRAM_DATA bool8 gIsFishingEncounter = 0;
- EWRAM_DATA bool8 gIsSurfingEncounter = 0;
- EWRAM_DATA u8 gChainFishingDexNavStreak = 0;
- 
-+#ifdef PORT_BRIDGE
-+// The species a wild Pokemon of the map's tables is met as (3ds_randomizer.h):
-+// itself unless the randomizer's wild setting is on. The Battle Pike and the
-+// Battle Pyramid look their own tables up by the species they find, so theirs
-+// stay as they are.
-+static u16 WildSpecies(u16 species)
-+{
-+    if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS
-+     || gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR
-+     || InBattlePike() || CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
-+        return species;
-+    return CtrRandomizer_Species(CTR_RANDOMIZE_WILD, species);
-+}
-+#define WILD_SPECIES(species) WildSpecies(species)
-+#else
-+#define WILD_SPECIES(species) (species)
-+#endif
-+
- #include "data/wild_encounters.h"
- 
- const struct WildPokemon gWildFeebas = {20, 25, SPECIES_FEEBAS};
-@@ -463,19 +488,19 @@ enum TimeOfDay GetTimeOfDayForEncounters(u32 headerId, enum WildPokemonArea area
+@@ -463,19 +465,19 @@ enum TimeOfDay GetTimeOfDayForEncounters(u32 headerId, enum WildPokemonArea area
      {
      default:
      case WILD_AREA_LAND:
@@ -44694,7 +44549,7 @@ index dd6a0c88..ff59e137 100644
          break;
      }
  
-@@ -516,6 +541,10 @@ void CreateWildMon(enum Species species, u8 level)
+@@ -516,6 +518,10 @@ void CreateWildMon(enum Species species, u8 level)
      u32 personality = GetMonPersonality(species, GetSynchronizedGender(WILDMON_ORIGIN, species), PickWildMonNature(species), RANDOM_UNOWN_LETTER);
      CreateMonWithIVs(&gParties[B_TRAINER_OPPONENT_A][0], species, level, personality, OTID_STRUCT_PLAYER_ID, USE_RANDOM_IVS);
      GiveMonInitialMoveset(&gParties[B_TRAINER_OPPONENT_A][0]);
@@ -44705,41 +44560,7 @@ index dd6a0c88..ff59e137 100644
  }
  
  #ifdef BUGFIX
-@@ -578,15 +607,30 @@ bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, enum WildPok
-     if (gMapHeader.mapLayoutId != LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && flags & WILD_CHECK_KEEN_EYE && !IsAbilityAllowingEncounter(level))
-         return FALSE;
- 
--    CreateWildMon(wildMonInfo->wildPokemon[wildMonIndex].species, level);
-+    CreateWildMon(WILD_SPECIES(wildMonInfo->wildPokemon[wildMonIndex].species), level);
-     return TRUE;
- }
- 
- static u16 GenerateFishingWildMon(const struct WildPokemonInfo *wildMonInfo, u8 rod)
- {
-     u8 wildMonIndex = ChooseWildMonIndex_Fishing(rod);
--    enum Species wildMonSpecies = wildMonInfo->wildPokemon[wildMonIndex].species;
--    u8 level = ChooseWildMonLevel(wildMonInfo->wildPokemon, wildMonIndex, WILD_AREA_FISHING);
-+    u8 level = ChooseWildMonLevel(&wildMonInfo->wildPokemon[wildMonIndex]);
-+    u16 species = WILD_SPECIES(wildMonInfo->wildPokemon[wildMonIndex].species);
-+
-+    CreateWildMon(species, level);
-+    return species;
-+}
-+
-+static bool8 SetUpMassOutbreakEncounter(u8 flags)
-+{
-+    u16 i;
-+
-+    if (flags & WILD_CHECK_REPEL && !IsWildLevelAllowedByRepel(gSaveBlock1Ptr->outbreakPokemonLevel))
-+        return FALSE;
-+
-+    CreateWildMon(gSaveBlock1Ptr->outbreakPokemonSpecies, gSaveBlock1Ptr->outbreakPokemonLevel);
-+    for (i = 0; i < MAX_MON_MOVES; i++)
-+        SetMonMoveSlot(&gEnemyParty[0], gSaveBlock1Ptr->outbreakPokemonMoves[i], i);
- 
-     UpdateChainFishingStreak();
-     CreateWildMon(wildMonSpecies, level);
-@@ -605,6 +649,9 @@ static bool8 EncounterOddsCheck(u16 encounterRate)
+@@ -605,6 +611,9 @@ static bool8 EncounterOddsCheck(u16 encounterRate)
  static bool8 WildEncounterCheck(u32 encounterRate, bool8 ignoreAbility)
  {
      encounterRate *= 16;
@@ -44749,7 +44570,7 @@ index dd6a0c88..ff59e137 100644
      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
          encounterRate = encounterRate * 80 / 100;
      ApplyFluteEncounterRateMod(&encounterRate);
-@@ -662,6 +709,897 @@ bool8 AreLegendariesInSootopolisPreventingEncounters(void)
+@@ -662,6 +671,852 @@ bool8 AreLegendariesInSootopolisPreventingEncounters(void)
      return FlagGet(FLAG_LEGENDARIES_IN_SOOTOPOLIS);
  }
  
@@ -44792,6 +44613,11 @@ index dd6a0c88..ff59e137 100644
 +#include "constants/pokemon_icon.h"
 +#include "constants/songs.h"
 +
++static bool8 VisiblePlayerInWater(void)
++{
++    return CtrEncounters_PlayerInWater(TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING)!=0,
++        TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER)!=0);
++}
 +/* The setting: off, or how many may be about at once (FEW, SOME, MANY). */
 +static const u8 sVisibleMost[] = {0, 2, 4, 6};
 +
@@ -44997,16 +44823,6 @@ index dd6a0c88..ff59e137 100644
 +    return VisibleTileKind(x, y, water) && GetObjectEventIdByXY(x, y) == OBJECT_EVENTS_COUNT;
 +}
 +
-+/* Where the water ones are met: surfing, or diving (3ds_encounters.h). Under
-+ * the sea the player is not surfing, and the ones on the seaweed were never
-+ * met: with MANY, nothing was, as they replace the random encounters. */
-+static bool8 VisiblePlayerInWater(void)
-+{
-+    return CtrEncounters_PlayerInWater(TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING) != 0,
-+                                       TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER) != 0);
-+}
-+
-+u32 ShinyOdds_WildPersonality(void); // pokemon.c
 +
 +static u32 VisibleRollPersonality(enum Species species)
 +{
@@ -45229,10 +45045,9 @@ index dd6a0c88..ff59e137 100644
 +            VisibleLogFail("kept away by a repel", wild->species);
 +            return;
 +        }
-+        // The species it is shown as is the one met when touched (VisibleStartBattle).
-+        v->species = WILD_SPECIES(wild->species);
-+        v->personality = VisibleRollPersonality();
-+        v->shiny = GET_SHINY_VALUE(VisibleOtId(), v->personality) < SHINY_ODDS;
++        v->species = wild->species;
++        v->personality = VisibleRollPersonality(v->species);
++        v->shiny = ComputePlayerShinyOdds(v->personality, VisibleOtId());
 +        v->faceX = 0;
 +        v->faceY = 1;
 +        v->water = water;
@@ -45262,44 +45077,6 @@ index dd6a0c88..ff59e137 100644
 +    VisibleLogFail("no free encounter tile near the player", 0);
 +}
 +
-+/*
-+ * The sprites of the species the map's tables may show, read ahead on a
-+ * worker (follower_mon.c): read as one appears, its file was 15 ms of that
-+ * frame on an Old 3DS, every two seconds. Looked at again each second, as
-+ * the tables change with the time of day.
-+ */
-+static void VisiblePrefetch(u16 headerId)
-+{
-+    static u16 sHeader = HEADER_NONE;
-+    static u32 sSignature, sLastLook;
-+    const struct WildPokemonInfo *land, *water;
-+    u16 species[LAND_WILD_COUNT + WATER_WILD_COUNT];
-+    u32 i, j, count = 0, signature = 0;
-+
-+    if (headerId == sHeader && sVisibleFrames - sLastLook < 60)
-+        return;
-+    sLastLook = sVisibleFrames;
-+    land = headerId != HEADER_NONE ? GetLandMonsInfo(headerId) : NULL;
-+    water = headerId != HEADER_NONE ? gWildMonHeaders[headerId].waterMonsInfo : NULL;
-+    for (i = 0; land != NULL && i < LAND_WILD_COUNT; i++)
-+        species[count++] = WILD_SPECIES(land->wildPokemon[i].species);
-+    for (i = 0; water != NULL && i < WATER_WILD_COUNT; i++)
-+        species[count++] = WILD_SPECIES(water->wildPokemon[i].species);
-+    for (i = 0; i < count; i++)
-+        signature = signature * 31 + species[i];
-+    if (headerId == sHeader && signature == sSignature)
-+        return;
-+    sHeader = headerId;
-+    sSignature = signature;
-+    for (i = 0; i < count; i++)
-+    {
-+        for (j = 0; j < i && species[j] != species[i]; j++)
-+            ;
-+        if (j == i)
-+            FollowerMon_WildPrefetch(species[i]);
-+    }
-+}
-+
 +/* Touched: the battle with this Pokemon, as a random encounter starts one. */
 +static void VisibleStartBattle(struct VisibleWild *v)
 +{
@@ -45320,7 +45097,7 @@ index dd6a0c88..ff59e137 100644
 +    BattleSetup_StartWildBattle();
 +}
 +
-+static void VisibleMove(struct VisibleWild *v, s16 px, s16 py, bool8 inWater)
++static void VisibleMove(struct VisibleWild *v, s16 px, s16 py, bool8 surfing)
 +{
 +    static const s8 sSteps[4][2] = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
 +    u32 dir;
@@ -45347,7 +45124,7 @@ index dd6a0c88..ff59e137 100644
 +    if (tx == px && ty == py)
 +    {
 +        /* Into the player: a battle, if the player stands where it lives. */
-+        if (v->water == inWater)
++        if (v->water == surfing)
 +            v->idle = 0xFFFF;    /* asks for the battle (VisibleWild_Update) */
 +        else
 +            v->idle = 60;
@@ -45390,7 +45167,7 @@ index dd6a0c88..ff59e137 100644
 +bool8 VisibleWild_StepOnto(void)
 +{
 +    struct ObjectEvent *player = &gObjectEvents[gPlayerAvatar.objectEventId];
-+    bool8 inWater = VisiblePlayerInWater();
++    bool8 surfing = VisiblePlayerInWater();
 +    s16 px = player->currentCoords.x, py = player->currentCoords.y;
 +    u32 i;
 +
@@ -45400,7 +45177,7 @@ index dd6a0c88..ff59e137 100644
 +    {
 +        struct VisibleWild *v = &sVisible[i];
 +
-+        if (!v->active || v->vanishing || v->spriteId == VW_NONE || v->water != inWater)
++        if (!v->active || v->vanishing || v->spriteId == VW_NONE || v->water != surfing)
 +            continue;
 +        if ((v->x == px && v->y == py) || (v->progress && v->x + v->dx == px && v->y + v->dy == py))
 +        {
@@ -45443,13 +45220,13 @@ index dd6a0c88..ff59e137 100644
 +    sNum = gSaveBlock1Ptr->location.mapNum;
 +    headerId = GetCurrentMapWildMonHeaderId();
 +    CtrLog_Write(CTR_LOG_GAME, "wild: map %d/%d header %d (land %d water %d) rate %lu%% disabled %d "
-+                 "repel %u lead lv %d visible %lu (replaces random %d) in water %d",
++                 "repel %u lead lv %d visible %lu (replaces random %d)",
 +                 sGroup, sNum, headerId == HEADER_NONE ? -1 : headerId,
 +                 headerId != HEADER_NONE && GetLandMonsInfo(headerId) != NULL,
 +                 headerId != HEADER_NONE && (*CR_WILD_HEADER(headerId)).encounterTypes[GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER)].waterMonsInfo != NULL,
 +                 (unsigned long)EncounterRatePercent(), sWildEncountersDisabled, VarGet(VAR_REPEL_STEP_COUNT),
 +                 (int)GetMonData(&gPlayerParty[0], MON_DATA_LEVEL), (unsigned long)VISIBLE_MOST(),
-+                 VISIBLE_REPLACES_RANDOM(), VisiblePlayerInWater());
++                 VISIBLE_REPLACES_RANDOM());
 +}
 +
 +void VisibleWild_Update(void)
@@ -45457,7 +45234,7 @@ index dd6a0c88..ff59e137 100644
 +    struct ObjectEvent *player;
 +    u16 headerId;
 +    u32 i, percent, most;
-+    bool8 inWater, idle, settled;
++    bool8 surfing, idle, settled;
 +
 +    if (gMain.callback2 == CB2_Overworld)
 +        WildLogMap();
@@ -45537,9 +45314,8 @@ index dd6a0c88..ff59e137 100644
 +    sVisibleShifted = FALSE;
 +
 +    headerId = GetCurrentMapWildMonHeaderId();
-+    VisiblePrefetch(headerId);
 +    player = &gObjectEvents[gPlayerAvatar.objectEventId];
-+    inWater = VisiblePlayerInWater();
++    surfing = VisiblePlayerInWater();
 +    idle = !ArePlayerFieldControlsLocked() && !ScriptContext_IsEnabled()
 +        && gPlayerAvatar.tileTransitionState == T_NOT_MOVING;
 +    settled = !gPaletteFade.active;
@@ -45592,14 +45368,14 @@ index dd6a0c88..ff59e137 100644
 +                || (v->x == player->currentCoords.x && v->y == player->currentCoords.y && !v->progress);
 +
 +            // It walked into the player: a repel keeps it off, as it keeps random ones.
-+            if (touched && v->water == inWater && (v->idle != 0xFFFF || IsWildLevelAllowedByRepel(v->level)))
++            if (touched && v->water == surfing && (v->idle != 0xFFFF || IsWildLevelAllowedByRepel(v->level)))
 +            {
 +                VisibleStartBattle(v);
 +                return;
 +            }
 +            if (v->idle == 0xFFFF)
 +                v->idle = 60;
-+            VisibleMove(v, player->currentCoords.x, player->currentCoords.y, inWater);
++            VisibleMove(v, player->currentCoords.x, player->currentCoords.y, surfing);
 +            // Often enough to be told from the others at a glance: a shiny
 +            // one's icon is drawn in the same colours as any other's.
 +            if (v->shiny && ++v->sparkle >= 40)
@@ -45647,7 +45423,7 @@ index dd6a0c88..ff59e137 100644
  bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
  {
      u32 headerId;
-@@ -714,11 +1652,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -714,11 +1569,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
          {
              timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
  
@@ -45661,7 +45437,7 @@ index dd6a0c88..ff59e137 100644
                  return FALSE;
  
              if (TryStartRoamerEncounter())
-@@ -732,6 +1670,10 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -732,6 +1587,10 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
              }
              else
              {
@@ -45672,7 +45448,7 @@ index dd6a0c88..ff59e137 100644
                  if (DoMassOutbreakEncounterTest() == TRUE && SetUpMassOutbreakEncounter(WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
                  {
                      BattleSetup_StartWildBattle();
-@@ -739,12 +1681,12 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -739,12 +1598,12 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
                  }
  
                  // try a regular wild land encounter
@@ -45687,7 +45463,7 @@ index dd6a0c88..ff59e137 100644
                          gParties[B_TRAINER_OPPONENT_A][1] = mon1;
                          BattleSetup_StartDoubleWildBattle();
                      }
-@@ -765,11 +1707,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -765,11 +1624,11 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
  
              if (AreLegendariesInSootopolisPreventingEncounters() == TRUE)
                  return FALSE;
@@ -45701,7 +45477,7 @@ index dd6a0c88..ff59e137 100644
                  return FALSE;
  
              if (TryStartRoamerEncounter())
-@@ -783,13 +1725,17 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
+@@ -783,13 +1642,17 @@ bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior)
              }
              else // try a regular surfing encounter
              {
@@ -45721,7 +45497,7 @@ index dd6a0c88..ff59e137 100644
                          gParties[B_TRAINER_OPPONENT_A][1] = mon1;
                          BattleSetup_StartDoubleWildBattle();
                      }
-@@ -817,7 +1763,7 @@ void RockSmashWildEncounter(void)
+@@ -817,7 +1680,7 @@ void RockSmashWildEncounter(void)
      {
          timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_ROCKS);
  
@@ -45730,7 +45506,7 @@ index dd6a0c88..ff59e137 100644
  
          if (wildPokemonInfo == NULL)
          {
-@@ -891,7 +1837,7 @@ bool8 SweetScentWildEncounter(void)
+@@ -891,7 +1754,7 @@ bool8 SweetScentWildEncounter(void)
          {
              timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
  
@@ -45739,7 +45515,7 @@ index dd6a0c88..ff59e137 100644
                  return FALSE;
  
              if (TryStartRoamerEncounter())
-@@ -903,7 +1849,7 @@ bool8 SweetScentWildEncounter(void)
+@@ -903,7 +1766,7 @@ bool8 SweetScentWildEncounter(void)
              if (DoMassOutbreakEncounterTest() == TRUE)
                  SetUpMassOutbreakEncounter(0);
              else
@@ -45748,7 +45524,7 @@ index dd6a0c88..ff59e137 100644
  
              BattleSetup_StartWildBattle();
              return TRUE;
-@@ -914,7 +1860,7 @@ bool8 SweetScentWildEncounter(void)
+@@ -914,7 +1777,7 @@ bool8 SweetScentWildEncounter(void)
  
              if (AreLegendariesInSootopolisPreventingEncounters() == TRUE)
                  return FALSE;
@@ -45757,7 +45533,7 @@ index dd6a0c88..ff59e137 100644
                  return FALSE;
  
              if (TryStartRoamerEncounter())
-@@ -923,7 +1869,7 @@ bool8 SweetScentWildEncounter(void)
+@@ -923,7 +1786,7 @@ bool8 SweetScentWildEncounter(void)
                  return TRUE;
              }
  
@@ -45766,7 +45542,7 @@ index dd6a0c88..ff59e137 100644
              BattleSetup_StartWildBattle();
              return TRUE;
          }
-@@ -937,7 +1883,7 @@ bool8 DoesCurrentMapHaveFishingMons(void)
+@@ -937,7 +1800,7 @@ bool8 DoesCurrentMapHaveFishingMons(void)
      u32 headerId = GetCurrentMapWildMonHeaderId();
      enum TimeOfDay timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_FISHING);
  
@@ -45775,12 +45551,12 @@ index dd6a0c88..ff59e137 100644
          return TRUE;
      else
          return FALSE;
-@@ -956,14 +1902,14 @@ void FishingWildEncounter(u8 rod)
+@@ -956,14 +1819,14 @@ void FishingWildEncounter(u8 rod)
      {
          u8 level = ChooseWildMonLevel(&gWildFeebas, 0, WILD_AREA_FISHING);
  
 -        species = gWildFeebas.species;
-+        species = WILD_SPECIES(sWildFeebas.species);
++        species = CtrRandomizer_Species(CTR_RANDOMIZE_WILD,gWildFeebas.species);
          CreateWildMon(species, level);
      }
      else
@@ -45792,7 +45568,7 @@ index dd6a0c88..ff59e137 100644
      }
  
      IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS);
-@@ -984,10 +1930,10 @@ u16 GetLocalWildMon(bool8 *isWaterMon)
+@@ -984,10 +1847,10 @@ u16 GetLocalWildMon(bool8 *isWaterMon)
          return SPECIES_NONE;
  
      timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_LAND);
@@ -45805,7 +45581,7 @@ index dd6a0c88..ff59e137 100644
  
      // Neither
      if (landMonsInfo == NULL && waterMonsInfo == NULL)
-@@ -1022,7 +1968,7 @@ u16 GetLocalWaterMon(void)
+@@ -1022,7 +1885,7 @@ u16 GetLocalWaterMon(void)
      {
          timeOfDay = GetTimeOfDayForEncounters(headerId, WILD_AREA_WATER);
  

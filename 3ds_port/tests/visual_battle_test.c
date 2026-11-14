@@ -15,7 +15,7 @@ static bool CtrVoxel_InBattle(void) { return inBattle; }
 static void CtrVoxel_BeginBattle(void) { inBattle=true;++begins; }
 static float BattleScenerySway(unsigned n) { return (float)n; }
 static void CtrVoxel_SetBattleFrame(bool intro,float x,float y) { if(intro || moveBg) assert(x==0 && y==0); }
-static bool CtrVoxel_Update(void) { ++updates;return work>=2; }
+static bool CtrVoxel_Update(void) { ++updates;return true; }
 static bool VoxelBattle_IsLink(void) { return false; }
 static unsigned Reg(unsigned n) { assert(!n);return display; }
 static void CtrVoxel_AfterSubmit(uint64_t start) { (void)start;++work; }
@@ -23,9 +23,9 @@ static void CtrVoxel_Idle(void) { ++idles; }
 /* PRODUCTION */
 int main(void)
 {
-    // New scene cannot draw until two post-submit build slices have run.
-    assert(!Frame(false) && work==1);
-    assert(!Frame(false) && work==2);
+    // v0.5.0 Update owns readiness; available frames receive post-submit work.
+    assert(Frame(false) && work==1);
+    assert(Frame(false) && work==2);
     assert(Frame(false) && inBattle && begins==1 && sWorldLayers==(1u<<3));
     sliding=true;assert(Frame(false) && sWorldLayers==14);sliding=false;
     moveBg=true;assert(!Frame(false) && sWorldLayers==0);moveBg=false;
@@ -38,6 +38,6 @@ int main(void)
     sBattle=false;assert(!Frame(false) && updates==oldUpdates && work==oldWork);
     assert(!Frame(true) && work==oldWork+1); /* field preparation retained */
     assert(idles>=4);
-    puts("PASS production scenic scheduler: pending scene progresses through flat fallback; one begin, native intro/move background/forced blank fallbacks and disabled/unavailable states");
+    puts("PASS production scenic scheduler: v0.5.0 frame availability drives post-submit preparation; one begin, native intro/move background/forced blank fallbacks and disabled/unavailable states");
     return 0;
 }

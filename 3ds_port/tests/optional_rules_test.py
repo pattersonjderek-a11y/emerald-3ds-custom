@@ -93,6 +93,12 @@ int main(void){
  gMain.inBattle=false; // stale battle flags do not disable field effects
  assert(CtrOptional_Ability(1,0,ABILITY_STATIC)==ability);
  gBattleTypeFlags=0;
+ gMain.inBattle=true;CtrOptional_BeginBattle();
+ seed=77;options[0]=0;
+ assert(CtrOptional_Ability(1,0,ABILITY_STATIC)==ability);
+ gMain.inBattle=false;
+ assert(CtrOptional_Ability(1,0,ABILITY_STATIC)==ABILITY_STATIC);
+ options[0]=1;seed=42;
  items[400].importance=1;items[401].pocket=POCKET_TM_HM;items[402].pocket=POCKET_KEY_ITEMS;
  assert(CtrOptional_Field(0,0,1)==0);
  assert(CtrOptional_Field(400,0,1)==400&&CtrOptional_Field(401,0,1)==401&&CtrOptional_Field(402,1,1)==402);

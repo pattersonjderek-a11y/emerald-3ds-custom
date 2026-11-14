@@ -25,6 +25,8 @@ static struct Trainer gTrainers[DIFFICULTY_COUNT][64];
 static enum DifficultyLevel GetTrainerDifficultyLevel(u16 id);
 ''')
     source = source.replace('return &trainers[id];', 'return &gTrainers[GetTrainerDifficultyLevel(id)][id];')
+    for obsolete in ('static unsigned Port_GetAssetSize(', 'static unsigned GetItemHoldEffect(', 'static unsigned LocalRandomSeed('):
+        source=source.replace(function(source,obsolete),'')
     source += '''
 #include "custom_run_menu_model.h"
 #include "custom_difficulty.h"
@@ -69,7 +71,17 @@ static unsigned GetMoveCategory(unsigned move) { return move==MOVE_STATUS ? DAMA
     source += function((tree / 'src/difficulty.c').read_text(), 'enum DifficultyLevel GetCurrentDifficultyLevel(void)')
     source += function((tree / 'src/difficulty.c').read_text(), 'enum DifficultyLevel GetTrainerDifficultyLevel(u16 trainerId)')
     random = (tree / 'src/custom_random.c').read_text()
-    source += random[random.index('static struct CRPoolEntry'):random.rindex('#endif')]
+    source += r"""
+#include "3ds_randomizer.h"
+static bool upstreamTrainers;
+bool CtrRandomizer_Enabled(unsigned kind) { return upstreamTrainers && kind==CTR_RANDOMIZE_TRAINERS; }
+u32 CtrRandomizer_Seed(void) { return 42; }
+u16 CtrRandomizer_Species(unsigned kind,u16 species) { return CtrRandomizer_Enabled(kind) ? 25+(species%3) : species; }
+static u16 CtrOptional_Held(u16 item,u32 key,u16 slot) { (void)key;(void)slot;return item; }
+"""
+    # Production native adapter/factory composition. The real upstream permutation
+    # is separately exercised by upstream_expansion_test.py over all 1025 entries.
+    source += random[random.index('static u16 sTrainerId'):random.rindex('#endif')]
     source += '''
 #define MAX_LEVEL 100
 #define B_LEVEL_CAP_TYPE 0
@@ -310,7 +322,7 @@ def main():
     args=p.parse_args()
     tree=args.tree.resolve()
     trainer_source_audit(tree)
-    compile_run(args.cc,tree,native(tree),[str(tree/"src/custom_run_menu_model.c")])
+    compile_run(args.cc,tree,native(tree),["-I"+str(HERE.parent/"include"),str(tree/"src/custom_run_menu_model.c")])
     print('Production difficulty hooks PASS (ASan + UBSan; controlled host state)')
 
 

@@ -32,6 +32,7 @@ static unsigned sInstanceCount=1;
 static int sBorderMemo;
 static bool MemoGet(int *memo,const void *source,const void **dest) { (void)memo;(void)source;(void)dest;return false; }
 static void MemoPut(int *memo,const void *source,const void *dest) { (void)memo;(void)source;(void)dest; }
+static int EdgeFillAt(int x,int y){(void)x;(void)y;return -1;}
 /* PRODUCTION */
 static void Select(const struct MapLayout *layout,const struct MapConnections *connections)
 {

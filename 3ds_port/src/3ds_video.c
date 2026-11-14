@@ -1,3 +1,4 @@
+#include "3ds_paths.h"
 /* GBA compatibility compositor on PICA200. CPU work only decodes dirty tiles
  * into a texture atlas and submits geometry. All rasterization, transforms,
  * transparency, priority composition and scaling happen on the GPU. */
@@ -7601,7 +7602,7 @@ static unsigned CtrDumpOff(void)
 
     if (!read)
     {
-        FILE *file = fopen("sdmc:/3ds/emerald3ds/nocache.txt", "r");
+        FILE *file = fopen(CTR_DATA_DIR "nocache.txt", "r");
 
         read = 1;
         if (file)
@@ -12235,7 +12236,7 @@ static __attribute__((unused)) float CtrDumpSlider(void)
 
     if (!read)
     {
-        FILE *file = fopen("sdmc:/3ds/emerald3ds/slider.txt", "r");
+        FILE *file = fopen(CTR_DATA_DIR "slider.txt", "r");
 
         read = 1;
         if (file) { value = 1.0f; fclose(file); }
@@ -12521,7 +12522,7 @@ void CtrVideo_Present(void)
     {
         static FILE *dump;
 
-        if (!dump) dump = fopen("sdmc:/3ds/emerald3ds/frames.raw", "wb");
+        if (!dump) dump = fopen(CTR_DATA_DIR "frames.raw", "wb");
         if (dump)
         {
             uint32_t frame = sStats.frames;

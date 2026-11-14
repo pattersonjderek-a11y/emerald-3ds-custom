@@ -53,6 +53,7 @@
 #include "custom_difficulty.h"
 #endif
 #include "3ds_locale.h"
+#include "3ds_expansion.h"
 #ifdef PORT_EXPANSION
 #include "move.h"
 #define gActiveBattler gBattlerInMenuId
@@ -443,13 +444,25 @@ static void DrawCategoryIcon(u16 move, int x, int y);
 /* Resources                                                                */
 /* ------------------------------------------------------------------------ */
 
-#ifndef PORT_EXPANSION
 static void *ReadRomfs(const char *path, u32 *outSize)
 {
-    char full[128];
+    char full[192];
     void *data;
 
+#ifdef PORT_EXPANSION
+    const char *suffix=strrchr(path,'.');
+    if(suffix && !strcmp(suffix,".lz")) {
+        char base[96];snprintf(base,sizeof(base),"%.*s",(int)(suffix-path),path);
+        char *format=strrchr(base,'.');
+        if(format && !strcmp(format,".4bpp")) {*format=0;snprintf(full,sizeof(full),"build/assets/graphics/%s.png.4bpp.smol",base);}
+        else if(format && !strcmp(format,".bin")) snprintf(full,sizeof(full),"build/assets/graphics/%s.smolTM",base);
+        else snprintf(full,sizeof(full),"build/assets/graphics/%s",base);
+    } else if(suffix && !strcmp(suffix,".gbapal"))
+        snprintf(full,sizeof(full),"build/assets/graphics/%.*s.pal.gbapal",(int)(suffix-path),path);
+    else snprintf(full,sizeof(full),"build/assets/graphics/%s",path);
+#else
     snprintf(full, sizeof(full), "graphics/%s", path);
+#endif
     data = CtrData_Load(full, outSize);
     if (!data)
         CtrLog_Write(CTR_LOG_ERROR, "bottom: %s missing", full);
@@ -530,7 +543,6 @@ static bool8 PalFile(const char *path, Pal *dst, int count, bool8 compressed)
     free(raw);
     return TRUE;
 }
-#endif /* !PORT_EXPANSION */
 
 /* An uncompressed game palette; the pointer may be an asset stub. */
 static void PalSymbol(const void *src, Pal *dst, int count)
@@ -801,7 +813,7 @@ static void LoadResources(void)
     sRes.column[SCR_NUZLOCKE].tiles = (u8 *)sArtNuzlocke;
     sRes.column[SCR_NUZLOCKE].size = 3;
     ToPals(&sRes.column[SCR_NUZLOCKE].pal, sArtPalette2, 1);
-    LoadItemIcon(&sRes.repel, GetItemIconPicOrPalette(ITEM_REPEL, 0), GetItemIconPicOrPalette(ITEM_REPEL, 1));
+    LoadItemIcon(&sRes.repel, GetItemIconPic(ITEM_REPEL), GetItemIconPalette(ITEM_REPEL));
 
 #ifdef PORT_EXPANSION
     sRes.typeTiles = DecompSymbol(gMoveTypes_Gfx, NULL);
@@ -987,8 +999,8 @@ static int ItemIcon(u16 item)
     }
     free(tiles);
 #else
-    tiles = Unlz(GetItemIconPicOrPalette(item, 0), &size);
-    pal = Unlz(GetItemIconPicOrPalette(item, 1), NULL);
+    tiles = Unlz(GetItemIconPic(item), &size);
+    pal = Unlz(GetItemIconPalette(item), NULL);
     sItemIcons[victim].valid = tiles && pal && size >= sizeof(sItemIcons[victim].tiles);
     if (sItemIcons[victim].valid)
     {
@@ -1733,7 +1745,7 @@ static const u8 *MoveName(u16 move)
 static bool8 BottomMoveSplitEnabled(void)
 {
 #ifdef PORT_EXPANSION
-    return TRUE; /* The expansion uses move categories natively. */
+    return MoveSplitEnabled();
 #else
     return MoveSplitEnabled();
 #endif

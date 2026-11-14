@@ -40,7 +40,7 @@ def source_for(case, tree, port):
         video = (port / 'src/3ds_video.c').read_text()
         code = function(video, 'static bool PrepareBattleWorld(') if 'static bool PrepareBattleWorld(' in video else ''
         begin = video.index('    sBattleWorld = false;', video.index('void CtrVideo_Present(void)'))
-        end = video.index('#endif', begin) + len('#endif')
+        end = video.index('    /* The 2D field',begin) if '    /* The 2D field' in video[begin:] else video.index('#endif', begin) + len('#endif')
         dispatch = re.search(r'    if \(overworld \|\| (?:battleUpdated|battlePrepared)\)\s+CtrVoxel_AfterSubmit\(start\);\s+else\s+CtrVoxel_Idle\(\);', video)[0]
         code += 'static bool Frame(bool overworld) {\nuint64_t start=0;\n' + video[begin:end] + '\n' + dispatch + '\nreturn sBattleWorld;\n}\n'
     before, after = (HERE / f'visual_{case}_test.c').read_text().split('/* PRODUCTION */')

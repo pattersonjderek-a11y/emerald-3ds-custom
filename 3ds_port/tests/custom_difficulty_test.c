@@ -126,11 +126,11 @@ static void Composition(void)
     for(unsigned preset=0;preset<3;++preset) {
         struct CRConfig c=SaveRules(preset,false);
         if(preset==CR_CUSTOM) { c.difficultyOptions=CR_BOSS_PREP;assert(CR_Encode(save1.customRunConfig,123,&c)); }
-        CreateNPCTrainerParty(fixed,16);
+        upstreamTrainers=false;CreateNPCTrainerParty(fixed,16);
         assert(fixed[0].species==7 && fixed[0].source.iv==(preset==CR_NORMAL ? 12 : 31));
         c.mode=CR_RANDOMIZED;c.algorithm=1;c.randomOptions=CR_CORE_OPTIONS;c.generations=256;
         assert(CR_Encode(save1.customRunConfig,123,&c));
-        globalRng=1; CreateNPCTrainerParty(random,16);
+        upstreamTrainers=true;globalRng=1; CreateNPCTrainerParty(random,16);
         for(unsigned i=0;i<4;++i) {
             assert(random[i].species>=25 && random[i].species<=27 && random[i].species!=fixed[i].species);
             assert(random[i].level==fixed[i].level && random[i].source.iv==fixed[i].source.iv);
@@ -139,19 +139,24 @@ static void Composition(void)
         for(unsigned i=0;i<4;++i) for(unsigned j=0;j<4;++j)
             assert(!random[i].moves[j] || random[i].moves[j]==MOVE_TACKLE || random[i].moves[j]==MOVE_EMBER || random[i].moves[j]==MOVE_STATUS);
         assert(!sPreparedTrainer && !sTrainerContext);
-        globalRng=234567;CreateNPCTrainerParty(again,16);assert(!memcmp(random,again,sizeof(random)));
+        globalRng=234567;CreateNPCTrainerParty(again,16);
+        for(unsigned i=0;i<4;++i) {
+            assert(again[i].species==random[i].species && again[i].level==random[i].level);
+            assert(!memcmp(&again[i].source,&random[i].source,sizeof(again[i].source)));
+            assert(again[i].personality!=random[i].personality); /* native RNG is retained */
+        }
         gBattleTypeFlags|=BATTLE_TYPE_TWO_OPPONENTS;CreateNPCTrainerParty(again,16);
         assert(again[2].species && !again[3].species);gBattleTypeFlags=BATTLE_TYPE_TRAINER;
         CreateNPCTrainerParty(again,17);assert(again[0].source.iv==12); /* Missing variant falls back safely. */
         CreateNPCTrainerPartyFromTrainer(again,&trainers[16]);assert(again[0].species==7); /* No leaked opponent context into ally/script factory. */
     }
-    puts("production party factory: Normal/Hard/Custom templates before seeded species; boss randomization survives, legal moves, retained levels/size, doubles, reset determinism, no context leaks PASS");
+    puts("production party factory: Normal/Hard/Custom templates before seeded species; boss randomization survives, legal moves, retained levels/size, doubles, stable species with native personality RNG, no context leaks PASS");
 }
 static void MenuRules(void)
 {
     struct CRMenu m; char lines[12][36];
     CR_MenuBegin(&m,42,77);
-    CR_MenuInput(&m,CR_A,0); /* Standard is default; difficulty remains independent. */
+    assert(m.page==CR_PAGE_DIFFICULTY); /* upstream OPTIONS owns species rules */
     m.selected=2;CR_MenuInput(&m,CR_A,0);assert(m.page==CR_PAGE_DIFFICULTY_CUSTOM);
     const unsigned bits[]={CR_FORCE_SET,CR_NO_HEAL,CR_NO_BOOST};
     CR_MenuInput(&m,CR_A,0);assert(m.draft.config.capMode==CR_CAP_HARD);
@@ -159,8 +164,7 @@ static void MenuRules(void)
     for(unsigned i=1;i<=3;++i) { m.selected=i;CR_MenuInput(&m,CR_A,0);assert(m.draft.config.difficultyOptions&bits[i-1]); }
     m.selected=4;CR_MenuInput(&m,CR_A,0);assert(m.draft.config.aiPolicy==CR_AI_TACTICAL);
     m.selected=5;CR_MenuInput(&m,CR_A,0);assert(m.draft.config.difficultyOptions&CR_BOSS_PREP);
-    m.selected=6;CR_MenuInput(&m,CR_A,0);assert(m.page==CR_PAGE_SEED);
-    m.selected=3;CR_MenuInput(&m,CR_A,0);assert(m.page==CR_PAGE_SUMMARY);
+    m.selected=6;CR_MenuInput(&m,CR_A,0);assert(m.page==CR_PAGE_SUMMARY);
     CR_MenuInput(&m,CR_RIGHT,0); CR_MenuLines(&m,lines);
     assert(!strcmp(lines[4],"CAP: SOFT") && !strcmp(lines[5],"STYLE: SET"));
     assert(strstr(lines[6],"BLOCKED") && strstr(lines[8],"TACTICAL"));

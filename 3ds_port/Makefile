@@ -489,7 +489,10 @@ ifneq ($(wildcard $(ROOT)/include/custom_random_core.h),)
 .PHONY: verify-custom-random
 verify: verify-custom-random
 verify-custom-random:
-	"$(PYTHON)" tests/custom_random_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/upstream_expansion_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/optional_rules_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/follower_palette_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/expansion_split_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/custom_random_pool_test.py --tree "$(ROOT)" --gdb "$(DEVKITARM)/bin/arm-none-eabi-gdb" --output build/randomizer-pool.json
 endif
 

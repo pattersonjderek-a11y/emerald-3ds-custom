@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Stage D: same pinned SDK; isolated build tree, save namespace and private package.
 set -euo pipefail
+if [ -f "$(dirname "$0")/../3ds_port/src/3ds_optional_game.c" ] && [ "${1:-build}" != versions ]; then
+ echo "Checkout project/stage-d to rebuild the historical Stage D package." >&2;exit 2
+fi
 cd "$(dirname "$0")/.."
 export DEVKITPRO="${DEVKITPRO:-/opt/devkitpro}"
 export DEVKITARM="${DEVKITARM:-$DEVKITPRO/devkitARM}"

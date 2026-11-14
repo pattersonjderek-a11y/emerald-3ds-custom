@@ -39,3 +39,15 @@ All engine changes are captured in the canonical expansion patch (currently
 checks, roster/follower audit, final documentation, private packaging and source
 sync remain finish work. No ROM/save/firmware/generated game-data artifact is
 committed. See SOURCES.md and the amended blueprint for precedence/provenance.
+
+## 14 November checkpoint (not a release)
+
+Production configuration/sector recovery, difficulty/factory composition,
+optional rules, follower palette/bounds and 1,025-entry upstream randomizer host
+checks pass under ASan/UBSan. Native compilation reached final linking; API
+reconciliation continues (logs through work/native-build-35.log). No playable
+Stage E artifact or hardware result is claimed at this checkpoint. Canonical
+expansion patch includes the engine fixes; new platform adapters are tracked.
+The v0.5.0 physical/special split switch now drives the native category accessor.
+Next: finish native output, complete linked content/follower inventory, fresh
+bootstrap and regression checks, then prepare a separate private test package.

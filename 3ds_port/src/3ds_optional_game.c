@@ -47,6 +47,18 @@ static const u16 sHeld[]={ITEM_ORAN_BERRY,ITEM_SITRUS_BERRY,ITEM_LUM_BERRY,
  ITEM_MYSTIC_WATER,ITEM_MIRACLE_SEED,ITEM_MAGNET,ITEM_TWISTED_SPOON,
  ITEM_NEVER_MELT_ICE,ITEM_DRAGON_FANG,ITEM_BLACK_GLASSES,ITEM_BLACK_BELT,
  ITEM_METAL_COAT,ITEM_SILK_SCARF};
+static bool sBattleSnapshot,sBattleAbilities;
+static u32 sBattleSeed;
+void CtrOptional_BeginBattle(void)
+{
+ sBattleSeed=CtrRandomizer_Seed();
+ sBattleAbilities=CtrSettings_GetInt("rand_abilities",0)==1;
+ sBattleSnapshot=true;
+}
+static bool AbilityEnabled(void)
+{ return gMain.inBattle&&sBattleSnapshot ? sBattleAbilities : CtrSettings_GetInt("rand_abilities",0)==1; }
+static u32 AbilitySeed(void)
+{ return gMain.inBattle&&sBattleSnapshot ? sBattleSeed : CtrRandomizer_Seed(); }
 static bool sBuilt,sFormItems[ITEMS_COUNT];
 static u16 sAbilityCache[NUM_SPECIES][NUM_ABILITY_SLOTS];
 static u32 sAbilitySeed;
@@ -98,13 +110,13 @@ static void Pools(void)
 }
 uint16_t CtrOptional_Ability(uint16_t species,unsigned slot,uint16_t native)
 {
- if(CtrSettings_GetInt("rand_abilities",0)!=1||ProtectedBattle()||!native||slot>=NUM_ABILITY_SLOTS
+ if(!AbilityEnabled()||ProtectedBattle()||!native||slot>=NUM_ABILITY_SLOTS
     ||species>=NUM_SPECIES||!species)return native;
  const struct SpeciesInfo *p=&gSpeciesInfo[species];
  if(p->formChangeTable||GET_BASE_SPECIES_ID(species)!=species)return native;
  for(unsigned i=0;i<NUM_ABILITY_SLOTS;++i)if(p->abilities[i]&&!SafeAbility(p->abilities[i]))return native;
  Pools();
- u32 seed=CtrRandomizer_Seed();
+ u32 seed=AbilitySeed();
  if(!sAbilityCached||sAbilitySeed!=seed){memset(sAbilityCache,0,sizeof(sAbilityCache));sAbilitySeed=seed;sAbilityCached=true;}
  if(sAbilityCache[species][slot])return sAbilityCache[species][slot];
  u16 chosen[NUM_ABILITY_SLOTS]={0};
@@ -113,7 +125,7 @@ uint16_t CtrOptional_Ability(uint16_t species,unsigned slot,uint16_t native)
   bool alias=false;
   for(unsigned j=0;j<i;++j)if(p->abilities[i]==p->abilities[j]){chosen[i]=chosen[j];alias=true;break;}
   if(!alias)chosen[i]=CtrOptional_Pick(sAbilityPool,sAbilityCount,
-   CtrOptional_Key(CtrRandomizer_Seed(),CTR_OPT_ABILITY,species,i),chosen,i);
+   CtrOptional_Key(seed,CTR_OPT_ABILITY,species,i),chosen,i);
  }
  memcpy(sAbilityCache[species],chosen,sizeof(chosen));
  return chosen[slot]?chosen[slot]:native;
@@ -152,4 +164,5 @@ uint16_t CtrOptional_Ability(uint16_t species,unsigned slot,uint16_t native){(vo
 uint16_t CtrOptional_Field(uint16_t item,unsigned kind,unsigned id){(void)kind;(void)id;return item;}
 uint16_t CtrOptional_Held(uint16_t item,unsigned id,unsigned slot){(void)id;(void)slot;return item;}
 void CtrOptional_WildHeld(void){}
+void CtrOptional_BeginBattle(void){}
 #endif

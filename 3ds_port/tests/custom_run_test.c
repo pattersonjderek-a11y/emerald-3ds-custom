@@ -79,53 +79,31 @@ static void Codec(void)
     assert(CR_ParseSeed("4294967295",&seed) && seed==UINT32_MAX);
     puts("codec: round trips, all 416 single-bit corruptions, versions/rules/binding, legacy, parsing PASS");
 }
-static enum CROutcome Key(struct CRMenu *m,unsigned k) { return CR_MenuInput(m,k,56789); }
 static void Menu(void)
 {
-    struct CRMenu m;
-    CR_MenuBegin(&m,123,456);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY && m.draft.config.mode==CR_RANDOMIZED);
-    assert(m.draft.config.randomOptions==CR_CORE_OPTIONS && m.draft.config.algorithm==1);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SEED && m.draft.config.difficulty==CR_HARD);
-    Key(&m,CR_B); m.selected=2; Key(&m,CR_A); assert(m.page==CR_PAGE_DIFFICULTY_CUSTOM);
-    m.selected=6; Key(&m,CR_A); assert(m.page==CR_PAGE_SEED && m.draft.config.difficulty==CR_CUSTOM);
-    m.selected=2; Key(&m,CR_A); assert(m.page==CR_PAGE_CUSTOM);
-    for(unsigned i=3;i<6;++i) { m.selected=i; Key(&m,CR_A); assert(m.notice && m.draft.config.randomOptions==CR_CORE_OPTIONS); }
-    m.selected=0; Key(&m,CR_A); assert(m.draft.config.randomOptions==6);
-    m.selected=1; Key(&m,CR_A); assert(m.draft.config.randomOptions==4);
-    m.selected=2; Key(&m,CR_A); assert(m.notice && m.draft.config.randomOptions==4);
-    m.selected=0; Key(&m,CR_A); m.selected=1; Key(&m,CR_A);
-    m.selected=6; Key(&m,CR_A); assert(m.page==CR_PAGE_GENERATIONS);
-    for(unsigned i=0;i<8;++i) { m.selected=i; Key(&m,CR_A); }
-    m.selected=8; Key(&m,CR_A); assert(m.notice && m.draft.config.generations==256);
-    m.selected=9; Key(&m,CR_A); assert(m.page==CR_PAGE_CUSTOM);
-    m.selected=7; Key(&m,CR_A); assert(m.page==CR_PAGE_BALANCE);
-    Key(&m,CR_A); assert(m.draft.config.balanceFlags==CR_BALANCE_NO_LEGENDS);
-    Key(&m,CR_B); Key(&m,CR_B); assert(m.page==CR_PAGE_SEED);
-    assert(m.draft.config.seed==123); Key(&m,CR_A); assert(m.draft.config.seed==56789);
-    Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_DIGITS);
-    strcpy(m.digits,"4294967296"); Key(&m,CR_A); assert(m.page==CR_PAGE_DIGITS && m.notice && m.draft.config.seed==56789);
-    strcpy(m.digits,"4294967295"); Key(&m,CR_A); assert(m.page==CR_PAGE_SEED && m.draft.config.seed==UINT32_MAX && m.draft.manualSeed);
-    Key(&m,CR_DOWN); Key(&m,CR_A); Key(&m,CR_UP); Key(&m,CR_B); assert(m.draft.config.seed==UINT32_MAX); /* discard edit */
-    Key(&m,CR_DOWN); Key(&m,CR_DOWN); Key(&m,CR_DOWN); Key(&m,CR_A); assert(m.page==CR_PAGE_SUMMARY && !m.draft.confirmed);
-    assert(Key(&m,CR_A)==CR_ACCEPTED && m.draft.confirmed);
-    struct CRMenu accepted=m; Key(&m,CR_B); Key(&m,CR_DOWN); assert(!memcmp(&m,&accepted,sizeof(m)));
-    uint8_t record[52], old[52]; memset(record,0x5A,52); memcpy(old,record,52);
-    CR_MenuBegin(&m,3,4); assert(Key(&m,CR_B)==CR_CANCELLED);
-    assert(!CR_Commit(&m.draft,record,1) && !memcmp(record,old,52));
-    /* Explore actual input transitions and rendered labels under sanitizers. */
-    for(unsigned trial=0;trial<100;++trial) {
-        CR_MenuBegin(&m,trial,trial+1);
-        uint32_t rng=trial+1;
-        for(unsigned step=0;step<500;++step) {
-            char lines[12][36]; CR_MenuLines(&m,lines);
-            for(unsigned row=0;row<12;++row) assert(strlen(lines[row])<36);
-            rng=rng*1664525u+1013904223u;
-            enum CROutcome outcome=Key(&m,1u<<(rng%6));
-            assert(CR_Validate(&m.draft.config)==CR_OK || outcome==CR_CANCELLED);
-            if(outcome!=CR_STAY) break;
+    struct CRMenu m;uint8_t old[52],record[52];char lines[12][36];
+    memset(record,0xA5,52);memcpy(old,record,52);
+    CR_MenuBegin(&m,42,77);assert(m.page==CR_PAGE_DIFFICULTY);
+    assert(CR_MenuInput(&m,CR_B,0)==CR_CANCELLED);
+    assert(!CR_Commit(&m.draft,record,1)&&!memcmp(old,record,52));
+    for(unsigned preset=0;preset<3;++preset){
+        CR_MenuBegin(&m,42,77);m.selected=preset;CR_MenuInput(&m,CR_A,0);
+        assert(m.draft.config.mode==CR_STANDARD&&!m.draft.config.randomOptions);
+        if(preset==CR_CUSTOM){assert(m.page==CR_PAGE_DIFFICULTY_CUSTOM);m.selected=6;CR_MenuInput(&m,CR_A,0);}
+        assert(m.page==CR_PAGE_SUMMARY);CR_MenuLines(&m,lines);
+        assert(strstr(lines[5],"OPTIONS"));
+        assert(CR_MenuInput(&m,CR_A,0)==CR_ACCEPTED);
+        assert(CR_Commit(&m.draft,record,123));
+    }
+    for(unsigned trial=0;trial<100;++trial){
+        CR_MenuBegin(&m,trial,trial+1);uint32_t rng=trial+1;
+        for(unsigned step=0;step<500;++step){
+            CR_MenuLines(&m,lines);for(unsigned row=0;row<12;++row)assert(strlen(lines[row])<36);
+            rng=rng*1664525u+1013904223u;enum CROutcome out=CR_MenuInput(&m,1u<<(rng%6),0);
+            assert(CR_Validate(&m.draft.config)==CR_OK||out==CR_CANCELLED);
+            if(out!=CR_STAY)break;
         }
     }
-    puts("menu: randomized core, category/generation/balance options, locked later rules, auto/manual seed, overflow, confirmation, cancel and 50k transition budget PASS");
+    puts("production difficulty-only setup: upstream randomizer ownership, all presets, confirmation, cancellation, bounded labels and transition fuzz PASS");
 }
 int main(void) { Storage(); Codec(); Menu(); return 0; }

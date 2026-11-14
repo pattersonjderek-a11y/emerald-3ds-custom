@@ -52,6 +52,8 @@ static struct CRMenu sMenu;
     init = function((tree / 'src/new_game.c').read_text(), 'void NewGameInitData(void)')
     source += r'''
 #define PORT_BRIDGE 1
+#define PLATFORM_3DS 1
+static void CtrClockStore_Load(const void *p,unsigned n){assert(!p&&!n);}
 #define IS_FRLG 0
 #define TRUE 1
 #define SAVE_STATUS_EMPTY 0
@@ -294,6 +296,7 @@ static void FadeScreen(unsigned kind,unsigned n) { assert(kind==FADE_TO_BLACK &&
 static bool8 RunPage(void) { return TRUE; }
 static bool8 OtherPage(void) { return TRUE; }
 static bool8 CtrSaveStartCallback(void) { return TRUE; }
+static bool8 CtrTrainerCardCallback(void) { return TRUE; }
 static bool8 (*gMenuCallback)(void);
 static void Task_CtrStartMenuAction(u8 id) { (void)id; }
 static void CreateTask(void (*fn)(u8),unsigned priority) { assert(fn==Task_CtrStartMenuAction && priority==0x50); ++taskCreated; }
@@ -310,7 +313,9 @@ static const struct { struct { bool8 (*u8_void)(void); } func; } sStartMenuItems
     source += r'''
 int main(void) {
     /* The actual dual-screen adapter consumes plain physical START. */
-    assert(CtrStartMenu_AcceptStart() && sCtrRequest==MENU_ACTION_RUN_SETTINGS);
+    assert(!CtrStartMenu_AcceptStart() && sCtrRequest==MENU_ACTION_NONE_CTR);
+    sCtrRequest=MENU_ACTION_RUN_SETTINGS;
+    assert(CtrStartMenu_AcceptStart());
     assert(CtrStartMenu_Divert() && sCtrRequest==MENU_ACTION_NONE_CTR);
     assert(gMenuCallback==RunPage && frozen==1 && faded==1 && taskCreated==1);
     sCtrRequest=MENU_ACTION_BAG;
@@ -322,7 +327,7 @@ int main(void) {
     sCtrRequest=MENU_ACTION_EXIT; assert(!CtrStartMenu_AcceptStart());
     replaced=FALSE; sCtrRequest=MENU_ACTION_NONE_CTR;
     assert(CtrStartMenu_AcceptStart() && !CtrStartMenu_Divert());
-    puts("production dual-screen START adapter: Run Settings reachable; bag/save/Dex and classic fallback retained PASS");
+    puts("production v0.5.0 START adapter: plain START preserved, explicit Run Settings/bag/save/Dex requests and classic fallback PASS");
     return 0;
 }
 '''

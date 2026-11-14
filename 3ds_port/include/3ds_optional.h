@@ -14,4 +14,5 @@ uint16_t CtrOptional_Ability(uint16_t species,unsigned slot,uint16_t native);
 uint16_t CtrOptional_Field(uint16_t item,unsigned kind,unsigned localId);
 uint16_t CtrOptional_Held(uint16_t item,unsigned identity,unsigned slot);
 void CtrOptional_WildHeld(void);
+void CtrOptional_BeginBattle(void);
 #endif

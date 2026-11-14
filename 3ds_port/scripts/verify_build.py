@@ -56,7 +56,8 @@ def main():
                      'CustomRun_CommitNewSave', 'CR_Decode', 'CR_MenuInput', 'CR_MenuLines']
     if args.full and args.expansion and (root.parent / 'include/custom_random_core.h').is_file():
         required += ['CustomRandom_Starter', 'CustomRandom_Header', 'CustomRandom_TrainerMon',
-                     'CustomRandom_EnsureMoves', 'CRandom_Key', 'CRandom_Pick']
+                     'CustomRandom_EnsureMoves', 'CtrRandomizer_Species', 'CtrRandomizer_Build',
+                     'CtrOptional_Ability', 'CtrOptional_Field', 'CtrOptional_Held', 'CtrOptional_BeginBattle']
     if args.full and args.expansion and (root.parent / 'include/custom_difficulty.h').is_file():
         required += ['CustomDifficulty_ExpCap', 'CustomDifficulty_ItemBlocked', 'CustomDifficulty_AiFlags', 'CustomDifficulty_FinishMon', 'CustomDifficulty_ClampExp']
     if args.full and args.expansion:

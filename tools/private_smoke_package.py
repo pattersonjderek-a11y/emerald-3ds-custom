@@ -26,14 +26,15 @@ def sha(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--stage', choices=('A', 'B', 'C', 'D'), default='A')
+    ap.add_argument('--stage', choices=('A', 'B', 'C', 'D', 'E'), default='A')
     ap.add_argument('--tree', type=Path)
     ap.add_argument('--variant', choices=('baseline','visual-fixes'), default='baseline')
     args = ap.parse_args()
     if args.variant != 'baseline' and args.stage != 'C':
         ap.error('visual-fixes is a Stage C upgrade, not a new save format')
-    tree = (args.tree or ROOT / {'A':'build/expansion','B':'build/stage-b','C':'build/stage-c','D':'build/stage-d'}[args.stage]).resolve()
+    tree = (args.tree or ROOT / {'A':'build/expansion','B':'build/stage-b','C':'build/stage-c','D':'build/stage-d','E':'build/stage-e'}[args.stage]).resolve()
     namespace = 'emerald3ds-custom' + (f'-stage-{args.stage.lower()}' if args.stage != 'A' else '')
+    if args.stage == 'E': namespace += '-v050'
     port = tree / '3ds_port'
     from bootstrap import patch_digest
     expected = patch_digest(sorted((ROOT / 'patches/pokeemerald-expansion').glob('*.patch')))
@@ -62,6 +63,9 @@ def main():
         assert b'sdmc:/3ds/emerald3ds-custom-stage-b/' not in blob
     if args.stage == 'D':
         assert b'sdmc:/3ds/emerald3ds-custom-stage-c/' not in blob
+    if args.stage == 'E':
+        for old in ('b','c','d'):
+            assert f'sdmc:/3ds/emerald3ds-custom-stage-{old}/'.encode() not in blob
     assert b'sdmc:/3ds/emerald3ds/' not in blob
     assert b'sdmc:/3ds/pokeemerald/' not in blob
     assert struct.pack('<I', abi) in blob, 'ABI missing from embedded application'
