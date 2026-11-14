@@ -124,3 +124,24 @@ Manifest: `work/stage-d-private/manifest.json`. Package log:
 No unresolved build/dependency/publication blocker remains. Stage D balance,
 visual-fix acceptance, save/Continue and performance on the original XL remain
 pending. No emulator or physical-console execution was performed by Codex.
+
+
+## Upstream refresh requested before completing Stage E
+
+On 13 November 2026 (America/Los_Angeles), Derek requested the latest original
+Emerald 3DS integration before resuming interrupted Stage E. The source target
+is v0.5.0 at `bcae4b70dac61419fc933084084469f6cfbe344b`; the expansion
+integration main remains `8ebb7355742ce43bbb10528044f9a175fc990a64`.
+
+The cloud execution environment is unavailable after provisioning/executor
+failure. GitHub source inspection and a complete blob-difference inventory were
+completed; integration, local E recovery, host/native checks and packaging are
+blocked. This documentation checkpoint is based on saved Stage D, **not** the
+inaccessible local Stage E source. No new build or console acceptance is claimed.
+
+[UPSTREAM_REFRESH.md](UPSTREAM_REFRESH.md) records exact findings, conflicting
+global/386-species randomizer semantics, upstream licence/generator changes,
+and the interrupted E recovery locations. [UPSTREAM_REFRESH.json](UPSTREAM_REFRESH.json)
+contains the metadata-only 757-path inventory. Restore this chat's existing
+workspace, preserve/commit local E edits first, then integrate the inspected
+upstream and finish E verification. Preserve every baseline branch and package.

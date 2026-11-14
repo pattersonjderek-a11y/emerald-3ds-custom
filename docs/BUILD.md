@@ -401,3 +401,24 @@ Stage A outputs and checksums are in [BUILD_OUTPUTS.json](BUILD_OUTPUTS.json);
 Stage B outputs are in [STAGE_B_BUILD_OUTPUTS.json](STAGE_B_BUILD_OUTPUTS.json).
 Hashes identify this run; embedded build paths and link IDs can change hashes
 on a rebuild. Pair each engine with data from that same audited build.
+
+
+## Latest-upstream resume blocked by unavailable execution
+
+Derek now requests Emerald 3DS v0.5.0 integration before finishing local
+Stage E. This explicit request supersedes the earlier instruction against an
+unrequested upstream refresh. No dependency or engine pin has changed yet.
+
+On 13 November 2026, terminal execution was unavailable because the managed
+environment failed provisioning/executor configuration. No build/test command
+could run during this resume and no new application or private ZIP was made.
+Restore/reconnect the existing workspace; inspect and preserve local E changes
+before running bootstrap or changing branches. Do not reconstruct from remote D
+over an unrecovered E checkout.
+
+See [UPSTREAM_REFRESH.md](UPSTREAM_REFRESH.md) for the exact v0.5.0 commit,
+historical local E outputs/logs and preservation requirements. New upstream
+release generators pin Python 3.13/Pillow 12.3.0 while the existing SDK remains
+frozen as documented above. Stock release packs are incompatible substitutes
+for audited custom expansion output. Existing build commands describe their
+historical source branches; they have not built the requested refresh.

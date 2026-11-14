@@ -100,3 +100,28 @@ fixtures are new project code applied to existing integration paths. Torchic's
 six-frame sheet and palettes were inspected in the actual linked asset index;
 no sprite/art was downloaded, replaced or added. Full follower coverage remains
 a later audit. Original C source/build/package and Dropbox file remain preserved.
+
+
+## Requested v0.5.0 refresh: inspection only
+
+Inspected on 13 November 2026 (America/Los_Angeles):
+[ZallaxDev/emerald-3ds v0.5.0](https://github.com/ZallaxDev/emerald-3ds/releases/tag/v0.5.0),
+tag object `1561e874dc5ef7922b5e2758c73a282f31e8ae89`, commit
+`bcae4b70dac61419fc933084084469f6cfbe344b`. Current main resolves to that
+same commit. The expansion integration main remains the candidate
+`8ebb7355742ce43bbb10528044f9a175fc990a64`.
+
+[UPSTREAM_REFRESH.json](UPSTREAM_REFRESH.json) records complete path/blob
+metadata relative to the blueprint original-port reference and saved custom D.
+Inspected upstream randomizer documentation/header, Makefiles, bridge,
+compatibility, settings/data runtime, source lock, release notes and notices.
+No v0.5.0 source/art has been imported; execution failure blocks integration.
+
+Upstream changed the terms for its original port contributions from v0.5.0 to
+CC BY-NC-SA 4.0 (`LICENSE-PORT.md`), crediting “Emerald 3DS by Zallax and
+contributors”. Earlier published MIT copies and separately licensed third-party
+code retain their notices. Record exact imported paths, credits, terms and
+modifications when integration is actually performed; this inspection does
+not relicense existing project or game material. The current lock and existing
+notices remain unchanged. See [UPSTREAM_REFRESH.md](UPSTREAM_REFRESH.md) for
+source findings, version differences and the unverified local Stage E handoff.
