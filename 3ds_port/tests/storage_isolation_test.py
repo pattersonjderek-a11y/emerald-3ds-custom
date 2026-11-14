@@ -10,7 +10,8 @@ PORT = Path(__file__).resolve().parents[1]
 def main():
     # Reject new literal paths outside the central namespace. Shared mount root
     # creation is intentional; the DSP firmware is loaded by libctru read-only.
-    for path in (PORT / 'src').rglob('*.c'):
+    for path in (PORT / 'src').rglob('*'):
+        if path.suffix not in ('.c','.h','.inc'):continue
         source = path.read_text()
         assert 'sdmc:/3ds/emerald3ds/' not in source, path
         assert 'sdmc:/3ds/pokeemerald/' not in source, path
@@ -71,7 +72,7 @@ int main(void) {
                 for name in ('emerald3ds.sav', 'pokeemerald.sav', 'settings.txt',
                              'emerald3ds.clock', 'emerald3ds.clock.bak', 'port.log',
                              'emerald3ds.pak', 'debug.txt', 'emerald3ds.clock.tmp',
-                             'emerald3ds.nuzlocke', 'emerald3ds.nuzlocke.tmp', 'emerald3ds.nuzlocke.bak'):
+                             'emerald3ds.nuzlocke', 'emerald3ds.nuzlocke.tmp', 'emerald3ds.nuzlocke.bak', 'plates.bin'):
                     path = folder / name
                     path.write_bytes(b'legacy must survive: ' + name.encode())
                     protected[path] = path.read_bytes()

@@ -417,7 +417,7 @@ static bool8 PlateJobIs(const PlateSpec *s, bool8 odd)
 }
 
 /*
- * The plates kept on the SD card (sdmc:/3ds/emerald3ds/plates.bin): a plate
+ * The plates kept on the SD card (plates.bin in the isolated project data directory): a plate
  * is worked out once on this console and kept there for the next sessions.
  * The card is slow on the console - 30-50 ms to read a plate, more than
  * making it, and 100 ms or more to write one, a second to look through the
@@ -683,7 +683,7 @@ static void PlateDiskScan(void)
     FILE *file = NULL;
 
     /* None yet: not an error, the first session's. */
-    if (stat("sdmc:/3ds/emerald3ds/" PLATE_DISK_FILE, &st) == 0)
+    if (stat(CTR_DATA_DIR PLATE_DISK_FILE, &st) == 0)
     {
         file = CtrFs_OpenData(PLATE_DISK_FILE, "r+b");
         size = (u32)st.st_size;

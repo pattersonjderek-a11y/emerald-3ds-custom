@@ -509,3 +509,9 @@ Final output locations under `build/stage-e/3ds_port/`:
 The engine-only release needs a matching custom expansion data recipe; the
 upstream public builder is not the custom test workflow. Only the private
 embedded ZIP is intended for this console smoke test.
+
+The final private-package gate caught an upstream plate-cache stat path in a
+`.inc` fragment still targeting the original app. It was corrected to CTR_DATA_DIR;
+the source isolation scan now covers `.c`, `.h` and `.inc`, and the compiled
+app is scanned for every legacy namespace before any ZIP is created. The ZIP
+also includes the port/voxel license notices and source attribution.

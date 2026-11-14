@@ -131,6 +131,7 @@
 #endif
 
 #include "3ds_data.h"
+#include "3ds_paths.h"
 #include "3ds_bottom.h"
 #include "3ds_extras.h"
 #include "3ds_bottom_art.h"

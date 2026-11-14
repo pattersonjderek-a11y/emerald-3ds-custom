@@ -120,6 +120,12 @@ def main():
         archive.writestr(f'STAGE_{args.stage}_MANIFEST.json', manifest)
         archive.write(toolchain, 'TOOLCHAIN_PACKAGES.txt')
         archive.write(ROOT / 'docs/DEVICE_TESTS.md', 'READ_ME_FIRST.md')
+        for source,target in (
+            ('LICENSE-PORT.md','LICENSES/LICENSE-PORT.md'),
+            ('NOTICE.md','LICENSES/NOTICE.md'),
+            ('3ds_port/src/voxel/NOTICE.md','LICENSES/VOXEL-NOTICE.md'),
+            ('docs/SOURCES.md','SOURCES.md')):
+            archive.write(ROOT/source,target)
     print(manifest)
     print(f'PRIVATE package: {zip_path} ({zip_path.stat().st_size} bytes); SHA-256 {sha(zip_path)}')
 

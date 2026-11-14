@@ -62,7 +62,9 @@ adapters are included. Raw/short palette support fixes native UI/Dex/bag decodin
   zero console approvals. No new artwork is claimed.
 - **Storage:** actual filesystem/save tests preserve original/A/B/C/D sentinels;
   mutable state/data paths use `/3ds/emerald3ds-custom-stage-e-v050/`.
-  No save migration. Source and engine-only publication audits run separately
+  No save migration. The package gate caught and corrected the new plate-cache
+  fragment's legacy stat path; `.inc` files are now included in source scanning.
+  Source and engine-only publication audits run separately
   from private content-bearing packaging. No ROM/save/firmware/data pack is committed.
 - **Emulator / physical console / campaign:** NOT performed for this integration.
 
