@@ -27,6 +27,7 @@
 #include "constants/wild_encounter.h"
 
 #include "port_platform.h"
+#include "3ds_engine_compat.h"
 #include "3ds_video.h"
 #include "3ds_dex_top.h"
 
@@ -79,9 +80,9 @@ static unsigned DecodePicture(u16 species, u16 *out)
     static u8 tiles[4 * FRAME_BYTES];
     static u16 pal[16];
     unsigned frames;
-    u32 size = Unlz(gSpeciesInfo[species].frontPic, tiles, sizeof(tiles));
+    u32 size = Unlz(CtrFrontPic(species), tiles, sizeof(tiles));
 
-    if (size < FRAME_BYTES || Unlz(gSpeciesInfo[species].palette, pal, sizeof(pal)) != sizeof(pal))
+    if (size < FRAME_BYTES || Unlz(CtrNormalPal(species), pal, sizeof(pal)) != sizeof(pal))
         return 0;
     frames = size >= 2 * FRAME_BYTES ? 2 : 1;
     for (unsigned f = 0; f < frames; ++f)
@@ -160,12 +161,12 @@ static u8 TerrainOf(u16 species)
         const struct MapHeader *map = Overworld_GetMapHeaderByGroupAndId(h->mapGroup, h->mapNum);
         u8 type = map ? map->mapType : MAP_TYPE_ROUTE;
 
-        if (InTable(h->encounterTypes[0].landMonsInfo, NUM_LAND_MONS_ENCOUNTER_SLOTS, species))
+        if (InTable(CtrWildInfo(h,landMonsInfo,0), NUM_LAND_MONS_ENCOUNTER_SLOTS, species))
             return type == MAP_TYPE_UNDERGROUND ? BATTLE_ENVIRONMENT_CAVE : BATTLE_ENVIRONMENT_GRASS;
-        if (InTable(h->encounterTypes[0].waterMonsInfo, NUM_WATER_MONS_ENCOUNTER_SLOTS, species) || InTable(h->encounterTypes[0].fishingMonsInfo, NUM_FISHING_MONS_ENCOUNTER_SLOTS, species))
+        if (InTable(CtrWildInfo(h,waterMonsInfo,0), NUM_WATER_MONS_ENCOUNTER_SLOTS, species) || InTable(CtrWildInfo(h,fishingMonsInfo,0), NUM_FISHING_MONS_ENCOUNTER_SLOTS, species))
             return type == MAP_TYPE_OCEAN_ROUTE ? BATTLE_ENVIRONMENT_WATER
                  : type == MAP_TYPE_UNDERWATER ? BATTLE_ENVIRONMENT_UNDERWATER : BATTLE_ENVIRONMENT_POND;
-        if (InTable(h->encounterTypes[0].rockSmashMonsInfo, NUM_ROCK_SMASH_MONS_ENCOUNTER_SLOTS, species))
+        if (InTable(CtrWildInfo(h,rockSmashMonsInfo,0), NUM_ROCK_SMASH_MONS_ENCOUNTER_SLOTS, species))
             return BATTLE_ENVIRONMENT_MOUNTAIN;
     }
     switch (gSpeciesInfo[species].types[0])

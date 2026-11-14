@@ -1,3 +1,71 @@
+# Stage E + v0.5.0 console checklist — ALL RESULTS PENDING
+
+Target: Derek's **original 3DS XL**. No emulator, console boot, frame rate or
+campaign result is claimed for this integration. Prior general C play does not
+accept E. Preserve the earlier C/VisualFixes/D packages separately.
+
+When the verified E private ZIP is available:
+
+1. Back up existing Emerald folders on the laptop. Extract
+   `Emerald3DS-Custom-StageE-private.zip`; copy its `3ds` directory to the SD root.
+   The app belongs in `3ds/emerald3ds-custom-stage-e-v050/`.
+2. Keep older directories intact. Do not copy old saves/settings/clock/Nuzlocke
+   files or data packs into E. It starts a separate run and embeds matching data.
+3. Open Homebrew Launcher and launch **Emerald 3DS Custom Stage E v0.5.0**.
+   Use your existing DSP setup for audio; the package supplies no firmware.
+4. Record source/package manifest hash, model and options with every result.
+   Back up the entire E folder before replacing an E test run.
+
+First test with global randomizers OFF and Normal difficulty: new-game cancel,
+intro, starter, first wild/trainer battle, catch, summary, PC, save/restart/Continue.
+Choose Hard in a separate backed-up run to check the starting cap 15 and trainer
+bag restrictions. Enable CLASSIC MENUS in Options, then START → Run Settings;
+A/left/right switches overview/rules, B returns. The overview is read-only.
+New-game confirmation shows difficulty; Options → MODES → RANDOMIZER owns the
+upstream seed/species switches. MODES → OPTIONAL RULES contains the three new
+OFF-by-default E switches. Those are global and can affect existing mons.
+
+**Easy Gen 9 proof:** before starting a new run, set RANDOM STARTERS ON and
+seed **1** in Options → MODES → RANDOMIZER. If setting it before the intro is
+awkward, create `settings.txt` in the new E directory on the laptop with:
+
+```ini
+rand_seed=1
+rand_starters=1
+```
+
+The production resolver predicts the three balls, Treecko/Torchic/Mudkip order,
+as **Centiskorch (#851), Floragato (#907), Cresselia (#488)**. Select the middle
+ball; check name, model, summary, moves, cry, follower, PC deposit/withdraw and
+save/restart. This is a source/host prediction, not a reported device result.
+Floragato is Gen 9; no developer Pokémon grant is needed. Don't change the seed
+while comparing. Existing species do not transform when the global seed changes.
+
+Optional-rule tests, one switch at a time, with backups:
+
+- Abilities: compare summary → battle behavior → summary/PC → restart. Test
+  Normal and Hard. A seed edit outside battle may change owned abilities; this
+  is explicitly global v0.5.0 behavior. Signature/form species stay protected.
+- Field items: compare the same uncollected ordinary ball/hidden item after
+  reload; it must match for the same seed. Quantity and collection flags stay
+  correct. Key items/TMs/HMs and gifts should retain their identity.
+- Held items: catch wild mons with occupied slots and inspect trainer rewards
+  only where observable; empty slots must not gain items. Test separate doubles
+  and partner battles for no leaked enemy-generation state.
+
+Visual regression checklist in **both 2D and voxel**, starting with Littleroot
+and Torchic at seed randomizers OFF: extended tree/map borders, correct visible
+follower, shiny/female handling when available, transitions, interiors, doors,
+stairs/elevation, surfing, bike, reorder, fainted lead, eggs, save/reload and
+battle return. Scenic wild battles on Routes 101–103 should use encounter-site
+scenery with voxel/scenic options ON. Test move-background effects and restart
+persistence. Report failures with map, lead species, mode, exact toggles and logs.
+Measure original-XL frame pacing/memory in towns, interiors and battles; no New
+3DS performance assumption is made. Native trade/wireless integration, localized
+expansion builds, complete artwork and full campaign acceptance remain unproven.
+
+---
+
 # Emerald 3DS Custom device tests
 
 ## Stage D private package — current, all device results PENDING

@@ -1,3 +1,72 @@
+# Stage E + v0.5.0 build record (14 November 2026)
+
+Current source branch: `project/stage-e-v050`; working tree:
+`/workspace/emerald-3ds-stage-e`. Graphics upstream is v0.5.0 at
+`bcae4b70dac61419fc933084084469f6cfbe344b`. Expansion stays pinned to
+`dfb0f84374230f4d462191601179b742f9f077df`. Upstream history is merged,
+not replaced. Earlier build instructions below are historical and require their
+matching branches. No historical test ZIP was available to hash-verify here.
+
+The historical ARM SDK remains frozen. Generators now use Python 3.13.17 and
+Pillow 12.3.0, matching v0.5.0; see `STAGE_E_TOOLCHAIN_PACKAGES.txt` for actual
+versions (Debian Python 3.11 is also installed but is not the selected interpreter).
+
+```sh
+docker build -f tools/stage_a.Dockerfile -t emerald-stage-a-sdk .
+docker build -f tools/stage_e.Dockerfile -t emerald-stage-e-v050-sdk .
+docker run -d --name emerald-stage-e --user "$(id -u):$(id -g)" \
+  -v /workspace:/workspace -w /workspace/emerald-3ds-stage-e \
+  emerald-stage-e-v050-sdk sleep infinity
+docker exec emerald-stage-e tools/stage_e.sh build
+docker exec emerald-stage-e tools/stage_e.sh test
+docker exec emerald-stage-e tools/stage_e.sh audit
+docker exec emerald-stage-e tools/stage_e.sh fresh
+docker exec emerald-stage-e tools/stage_e.sh package
+```
+
+The current session uses `docker --host=unix:///var/run/docker.sock` explicitly.
+Where a managed proxy is required, forward its current HTTP_PROXY/HTTPS_PROXY/
+ALL_PROXY/NO_PROXY values and the lowercase equivalents with `docker exec -e`
+without printing credentials. A resumed container can retain a stale proxy IP.
+The initial fresh network fetch failed connecting to its old proxy. A separate
+clean checkout was populated from the exact existing Git object, then normal
+bootstrap applied the patch. This is fresh source reproduction, not a claim of
+fresh network availability or a second native compilation.
+
+```sh
+git -C work/stage-e-clean fetch "$PWD/build/stage-e" dfb0f84374230f4d462191601179b742f9f077df
+git -C work/stage-e-clean reset --hard dfb0f84374230f4d462191601179b742f9f077df
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir work/stage-e-clean
+python3 tools/verify_expansion_bootstrap.py
+```
+
+Actual native iterations use `make -C build/stage-e/3ds_port -j6 PYTHON=python3`
+in the SDK image. Logs: `work/native-build-*.log`. The latest combined build
+is still generating/verifying voxel assets at this documentation checkpoint;
+no final native or package pass is claimed here. The linked audit reads
+`build/stage-e/3ds_port/build/gamedata_image.elf` (PROGBITS), not the NOBITS
+placeholder in the shipped ELF.
+
+Production host commands actually executed successfully: `custom_run_test.py`,
+`custom_difficulty_test.py`, `optional_rules_test.py`, `follower_palette_test.py`,
+`follower_context_test.py`, `upstream_expansion_test.py`, `expansion_split_test.py`,
+and `visual_regressions_test.py`, each under `3ds_port/tests`, with
+`--tree build/stage-e`. ASan/UBSan remain enabled. The first five were also
+run against the clean bootstrap; an omitted item-ball path was discovered,
+added to the patch, and retested. Nine enhancement adapters pass. All builder
+checks pass: 254 tests, four skips. Original-engine UI/Dex native objects compile;
+a complete original-engine application build is not claimed.
+
+`tools/regenerate_expansion_patch.py --tree build/stage-e --add <new paths>`
+now rejects unlisted tracked engine edits. Regenerate before bootstrap to retain
+all implementation. New platform sources stay in root `3ds_port/`. Header
+tracking added by v0.5.0 now covers game objects through preprocessor `.d` files;
+the old instruction to delete them manually is retained below as historical.
+CI uses the same two SDK Dockerfiles and keeps only audited engine-only uploads.
+Content-bearing data, embedded apps and private ZIPs stay ignored.
+
+---
+
 # Emerald 3DS Custom: reproducible builds
 
 ## Stage D (current `project/stage-d`)

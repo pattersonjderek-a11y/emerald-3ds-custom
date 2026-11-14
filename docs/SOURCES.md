@@ -153,3 +153,17 @@ Engine platform hooks adapted from the same upstream revision are captured in
 `patches/pokeemerald-expansion/0001-port.patch`; native battle/species/save
 formats and expansion-specific gameplay interfaces are retained. Current
 integration limitations and actual validation state are in STATUS.md.
+
+## Stage E follow-through — 14 November 2026
+
+Native API/compression/enum adapters reconcile the full graphics v0.5.0 merge
+with the unchanged expansion pin. New optional resolvers, palette/context
+regressions, fresh-source guards and audit tools are project implementation.
+No donor engine merge or new external asset download was performed. All
+species/follower pointers reported by the content audit come from the pinned
+expansion source and generated asset index; shared/fallback art is not claimed
+as new or complete artwork. Preserve the upstream CC BY-NC-SA/MIT notices and
+component credits. The earlier upstream-refresh audit is historical; Derek
+subsequently authorized rebuilding from the preserved D source and explicit
+v0.5.0 precedence. Python/Pillow generator versions were updated explicitly;
+the ARM SDK and engine pins were retained.

@@ -19,8 +19,8 @@ class DataLocaleIdentityTests(unittest.TestCase):
         # a pack built from the right cartridge must never be refused as
         # "from another ROM" because the client and the builder disagree
         source = (ROOT / "3ds_port/src/3ds_data.c").read_text(encoding="utf-8")
-        identities = source[source.index("#if GAME_LANGUAGE == LANGUAGE_SPANISH"):
-                            source.index("typedef struct")]
+        identities = source[source.index("#elif GAME_LANGUAGE == LANGUAGE_SPANISH"):
+                            source.index("typedef struct")].replace("#elif", "#if", 1)
         program = ('#include <stdint.h>\n#include <stdio.h>\n#include "3ds_locale.h"\n' + identities +
                    '\nint main(void) {\n'
                    '    for (unsigned i = 0; i < sizeof(sSupportedRomSha1); ++i)\n'

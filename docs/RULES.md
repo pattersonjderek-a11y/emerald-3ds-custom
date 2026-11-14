@@ -1,3 +1,45 @@
+# Stage E + v0.5.0 current rules
+
+User precedence amendment supersedes the historical custom C species policy.
+One v0.5.0 SplitMix64/Fisher-Yates permutation over all 1,025 National Dex base
+species is shared by wild, starters and trainers; each switch is independent.
+Native converters reject invalid IDs and alternate-form input. Generation/BST
+filters, old rival continuity and attack-based starter exclusions are superseded.
+Legendary and nonattacking species are possible, as in upstream's unrestricted
+policy. Native legal level-up moves are used; no promise that every seed is an
+easy or campaign-completable starter. Normal personality RNG is retained.
+
+Normal/Hard/Custom difficulty and all 49 prepared boss variants remain native
+save-bound rules. Templates are selected before species replacement; levels,
+party sizes, battle type and supported difficulty policy are retained. The
+v0.5.0 physical/special split toggle now controls the native category accessor:
+OFF means type-based Gen 3 categories, ON means native move categories. Its
+upstream default is OFF. Status and NONE categories remain unchanged.
+
+Stage E optional domains v1: ability `0x4142494C`, field `0x4649544D`, held
+`0x4849544D`, independently keyed by the upstream seed. All default OFF.
+Ability picks use a conservative whitelist and native restriction flags; protect
+signature/form species, unsafe abilities and alternate forms. Empty/alias slots
+remain empty/aliased; distinct populated slots remain distinct. The central
+native species-ability accessor feeds summary, battle, AI, PC and field readers.
+Raw IDs in trainer/facility constructors translate template IDs to stored slots;
+they intentionally do not rerandomize an already resolved ability.
+
+Ordinary item balls use map + actual object local ID; hidden items use map +
+hidden-item ID in a separate domain. Existing quantities and collection flags
+remain unchanged. Gifts, shops, rewards, berries and Pickup are excluded.
+Key/important items, TMs/HMs, Master Ball and item-based form dependencies remain
+native. Conservative held pools protect species/gimmick items. Empty held slots
+stay empty and wild rarity rolls remain native. Trainer held replacement is
+restricted to ordinary enemy party generation, with context reset before allies.
+Facilities, link/recorded play and tutorials retain native protected behavior.
+
+See SAVE_FORMAT.md for global setting semantics, CONTENT_AUDIT.md for actual
+coverage and DEVICE_TESTS.md for pending original-XL acceptance. The following
+Stage D/C detail is historical wherever inconsistent with this amendment.
+
+---
+
 # Stage C rules: seeded core species randomizer
 
 ## Stage D difficulty (current)

@@ -118,6 +118,7 @@
 #include "constants/songs.h"
 #include "constants/trainers.h"
 #include "port_platform.h"
+#include "3ds_engine_compat.h"
 
 #ifdef PORT_EXPANSION
 /* The expansion's graphics carry a header; its decompressor reads it. */
@@ -910,6 +911,11 @@ static u32 sIconClock;
 
 /* Mon icons, one of their two 32x32 frames each: the party (SAVE,
  * NUZLOCKE, the party menu's, which move) and the wild list's page. */
+#ifdef PORT_EXPANSION
+#define CTR_UI_SPECIES_LIMIT (SPECIES_EGG+1)
+#else
+#define CTR_UI_SPECIES_LIMIT (NUM_SPECIES+28)
+#endif
 #define MON_ICON_SLOTS 20
 static struct
 {
@@ -934,7 +940,7 @@ static const u8 *MonIconFrame(u16 iconSpecies, bool8 deoxysForm, u8 frame)
         if (sMonIcons[i].age < sMonIcons[victim].age)
             victim = i;
     }
-    if (iconSpecies >= SPECIES_EGG + 28 || iconSpecies == SPECIES_NONE || !sIconBudget)
+    if (iconSpecies >= CTR_UI_SPECIES_LIMIT || iconSpecies == SPECIES_NONE || !sIconBudget)
         return NULL;
     sIconBudget = FALSE;
 #ifdef PORT_EXPANSION
@@ -1045,11 +1051,11 @@ static int FrontPic(u16 species, bool8 shiny)
         if (sFronts[i].age < sFronts[victim].age)
             victim = i;
     }
-    if (!sIconBudget || species == SPECIES_NONE || species >= NUM_SPECIES + 28)
+    if (!sIconBudget || species == SPECIES_NONE || species >= CTR_UI_SPECIES_LIMIT)
         return -1;
     sIconBudget = FALSE;
-    tiles = Unlz(gSpeciesInfo[species].frontPic, &size);
-    pal = Unlz((shiny ? gSpeciesInfo[species].shinyPalette : gSpeciesInfo[species].palette), NULL);
+    tiles = Unlz(CtrFrontPic(species), &size);
+    pal = Unlz((shiny ? CtrShinyPal(species) : CtrNormalPal(species)), NULL);
     sFronts[victim].valid = tiles && pal && size >= sizeof(sFronts[victim].tiles);
     if (sFronts[victim].valid)
     {
@@ -1378,14 +1384,14 @@ static void BuildRayquaza(void)
 {
     static float body[64 * 64], lines[64 * 64], soft[64 * 64];
 #ifdef PORT_EXPANSION
-    u8 *tiles = DecompSymbol(gSpeciesInfo[SPECIES_RAYQUAZA].frontPic, NULL);
-    const u16 *raw = Port_ResolveAssetPointer(gSpeciesInfo[SPECIES_RAYQUAZA].palette);
+    u8 *tiles = DecompSymbol(CtrFrontPic(SPECIES_RAYQUAZA), NULL);
+    const u16 *raw = Port_ResolveAssetPointer(CtrNormalPal(SPECIES_RAYQUAZA));
     u16 *pal = raw ? malloc(32) : NULL;
     if (pal)
         memcpy(pal, raw, 32);
 #else
-    u8 *tiles = Unlz(gSpeciesInfo[SPECIES_RAYQUAZA].frontPic, NULL);
-    u16 *pal = Unlz(gSpeciesInfo[SPECIES_RAYQUAZA].palette, NULL);
+    u8 *tiles = Unlz(CtrFrontPic(SPECIES_RAYQUAZA), NULL);
+    u16 *pal = Unlz(CtrNormalPal(SPECIES_RAYQUAZA), NULL);
 #endif
 
     if (tiles && pal)
@@ -3775,11 +3781,11 @@ static void SnapshotEncounters(ViewState *s)
 
     if (header)
     {
-        info[ENC_LAND] = CtrEncounters_Land(header->encounterTypes[GetTimeOfDay()].landMonsInfo, gSaveBlock1Ptr->location.mapGroup,
+        info[ENC_LAND] = CtrEncounters_Land(CtrWildInfo(header,landMonsInfo,GetTimeOfDayForEncounters(header-gWildMonHeaders,WILD_AREA_LAND)), gSaveBlock1Ptr->location.mapGroup,
                                             gSaveBlock1Ptr->location.mapNum);
-        info[ENC_WATER] = header->encounterTypes[GetTimeOfDay()].waterMonsInfo;
-        info[ENC_ROCK] = header->encounterTypes[GetTimeOfDay()].rockSmashMonsInfo;
-        info[ENC_OLD_ROD] = info[ENC_GOOD_ROD] = info[ENC_SUPER_ROD] = header->encounterTypes[GetTimeOfDay()].fishingMonsInfo;
+        info[ENC_WATER] = CtrWildInfo(header,waterMonsInfo,GetTimeOfDayForEncounters(header-gWildMonHeaders,WILD_AREA_WATER));
+        info[ENC_ROCK] = CtrWildInfo(header,rockSmashMonsInfo,GetTimeOfDayForEncounters(header-gWildMonHeaders,WILD_AREA_ROCKS));
+        info[ENC_OLD_ROD] = info[ENC_GOOD_ROD] = info[ENC_SUPER_ROD] = CtrWildInfo(header,fishingMonsInfo,GetTimeOfDayForEncounters(header-gWildMonHeaders,WILD_AREA_FISHING));
     }
     for (u8 m = 0; m < ENC_METHODS; ++m)
         if (info[m] && info[m]->wildPokemon)

@@ -87,7 +87,10 @@ class RunnerTests(unittest.TestCase):
             (tree / "data").mkdir(parents=True)
             data = bytes(range(200))
             (tree / "data" / "in.bin").write_bytes(data)
-            return voxel.run_generators(tree, voxelgen, expected_outputs(data), runner=runner)
+            # This synthetic intro reads regions; the real intro does not.
+            from unittest.mock import patch
+            with patch.dict(voxel.AFTER, {"gen_intro_margins.py": ("gen_voxel_regions.py",)}):
+                return voxel.run_generators(tree, voxelgen, expected_outputs(data), runner=runner)
 
     def test_inprocess_matches_subprocess(self):
         self.assertEqual(self.run_once("inprocess"), self.run_once("subprocess"))

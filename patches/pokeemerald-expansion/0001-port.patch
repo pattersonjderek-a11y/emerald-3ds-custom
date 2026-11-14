@@ -7556,6 +7556,20 @@ index ec62e519..a93fb27c 100644
  void IsDodrioInParty(void);
  void ShowDodrioBerryPickingRecords(void);
  
+diff --git c/include/event_object_movement.h w/include/event_object_movement.h
+index 02e08133..7eeeb104 100644
+--- c/include/event_object_movement.h
++++ w/include/event_object_movement.h
+@@ -563,4 +563,9 @@ u8 MovementType_OverworldWildEncounter_Despawn_Step8(struct ObjectEvent *objectE
+ u8 MovementType_OverworldWildEncounter_Despawn_Step10(struct ObjectEvent *objectEvent, struct Sprite *sprite);
+ u8 MovementType_OverworldWildEncounter_Despawn_Step11(struct ObjectEvent *objectEvent, struct Sprite *sprite);
+ 
++#ifdef PLATFORM_3DS
++bool8 FreeObjectEventSlotNearPlayer(void);
++void UpdateObjectEventsForViewChange(void);
++void RemoveObjectEventsOutsideView(void);
++#endif
+ #endif //GUARD_EVENT_OBJECT_MOVEMENT_H
 diff --git c/include/field_camera.h w/include/field_camera.h
 index 41aa82ca..8b68a49c 100644
 --- c/include/field_camera.h
@@ -9001,7 +9015,7 @@ index 00000000..49dfa078
 +#endif
 +#endif//SOUND_MIXER_H
 diff --git c/include/sprite.h w/include/sprite.h
-index 4cedceb0..3a39cf56 100644
+index 4cedceb0..2b6dd665 100644
 --- c/include/sprite.h
 +++ w/include/sprite.h
 @@ -28,12 +28,23 @@ struct SpriteFrameImage
@@ -9029,6 +9043,16 @@ index 4cedceb0..3a39cf56 100644
  
  struct SpritePalette
  {
+@@ -345,4 +356,9 @@ u32 GetSpriteWidth(struct Sprite *sprite);
+ u32 GetSpriteHeight(struct Sprite *sprite);
+ u32 CountFreePaletteSlots(void);
+ 
++
++#ifdef PLATFORM_3DS
++u8 GetSpriteExtPalette(const struct Sprite *sprite);
++#endif
++
+ #endif //GUARD_SPRITE_H
 diff --git c/include/start_menu.h w/include/start_menu.h
 index 94d0f9d5..f4c03bab 100644
 --- c/include/start_menu.h
@@ -9042,6 +9066,18 @@ index 94d0f9d5..f4c03bab 100644
 +#endif
  
  #endif // GUARD_START_MENU_H
+diff --git c/include/task.h w/include/task.h
+index 31c46fca..2ff914fc 100644
+--- c/include/task.h
++++ w/include/task.h
+@@ -34,4 +34,7 @@ u8 FindTaskIdByFunc(TaskFunc func);
+ void SetWordTaskArg(u8 taskId, u8 dataElem, u32 value);
+ u32 GetWordTaskArg(u8 taskId, u8 dataElem);
+ 
++
++u8 GetTaskCount(void);
++
+ #endif // GUARD_TASK_H
 diff --git c/include/wild_encounter.h w/include/wild_encounter.h
 index f1e0b6af..8c74d8aa 100644
 --- c/include/wild_encounter.h
@@ -13477,14 +13513,17 @@ index 00000000..27aab04b
 +#endif
 diff --git c/src/custom_random.c w/src/custom_random.c
 new file mode 100644
-index 00000000..2b97fb0b
+index 00000000..fa45e601
 --- /dev/null
 +++ w/src/custom_random.c
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,123 @@
 +#include "global.h"
 +#ifdef PORT_BRIDGE
 +#include "custom_random.h"
 +#include "3ds_randomizer.h"
++#include "3ds_platform.h"
++#include "3ds_daynight.h"
++#include "3ds_encounters.h"
 +#include "3ds_optional.h"
 +#include "port_platform.h"
 +#include "custom_run.h"
@@ -13523,7 +13562,7 @@ index 00000000..2b97fb0b
 +}
 +#define CR_HEADER_CACHE 2
 +struct HeaderCache {
-+    bool valid; u16 index; u32 seed;
++    bool valid; u16 index; u32 seed,phase;
 +    struct WildPokemonHeader header;
 +    struct WildPokemonInfo info[TIMES_OF_DAY_COUNT][5];
 +    struct WildPokemon mons[TIMES_OF_DAY_COUNT][5][12];
@@ -13534,15 +13573,21 @@ index 00000000..2b97fb0b
 +{
 +    const struct WildPokemonHeader *original=&gWildMonHeaders[index];
 +    const unsigned counts[]={NUM_LAND_MONS_ENCOUNTER_SLOTS,NUM_WATER_MONS_ENCOUNTER_SLOTS,NUM_ROCK_SMASH_MONS_ENCOUNTER_SLOTS,NUM_FISHING_MONS_ENCOUNTER_SLOTS,NUM_HIDDEN_MONS_ENCOUNTER_SLOTS};
++    unsigned seconds,rate;u32 phase=0;
++    if(CtrSettings_GetInt("timed_encounters",0)==1 && CtrGame_IsOutdoor() && CtrDayNight_Time(&seconds,&rate))
++        phase=1+CtrEncounters_Phase(seconds);
 +    u32 seed=CtrRandomizer_Seed(); struct HeaderCache *cache; unsigned i,t,area,slot;
 +    if(original->mapGroup==MAP_GROUP(MAP_UNDEFINED) || !CtrRandomizer_Enabled(CTR_RANDOMIZE_WILD)) return original;
 +    for(i=0;i<CR_HEADER_CACHE;++i)
-+        if(sHeaders[i].valid && sHeaders[i].index==index && sHeaders[i].seed==seed) return &sHeaders[i].header;
++        if(sHeaders[i].valid && sHeaders[i].index==index && sHeaders[i].seed==seed && sHeaders[i].phase==phase) return &sHeaders[i].header;
 +    cache=&sHeaders[sHeaderNext++%CR_HEADER_CACHE]; cache->valid=false;
-+    cache->index=index; cache->seed=seed; cache->header=*original;
++    cache->index=index; cache->seed=seed; cache->phase=phase; cache->header=*original;
 +    for(t=0;t<TIMES_OF_DAY_COUNT;++t) {
 +        const struct WildEncounterTypes *source=&original->encounterTypes[t];
 +        const struct WildPokemonInfo *tables[]={source->landMonsInfo,source->waterMonsInfo,source->rockSmashMonsInfo,source->fishingMonsInfo,source->hiddenMonsInfo};
++        // Apply the same timed projection as the preview before the single
++        // upstream species permutation; cache invalidates when its phase changes.
++        tables[0]=CtrEncounters_Land(tables[0],original->mapGroup,original->mapNum);
 +        struct WildEncounterTypes *dest=&cache->header.encounterTypes[t];
 +        const struct WildPokemonInfo **destinations[]={&dest->landMonsInfo,&dest->waterMonsInfo,&dest->rockSmashMonsInfo,&dest->fishingMonsInfo,&dest->hiddenMonsInfo};
 +        for(area=0;area<5;++area) if(tables[area]) {
@@ -13653,11 +13698,12 @@ index 00000000..5e4dcecf
 +}
 diff --git c/src/custom_run.c w/src/custom_run.c
 new file mode 100644
-index 00000000..d96237b0
+index 00000000..8f4ec390
 --- /dev/null
 +++ w/src/custom_run.c
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,208 @@
 +#include "global.h"
++#include "menu.h"
 +#ifdef PORT_BRIDGE
 +#include "custom_run.h"
 +#include "3ds_randomizer.h"
@@ -13780,14 +13826,16 @@ index 00000000..d96237b0
 +        strcpy(lines[11],"A RULES / OVERVIEW - B RETURN");
 +    } else CR_MenuLines(&sMenu,lines);
 +    if ((sReadOnly && !sDifficultyPage && CustomRun_CanPlay()) || (!sReadOnly && sMenu.page==CR_PAGE_SUMMARY && !sMenu.summaryRules)) {
-+        strcpy(lines[3],"RANDOMIZER: OPTIONS - MODES");
-+        snprintf(lines[4],36,"DIFFICULTY IS SAVE-BOUND");
++        if(sReadOnly)strcpy(lines[3],"RANDOMIZER: OPTIONS - MODES");
++        if(!sReadOnly)snprintf(lines[4],36,"SAVE-BOUND: %s",CR_DifficultyName(sMenu.draft.config.difficulty));
++        else strcpy(lines[4],"DIFFICULTY IS SAVE-BOUND");
 +        snprintf(lines[5],36,"UPSTREAM SEED: %lu",(unsigned long)CtrRandomizer_Seed());
 +        snprintf(lines[6],36,"STARTERS %s / WILD %s",CtrRandomizer_Enabled(CTR_RANDOMIZE_STARTERS)?"ON":"OFF",CtrRandomizer_Enabled(CTR_RANDOMIZE_WILD)?"ON":"OFF");
 +        snprintf(lines[7],36,"TRAINERS %s / GEN 1-9",CtrRandomizer_Enabled(CTR_RANDOMIZE_TRAINERS)?"ON":"OFF");
 +        snprintf(lines[8],36,"ABIL %s / FIELD %s / HELD %s",CtrSettings_GetInt("rand_abilities",0)==1?"ON":"OFF",CtrSettings_GetInt("rand_field_items",0)==1?"ON":"OFF",CtrSettings_GetInt("rand_held_items",0)==1?"ON":"OFF");
 +        strcpy(lines[9],"GLOBAL RANDOMIZER - V0.5.0");
-+        strcpy(lines[10],"DIFFICULTY STAYS SAVE-BOUND");
++        strcpy(lines[10],"SEED EDITS CHANGE OWNED ABILITIES");
++        if(!sReadOnly)strcpy(lines[11],"A SELECT / L-R RULES / B BACK");
 +    }
 +    FillWindowPixelBuffer(0,PIXEL_FILL(0));
 +    for(row=0;row<12;++row) {
@@ -18336,10 +18384,16 @@ index fa858c8c..b7f047d1 100644
      }
      DebugSelectionStep_GenericInputConfirm(taskId);
 diff --git c/src/decompress.c w/src/decompress.c
-index 8030c726..41231e10 100644
+index 8030c726..4d430cc2 100644
 --- c/src/decompress.c
 +++ w/src/decompress.c
-@@ -207,8 +207,18 @@ static inline u32 DoLoadCompressedSpriteSheet(const struct CompressedSpriteSheet
+@@ -1,4 +1,5 @@
+ #include "global.h"
++#include "port_platform.h"
+ #include "malloc.h"
+ #include "data.h"
+ #include "decompress.h"
+@@ -207,8 +208,18 @@ static inline u32 DoLoadCompressedSpriteSheet(const struct CompressedSpriteSheet
  
  u32 LoadCompressedSpriteSheet(const struct CompressedSpriteSheet *src)
  {
@@ -18360,7 +18414,7 @@ index 8030c726..41231e10 100644
      Free(buffer);
  
      return ret;
-@@ -227,11 +237,16 @@ u32 LoadCompressedSpriteSheetByTemplate(const struct SpriteTemplate *template, s
+@@ -227,11 +238,16 @@ u32 LoadCompressedSpriteSheetByTemplate(const struct SpriteTemplate *template, s
      struct SpriteFrameImage myImage;
      u32 size;
  
@@ -18377,7 +18431,7 @@ index 8030c726..41231e10 100644
          myImage.data = buffer;
          myImage.size = size + offset;
          myTemplate.images = &myImage;
-@@ -260,6 +275,11 @@ void HandleLoadSpecialPokePicIsEgg(bool32 isFrontPic, void *dest, enum Species s
+@@ -260,6 +276,11 @@ void HandleLoadSpecialPokePicIsEgg(bool32 isFrontPic, void *dest, enum Species s
  //  VRAM version
  void DecompressDataWithHeaderVram(const u32 *src, void *dest)
  {
@@ -18389,7 +18443,7 @@ index 8030c726..41231e10 100644
      union CompressionHeader header;
      CpuCopy32(src, &header, 8);
      switch (header.smol.mode)
-@@ -288,6 +308,9 @@ void DecompressDataWithHeaderVram(const u32 *src, void *dest)
+@@ -288,6 +309,9 @@ void DecompressDataWithHeaderVram(const u32 *src, void *dest)
  //  WRAM version
  void DecompressDataWithHeaderWram(const u32 *src, void *dest)
  {
@@ -18399,7 +18453,7 @@ index 8030c726..41231e10 100644
      union CompressionHeader header;
      CpuCopy32(src, &header, 8);
      switch (header.smol.mode)
-@@ -403,10 +426,24 @@ static IWRAM_DATA u32 sCurrState = 0;
+@@ -403,10 +427,24 @@ static IWRAM_DATA u32 sCurrState = 0;
  
  extern void FastUnsafeCopy32(void *, const void *, u32 size);
  
@@ -18424,7 +18478,7 @@ index 8030c726..41231e10 100644
  }
  
  // The reason for macros and unrolling the loops stems from the following:
-@@ -513,6 +550,7 @@ LOOP_STORE:
+@@ -513,6 +551,7 @@ LOOP_STORE:
  //  Dark Egg magic
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallLOtANS(const u32 *data, u32 *ykTable, void *resultVec, void *resultVecEnd, void (*decodeFunction)(const u32 *data, u32 *ykTable, void *resultVec, void *resultVecEnd))
  {
@@ -18432,7 +18486,7 @@ index 8030c726..41231e10 100644
      decodeFunction(data, ykTable, resultVec, resultVecEnd);
  }
  
-@@ -593,6 +631,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -593,6 +632,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeSymtANS(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd, void (*decodeFunction)(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd))
  {
@@ -18440,7 +18494,7 @@ index 8030c726..41231e10 100644
      decodeFunction(data, ykTable, resultVec, resultVecEnd);
  }
  
-@@ -769,6 +808,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -769,6 +809,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  //  Dark Egg magic
  ARM_FUNC __attribute__((no_reorder)) static u32 SwitchToArmCallSymDeltaANS(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd, u32 (*decodeFunction)(const u32 *data, u32 *ykTable, u16 *resultVec, u16 *resultVecEnd))
  {
@@ -18448,7 +18502,7 @@ index 8030c726..41231e10 100644
      return decodeFunction(data, ykTable, resultVec, resultVecEnd);
  }
  
-@@ -929,6 +969,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -929,6 +970,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  //  Dark Egg magic
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeInstructions(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest, void (*decodeFunction)(u32 headerLoSize, const u8 *loVec, const u16 *symVec, void *dest))
  {
@@ -18456,7 +18510,7 @@ index 8030c726..41231e10 100644
      decodeFunction(headerLoSize, loVec, symVec, dest);
  }
  
-@@ -1077,6 +1118,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
+@@ -1077,6 +1119,7 @@ ARM_FUNC __attribute__((flatten, noinline, no_reorder)) __attribute__((optimize(
  
  ARM_FUNC __attribute__((no_reorder)) static void SwitchToArmCallDecodeTileNumbers(u16 *tileNumbers, u32 arraySize, void (*decodeFunction)(u16 *tileNumbers, u32 arraySize))
  {
@@ -18464,7 +18518,7 @@ index 8030c726..41231e10 100644
      decodeFunction(tileNumbers, arraySize);
  }
  
-@@ -1330,6 +1372,23 @@ static void UNUSED StitchObjectsOn8x8Canvas(s32 object_size, s32 object_count, u
+@@ -1330,6 +1373,23 @@ static void UNUSED StitchObjectsOn8x8Canvas(s32 object_size, s32 object_count, u
  
  u32 GetDecompressedDataSize(const u32 *ptr)
  {
@@ -18488,7 +18542,7 @@ index 8030c726..41231e10 100644
      union CompressionHeader *header = (union CompressionHeader *)ptr;
      switch (header->smol.mode)
      {
-@@ -1344,6 +1403,17 @@ u32 GetDecompressedDataSize(const u32 *ptr)
+@@ -1344,6 +1404,17 @@ u32 GetDecompressedDataSize(const u32 *ptr)
  
  bool32 IsCompressedData(const u32 *ptr)
  {
@@ -18506,7 +18560,7 @@ index 8030c726..41231e10 100644
      u32 size;
      union CompressionHeader *header = (union CompressionHeader *)ptr;
      switch (header->smol.mode)
-@@ -1393,6 +1463,7 @@ extern const u32 LZ77UnCompWRAMOptimized_end[];
+@@ -1393,6 +1464,7 @@ extern const u32 LZ77UnCompWRAMOptimized_end[];
  
  ARM_FUNC static void SwitchToArmCallFastLZ77(const u32 *src, void *dest, void (*funcPtr)(const u32 *src, void *dest))
  {
@@ -18971,7 +19025,7 @@ index 54a558fd..79a72c7a 100644
      {
          return FALSE;
 diff --git c/src/event_object_movement.c w/src/event_object_movement.c
-index 29286bdf..c0e78f71 100644
+index 29286bdf..d7a69b50 100644
 --- c/src/event_object_movement.c
 +++ w/src/event_object_movement.c
 @@ -1,4 +1,8 @@
@@ -19110,7 +19164,7 @@ index 29286bdf..c0e78f71 100644
      return paletteNum;
  }
  
-@@ -2352,13 +2334,14 @@ void UpdateFollowingPokemon(void)
+@@ -2352,13 +2334,15 @@ void UpdateFollowingPokemon(void)
      // 3. flag is set
      // 4. a follower NPC is present
      if (OW_POKEMON_OBJECT_EVENTS == FALSE
@@ -19122,11 +19176,20 @@ index 29286bdf..c0e78f71 100644
       || (gMapHeader.mapType == MAP_TYPE_INDOOR && SpeciesToGraphicsInfo(species, shiny, female)->oam->size > ST_OAM_SIZE_2)
       || FlagGet(FLAG_TEMP_HIDE_FOLLOWER)
       || PlayerHasFollowerNPC()
-+     || LoadDynamicFollowerPalette(species,shiny,female)>=16
++     || (SpeciesToGraphicsInfo(species,shiny,female)->paletteTag==OBJ_EVENT_PAL_TAG_DYNAMIC
++         && LoadDynamicFollowerPalette(species,shiny,female)>=16)
       )
      {
          RemoveFollowingPokemon();
-@@ -2875,93 +2858,8 @@ void TrySpawnLightSprites(s16 camX, s16 camY)
+@@ -2367,6 +2351,7 @@ void UpdateFollowingPokemon(void)
+ 
+     if (objEvent == NULL)
+     {
++        if(!FreeObjectEventSlotNearPlayer())return;
+         // Spawn follower
+         u32 objId = gPlayerAvatar.objectEventId;
+         struct ObjectEventTemplate template =
+@@ -2875,93 +2860,8 @@ void TrySpawnLightSprites(s16 camX, s16 camY)
      }
  }
  
@@ -19220,7 +19283,7 @@ index 29286bdf..c0e78f71 100644
  
  void SpawnObjectEventsOnReturnToField(s16 x, s16 y)
  {
-@@ -2983,7 +2881,7 @@ static void SpawnObjectEventOnReturnToField(u8 objectEventId, s16 x, s16 y)
+@@ -2983,7 +2883,7 @@ static void SpawnObjectEventOnReturnToField(u8 objectEventId, s16 x, s16 y)
      struct Sprite *sprite;
      struct ObjectEvent *objectEvent;
      struct SpriteTemplate spriteTemplate;
@@ -19229,7 +19292,7 @@ index 29286bdf..c0e78f71 100644
      const struct SubspriteTable *subspriteTables;
      const struct ObjectEventGraphicsInfo *graphicsInfo;
  
-@@ -3455,6 +3353,12 @@ void UpdateObjectEventCoordsForCameraUpdate(void)
+@@ -3455,6 +3355,12 @@ void UpdateObjectEventCoordsForCameraUpdate(void)
                  gObjectEvents[i].previousCoords.y -= dy;
              }
          }
@@ -19242,7 +19305,7 @@ index 29286bdf..c0e78f71 100644
      }
  }
  
-@@ -6919,6 +6823,13 @@ static enum Direction GetCopyDirection(u8 copyInitDir, enum Direction playerInit
+@@ -6919,6 +6825,13 @@ static enum Direction GetCopyDirection(u8 copyInitDir, enum Direction playerInit
  
  static void ObjectEventExecHeldMovementAction(struct ObjectEvent *objectEvent, struct Sprite *sprite)
  {
@@ -19256,7 +19319,7 @@ index 29286bdf..c0e78f71 100644
      objectEvent->movementActionId = TryUpdateMovementActionOnStairs(objectEvent, objectEvent->movementActionId);
      if (gMovementActionFuncs[objectEvent->movementActionId][sprite->sActionFuncId](objectEvent, sprite))
          objectEvent->heldMovementFinished = TRUE;
-@@ -9572,14 +9483,16 @@ static void UpdateObjectEventOffscreen(struct ObjectEvent *objectEvent, struct S
+@@ -9572,14 +9485,16 @@ static void UpdateObjectEventOffscreen(struct ObjectEvent *objectEvent, struct S
      x2 = x + graphicsInfo->width;
      y2 = y + graphicsInfo->height;
  
@@ -19277,7 +19340,7 @@ index 29286bdf..c0e78f71 100644
          objectEvent->offScreen = TRUE;
  }
  
-@@ -10946,9 +10859,11 @@ void UpdateObjectEventSpriteInvisibility(struct Sprite *sprite, bool8 invisible)
+@@ -10946,9 +10861,11 @@ void UpdateObjectEventSpriteInvisibility(struct Sprite *sprite, bool8 invisible)
      x2 = x - (sprite->centerToCornerVecX >> 1);
      y2 = y - (sprite->centerToCornerVecY >> 1);
  
@@ -19291,7 +19354,7 @@ index 29286bdf..c0e78f71 100644
          sprite->invisible = TRUE;
  }
  
-@@ -11139,6 +11054,13 @@ static void DoShadowFieldEffect(struct ObjectEvent *objectEvent)
+@@ -11139,6 +11056,13 @@ static void DoShadowFieldEffect(struct ObjectEvent *objectEvent)
  {
      if (objectEvent->noShadow)
      {
@@ -19305,7 +19368,7 @@ index 29286bdf..c0e78f71 100644
          objectEvent->noShadow = FALSE;
          StartFieldEffectForObjectEvent(FLDEFF_SHADOW, objectEvent);
      }
-@@ -12125,3 +12047,226 @@ bool8 MovementType_OverworldWildEncounter_Despawn_Step11(struct ObjectEvent *obj
+@@ -12125,3 +12049,226 @@ bool8 MovementType_OverworldWildEncounter_Despawn_Step11(struct ObjectEvent *obj
  }
  
  #undef sDespawnTimer
@@ -21071,11 +21134,12 @@ index ca0e9c7f..56a5476d 100644
 +{ return t==&sBubbleSpriteTemplate; }
 +#endif
 diff --git c/src/fieldmap.c w/src/fieldmap.c
-index b3451193..4716063b 100644
+index b3451193..0454941f 100644
 --- c/src/fieldmap.c
 +++ w/src/fieldmap.c
-@@ -1,4 +1,11 @@
+@@ -1,4 +1,12 @@
  #include "global.h"
++#include "3ds_video.h"
 +#ifdef PLATFORM_3DS
 +#include "3ds_platform.h"
 +#include "3ds_tile_banks.h"
@@ -21086,7 +21150,7 @@ index b3451193..4716063b 100644
  #include "battle_pyramid.h"
  #include "bg.h"
  #include "fieldmap.h"
-@@ -6,6 +13,7 @@
+@@ -6,6 +14,7 @@
  #include "fldeff_misc.h"
  #include "frontier_util.h"
  #include "menu.h"
@@ -21094,7 +21158,7 @@ index b3451193..4716063b 100644
  #include "mirage_tower.h"
  #include "overworld.h"
  #include "palette.h"
-@@ -20,6 +28,11 @@
+@@ -20,6 +29,11 @@
  #include "constants/metatile_behaviors_frlg.h"
  #include "wild_encounter.h"
  
@@ -21106,7 +21170,7 @@ index b3451193..4716063b 100644
  struct ConnectionFlags
  {
      u8 south:1;
-@@ -53,6 +66,11 @@ static bool8 IsCoordInIncomingConnectingMap(s32 coord, s32 srcMax, s32 destMax,
+@@ -53,6 +67,11 @@ static bool8 IsCoordInIncomingConnectingMap(s32 coord, s32 srcMax, s32 destMax,
  static inline u16 GetBorderBlockAt(int x, int y)
  {
      const struct MapLayout *mapLayout = gMapHeader.mapLayout;
@@ -21118,7 +21182,7 @@ index b3451193..4716063b 100644
  
      if (mapLayout->isFrlg)
      {
-@@ -67,12 +85,12 @@ static inline u16 GetBorderBlockAt(int x, int y)
+@@ -67,12 +86,12 @@ static inline u16 GetBorderBlockAt(int x, int y)
          yprime += 8 * mapLayout->borderHeight;
          yprime %= mapLayout->borderHeight;
  
@@ -21133,7 +21197,7 @@ index b3451193..4716063b 100644
  }
  
  #define AreCoordsWithinMapGridBounds(x, y) (x >= 0 && x < gBackupMapLayout.width && y >= 0 && y < gBackupMapLayout.height)
-@@ -181,6 +199,11 @@ static void InitBackupMapLayoutData(const u16 *map, u16 width, u16 height)
+@@ -181,6 +200,11 @@ static void InitBackupMapLayoutData(const u16 *map, u16 width, u16 height)
  {
      u16 *dest;
      s32 y;
@@ -21145,7 +21209,7 @@ index b3451193..4716063b 100644
      dest = gBackupMapLayout.map;
      dest += gBackupMapLayout.width * MAP_OFFSET + MAP_OFFSET;
      for (y = 0; y < height; y++)
-@@ -237,7 +260,11 @@ static void FillConnection(s32 x, s32 y, const struct MapHeader *connectedMapHea
+@@ -237,7 +261,11 @@ static void FillConnection(s32 x, s32 y, const struct MapHeader *connectedMapHea
      s32 mapWidth;
  
      mapWidth = connectedMapHeader->mapLayout->width;
@@ -21158,7 +21222,7 @@ index b3451193..4716063b 100644
      dest = &gBackupMapLayout.map[gBackupMapLayout.width * y + x];
  
      for (i = 0; i < height; i++)
-@@ -422,9 +449,549 @@ u32 GetNumPalsInPrimary(struct MapLayout const *mapLayout)
+@@ -422,9 +450,557 @@ u32 GetNumPalsInPrimary(struct MapLayout const *mapLayout)
      return mapLayout->isFrlg ? NUM_PALS_IN_PRIMARY_FRLG : NUM_PALS_IN_PRIMARY;
  }
  
@@ -21505,6 +21569,7 @@ index b3451193..4716063b 100644
 +    if (incoming == NULL || incoming->mapLayout == NULL || outgoing == NULL)
 +        return;
 +    next = incoming->mapLayout->secondaryTileset;
++    if (gMapHeader.mapLayout->isFrlg || incoming->mapLayout->isFrlg)return;
 +    if (next == outgoing || incoming->mapLayout->primaryTileset != gMapHeader.mapLayout->primaryTileset)
 +        return;
 +    for (bank = 0; bank < CTR_TILE_BANKS && sBankTilesets[bank] != next; bank++)
@@ -21539,7 +21604,8 @@ index b3451193..4716063b 100644
 +        const struct MapLayout *layout = map->header->mapLayout;
 +
 +        map->bank = 0;
-+        if (layout->primaryTileset != gMapHeader.mapLayout->primaryTileset
++        if (layout->isFrlg || gMapHeader.mapLayout->isFrlg
++         || layout->primaryTileset != gMapHeader.mapLayout->primaryTileset
 +         || layout->secondaryTileset == NULL
 +         || layout->secondaryTileset == gMapHeader.mapLayout->secondaryTileset)
 +            continue;
@@ -21617,14 +21683,20 @@ index b3451193..4716063b 100644
 +{
 +    const struct Tileset *tileset = metatile < GetNumMetatilesInPrimary(layout) ? layout->primaryTileset
 +                                                                         : layout->secondaryTileset;
-+    const u16 *attributes;
++    const void *attributes;
 +
 +    if (metatile >= NUM_METATILES_TOTAL || tileset == NULL)
 +        return 0;
 +    if (metatile >= GetNumMetatilesInPrimary(layout))
 +        metatile -= GetNumMetatilesInPrimary(layout);
 +    attributes = Port_ResolveAssetPointer(tileset->metatileAttributes);
-+    return attributes != NULL ? attributes[metatile] : 0;
++    if(attributes==NULL)return 0;
++    if(layout->isFrlg){
++        u32 value=((const u32*)attributes)[metatile];
++        return ExtractMetatileAttribute(value,METATILE_ATTRIBUTE_BEHAVIOR,TRUE)
++             | PACK_LAYER_TYPE(ExtractMetatileAttribute(value,METATILE_ATTRIBUTE_LAYER_TYPE,TRUE));
++    }
++    return ((const u16*)attributes)[metatile];
 +}
 +#endif
 +
@@ -21708,7 +21780,7 @@ index b3451193..4716063b 100644
  
      if (block == MAPGRID_UNDEFINED)
          return GetBorderBlockAt(x, y) & MAPGRID_METATILE_ID_MASK;
-@@ -435,6 +1002,9 @@ u32 MapGridGetMetatileIdAt(s32 x, s32 y)
+@@ -435,6 +1011,9 @@ u32 MapGridGetMetatileIdAt(s32 x, s32 y)
  u32 MapGridGetMetatileAttributeAt(s16 x, s16 y, u8 attributeType)
  {
      u16 metatileId = MapGridGetMetatileIdAt(x, y);
@@ -21718,7 +21790,7 @@ index b3451193..4716063b 100644
      return GetAttributeByMetatileIdAndMapLayout(metatileId, attributeType, gMapHeader.mapLayout->isFrlg);
  }
  
-@@ -483,11 +1053,43 @@ static u32 GetAttributeByMetatileIdAndMapLayoutFrlg(u16 metatile, u8 attributeTy
+@@ -483,11 +1062,43 @@ static u32 GetAttributeByMetatileIdAndMapLayoutFrlg(u16 metatile, u8 attributeTy
      if (metatile < GetNumMetatilesInPrimary(gMapHeader.mapLayout))
      {
          const u32 *attributes = (const u32*)gMapHeader.mapLayout->primaryTileset->metatileAttributes;
@@ -21762,7 +21834,7 @@ index b3451193..4716063b 100644
          metatile -= GetNumMetatilesInPrimary(gMapHeader.mapLayout);
          attribute = attributes[metatile];
      }
-@@ -509,11 +1111,17 @@ u32 GetAttributeByMetatileIdAndMapLayout(u16 metatile, u8 attributeType, bool32
+@@ -509,11 +1120,17 @@ u32 GetAttributeByMetatileIdAndMapLayout(u16 metatile, u8 attributeType, bool32
      if (metatile < GetNumMetatilesInPrimary(gMapHeader.mapLayout))
      {
          const u16 *attributes = (const u16*)gMapHeader.mapLayout->primaryTileset->metatileAttributes;
@@ -21780,7 +21852,7 @@ index b3451193..4716063b 100644
          metatile -= GetNumMetatilesInPrimary(gMapHeader.mapLayout);
          attribute = attributes[metatile];
      }
-@@ -959,10 +1567,22 @@ static void CopyTilesetToVramUsingHeap(struct Tileset const *tileset, u16 numTil
+@@ -959,10 +1576,22 @@ static void CopyTilesetToVramUsingHeap(struct Tileset const *tileset, u16 numTil
  {
      if (tileset)
      {
@@ -21803,7 +21875,7 @@ index b3451193..4716063b 100644
      }
  }
  
-@@ -981,12 +1601,45 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
+@@ -981,12 +1610,45 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
  {
      if (tileset)
      {
@@ -21851,7 +21923,7 @@ index b3451193..4716063b 100644
              gPlttBufferFaded[destOffset] = gPlttBufferUnfaded[destOffset] = RGB_BLACK;
              ApplyGlobalTintToPaletteEntries(destOffset + 1, (size - 2) >> 1);
          }
-@@ -995,13 +1648,13 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
+@@ -995,13 +1657,13 @@ static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u1
              // All 'gTilesetPalettes_' arrays should have ALIGNED(4) in them,
              // but we use SmartCopy here just in case they don't
              if (skipFaded)
@@ -21868,7 +21940,7 @@ index b3451193..4716063b 100644
              ApplyGlobalTintToPaletteEntries(destOffset, size >> 1);
          }
      }
-@@ -1036,8 +1689,20 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
+@@ -1036,8 +1698,20 @@ void CopyMapTilesetsToVram(struct MapLayout const *mapLayout)
  {
      if (mapLayout)
      {
@@ -21889,7 +21961,7 @@ index b3451193..4716063b 100644
      }
  }
  
-@@ -1071,3 +1736,4 @@ bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
+@@ -1071,3 +1745,4 @@ bool32 AreCoordsInsidePlayerMap(s16 x, s16 y)
  {
      return AreCoordsInsideMap(gSaveBlock1Ptr->location.mapGroup, gSaveBlock1Ptr->location.mapNum, x, y);
  }
@@ -22450,6 +22522,45 @@ index 0187d4d2..0b47f97c 100644
                  sprite->sTimer++;
              }
              else
+diff --git c/src/item_ball.c w/src/item_ball.c
+index 87707f91..172d0023 100644
+--- c/src/item_ball.c
++++ w/src/item_ball.c
+@@ -1,4 +1,7 @@
+ #include "global.h"
++#ifdef PORT_BRIDGE
++#include "3ds_optional.h"
++#endif
+ #include "item_ball.h"
+ #include "event_data.h"
+ #include "constants/event_objects.h"
+@@ -21,12 +24,22 @@ static u32 GetItemBallIdFromTemplate(u32 itemBallId)
+ {
+     enum Item itemId = gMapHeader.events->objectEvents[itemBallId].trainerRange_berryTreeId;
+ 
+-    return (itemId >= ITEMS_COUNT) ? (ITEM_NONE + 1) : itemId;
++    return (itemId >= ITEMS_COUNT) ? ITEM_NONE : itemId;
+ }
+ 
+ void GetItemBallIdAndAmountFromTemplate(void)
+ {
+-    u32 itemBallId = (gSpecialVar_LastTalked - 1);
+-    gSpecialVar_Result = GetItemBallIdFromTemplate(itemBallId);
+-    gSpecialVar_0x8009 = GetItemBallAmountFromTemplate(itemBallId);
++    gSpecialVar_Result=ITEM_NONE; gSpecialVar_0x8009=0;
++    if(!gMapHeader.events)return;
++    for(unsigned i=0;i<gMapHeader.events->objectEventCount;++i) {
++        if(gMapHeader.events->objectEvents[i].localId!=gSpecialVar_LastTalked)continue;
++        u16 item=GetItemBallIdFromTemplate(i);
++        if(item==ITEM_NONE || item>=ITEMS_COUNT)return;
++#ifdef PORT_BRIDGE
++        item=CtrOptional_Field(item,0,gSpecialVar_LastTalked);
++#endif
++        gSpecialVar_Result=item;
++        gSpecialVar_0x8009=GetItemBallAmountFromTemplate(i);
++        return;
++    }
+ }
 diff --git c/src/item_menu.c w/src/item_menu.c
 old mode 100755
 new mode 100644
@@ -43326,7 +43437,7 @@ index fab00724..fd819337 100644
  {
      if (dataElem < NUM_TASK_DATA - 1)
 diff --git c/src/text.c w/src/text.c
-index 6f512609..95e5826b 100644
+index 6f512609..ef630c8d 100644
 --- c/src/text.c
 +++ w/src/text.c
 @@ -17,6 +17,9 @@
@@ -43597,7 +43708,7 @@ index 6f512609..95e5826b 100644
      DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
      DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
      gCurGlyph.width = 8;
-@@ -2872,3 +2968,41 @@ void DeactivateSingleTextPrinter(u32 id, enum TextPrinterType type)
+@@ -2872,3 +2968,42 @@ void DeactivateSingleTextPrinter(u32 id, enum TextPrinterType type)
      if (foundPrinter)
          FreeFinishedTextPrinters();
  }
@@ -43615,7 +43726,8 @@ index 6f512609..95e5826b 100644
 +            && printer->printerTemplate.windowId==windowId)) printer=printer->nextPrinter;
 +    if(!printer)return -1;
 +    str = ResolveTextString(str);
-+    if (printer->printerTemplate.currentChar < str || printer->printerTemplate.currentChar - str > 0x400)
++    if ((uintptr_t)printer->printerTemplate.currentChar < (uintptr_t)str
++     || (uintptr_t)printer->printerTemplate.currentChar - (uintptr_t)str > 0x400)
 +        return -1;
 +    for (p = str; p < printer->printerTemplate.currentChar; p++)
 +    {
@@ -44084,10 +44196,16 @@ index ece527d2..73d58425 100644
 diff --git c/src/trainer_card.c w/src/trainer_card.c
 old mode 100755
 new mode 100644
-index fd0208d6..8401eb63
+index fd0208d6..a25bafd4
 --- c/src/trainer_card.c
 +++ w/src/trainer_card.c
-@@ -78,7 +78,7 @@ struct TrainerCardData
+@@ -1,4 +1,5 @@
+ #include "global.h"
++#include "menu_helpers.h"
+ #include "scanline_effect.h"
+ #include "palette.h"
+ #include "task.h"
+@@ -78,7 +79,7 @@ struct TrainerCardData
      u8 cardType;
      bool8 isHoenn;
      u16 blendColor;
@@ -44096,7 +44214,7 @@ index fd0208d6..8401eb63
      struct TrainerCard trainerCard;
      u16 frontTilemap[600];
      u16 backTilemap[600];
-@@ -102,6 +102,13 @@ static void HblankCb_TrainerCard(void);
+@@ -102,6 +103,13 @@ static void HblankCb_TrainerCard(void);
  static void BlinkTimeColon(void);
  static void CB2_TrainerCard(void);
  static void CloseTrainerCard(u8 task);
@@ -44110,7 +44228,7 @@ index fd0208d6..8401eb63
  static bool8 PrintAllOnCardFront(void);
  static void DrawTrainerCardWindow(u8);
  static void CreateTrainerCardTrainerPic(void);
-@@ -359,10 +366,13 @@ static void CB2_TrainerCard(void)
+@@ -359,10 +367,13 @@ static void CB2_TrainerCard(void)
  
  static void CloseTrainerCard(u8 taskId)
  {
@@ -44125,7 +44243,7 @@ index fd0208d6..8401eb63
  }
  
  // States for Task_TrainerCard. Skips the initial states, which are done once in order
-@@ -1114,6 +1124,9 @@ static void PrintTimeOnCard(void)
+@@ -1114,6 +1125,9 @@ static void PrintTimeOnCard(void)
      u16 minutes;
      s32 width;
      u32 x, y, totalWidth;
@@ -44135,7 +44253,7 @@ index fd0208d6..8401eb63
  
      if (!sData->isHoenn)
          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 88, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardTime);
-@@ -1147,6 +1160,23 @@ static void PrintTimeOnCard(void)
+@@ -1147,6 +1161,23 @@ static void PrintTimeOnCard(void)
          x = 128;
          y = 89;
      }
@@ -44159,7 +44277,7 @@ index fd0208d6..8401eb63
      totalWidth = width + 30;
      x -= totalWidth;
  
-@@ -1158,6 +1188,7 @@ static void PrintTimeOnCard(void)
+@@ -1158,6 +1189,7 @@ static void PrintTimeOnCard(void)
      x += width;
      ConvertIntToDecimalStringN(gStringVar4, minutes, STR_CONV_MODE_LEADING_ZEROS, 2);
      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTrainerCardTextColors, TEXT_SKIP_DRAW, gStringVar4);
@@ -44167,7 +44285,7 @@ index fd0208d6..8401eb63
  }
  
  static void PrintProfilePhraseOnCard(void)
-@@ -1538,6 +1569,8 @@ static void DrawStarsAndBadgesOnCard(void)
+@@ -1538,6 +1570,8 @@ static void DrawStarsAndBadgesOnCard(void)
  
  static void DrawCardBackStats(void)
  {
@@ -44176,7 +44294,7 @@ index fd0208d6..8401eb63
      if (sData->cardType == CARD_TYPE_FRLG)
      {
          if (sData->hasTrades)
-@@ -1576,6 +1609,7 @@ static void DrawCardBackStats(void)
+@@ -1576,6 +1610,7 @@ static void DrawCardBackStats(void)
              FillBgTilemapBufferRect(3, 156, 27, 16, 1, 1, 0);
          }
      }
@@ -44184,7 +44302,7 @@ index fd0208d6..8401eb63
      CopyBgTilemapBufferToVram(3);
  }
  
-@@ -1914,3 +1948,26 @@ static void CreateTrainerCardTrainerPic(void)
+@@ -1914,3 +1949,26 @@ static void CreateTrainerCardTrainerPic(void)
                      WIN_TRAINER_PIC);
      }
  }

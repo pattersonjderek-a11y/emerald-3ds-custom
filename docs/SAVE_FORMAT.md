@@ -1,3 +1,46 @@
+# Stage E / v0.5.0 persistence amendment
+
+The user explicitly makes upstream v0.5.0 authoritative over clashing current
+and future features. Its species randomizer and Stage E optional extensions use
+**global editable settings**, not immutable save-bound species/ability rules.
+The detailed B/C/D record description below is historical where it conflicts.
+
+Difficulty still uses schema 1, the same 52-byte SaveBlock1 reservation at
+`0x988`, trainer-ID binding, CRC, and native save-sector/checksum transaction.
+SaveBlock1 remains 15,536 bytes; SaveBlock2 is 3,884 bytes. No event flags or
+variables are allocated; flags `0x20–0x2C` remain untouched. New E records use
+content-rules ID `0x00040050`. New-game drafts record Standard/algorithm 0 and
+no old custom randomizer options; these fields do not drive the upstream
+randomizer. The historical seed/run ID identifies the difficulty record only.
+Continue restores difficulty without generating a new draft or seed.
+Cancellation commits no bytes. Unknown/corrupt difficulty records block Continue
+and save; native two-slot save recovery remains intact. No save import exists.
+
+All E files use `/3ds/emerald3ds-custom-stage-e-v050/`. This intentionally starts
+separately from D/C/B/A and original Emerald 3DS. Back up the whole folder for
+an E run: progress, `settings.txt`, clock and Nuzlocke state belong together.
+The existing global DSP file is read-only and is not bundled.
+
+| Settings key | Meaning | Default |
+| --- | --- | --- |
+| `rand_seed` | v0.5.0 31-bit seed | 0 |
+| `rand_starters`, `rand_wild`, `rand_trainers` | shared species permutation, independent toggles | 0/OFF |
+| `rand_abilities` | optional species/slot ability resolver | 0/OFF |
+| `rand_field_items` | ordinary item balls + hidden items | 0/OFF |
+| `rand_held_items` | occupied enemy trainer/wild held-item slots | 0/OFF |
+
+Changing the global seed or ability switch can change an already owned
+Pokémon's effective ability outside battle. A battle captures ability settings
+and seed at entry so summary/battle/AI species accessors use one mapping during
+that battle. Native transformations such as Trace retain their normal behavior.
+Species edits affect future generated Pokémon; existing species are not rewritten.
+Keep settings with backups to reproduce a mapping. Global-settings durability
+is upstream's behavior, not the CRC/transaction guarantee of the difficulty record.
+No critical gameplay sidecar was introduced. Upstream Nuzlocke/clock sidecars
+retain their existing save-binding/recovery behavior and separate purpose.
+
+---
+
 # Run configuration save format (Stages B/C/D)
 
 Schema 1 is native-expansion-only and stores critical run state in the same

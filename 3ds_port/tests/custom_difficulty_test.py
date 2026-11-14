@@ -73,10 +73,19 @@ static unsigned GetMoveCategory(unsigned move) { return move==MOVE_STATUS ? DAMA
     random = (tree / 'src/custom_random.c').read_text()
     source += r"""
 #include "3ds_randomizer.h"
-static bool upstreamTrainers;
-bool CtrRandomizer_Enabled(unsigned kind) { return upstreamTrainers && kind==CTR_RANDOMIZE_TRAINERS; }
-u32 CtrRandomizer_Seed(void) { return 42; }
+static bool upstreamTrainers,upstreamWild,timed;static unsigned upstreamSeed=42,clockSeconds;
+bool CtrRandomizer_Enabled(unsigned kind) { return kind==CTR_RANDOMIZE_TRAINERS ? upstreamTrainers : kind==CTR_RANDOMIZE_WILD && upstreamWild; }
+u32 CtrRandomizer_Seed(void) { return upstreamSeed; }
 u16 CtrRandomizer_Species(unsigned kind,u16 species) { return CtrRandomizer_Enabled(kind) ? 25+(species%3) : species; }
+static int CtrSettings_GetInt(const char *key,int def){(void)def;assert(!strcmp(key,"timed_encounters"));return timed;}
+static bool CtrGame_IsOutdoor(void){return true;}
+static bool CtrDayNight_Time(unsigned *seconds,unsigned *rate){*seconds=clockSeconds;*rate=1;return true;}
+static unsigned CtrEncounters_Phase(unsigned seconds){return seconds/100;}
+static const struct WildPokemonInfo *CtrEncounters_Land(const struct WildPokemonInfo *o,unsigned g,unsigned n){
+ static struct WildPokemonInfo info;static struct WildPokemon slots[12];(void)g;(void)n;
+ if(!o||!timed)return o;
+ info=*o;info.wildPokemon=slots;memcpy(slots,o->wildPokemon,sizeof(slots));slots[0].species=1+CtrEncounters_Phase(clockSeconds);return &info;
+}
 static u16 CtrOptional_Held(u16 item,u32 key,u16 slot) { (void)key;(void)slot;return item; }
 """
     # Production native adapter/factory composition. The real upstream permutation

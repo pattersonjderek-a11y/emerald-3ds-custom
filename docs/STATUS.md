@@ -51,3 +51,18 @@ expansion patch includes the engine fixes; new platform adapters are tracked.
 The v0.5.0 physical/special split switch now drives the native category accessor.
 Next: finish native output, complete linked content/follower inventory, fresh
 bootstrap and regression checks, then prepare a separate private test package.
+
+## Second 14 November checkpoint
+
+Fresh bootstrap reproduced 306 engine paths and all canonical overlays. It
+caught an omitted src/item_ball.c change; regeneration now requires new/previously
+unlisted edited paths explicitly and fails if they would be omitted. Production
+configuration/difficulty/optional/follower checks pass on the fresh tree.
+Full 254 builder tests pass with four documented optional/environment skips.
+Native UI/Dex objects also compile for the original engine; full stock build is
+not claimed. New tests cover native linked-list text printers and native palette
+fade holding (28 cases). Wild table adapters now apply timed substitutions before
+the same upstream permutation as the preview and invalidate their cache by phase.
+The native voxel build has completed model verification: 188 rooms, zero failures,
+77 existing upstream allowances, zero console approvals. buildings.bin is emitted;
+relief/terrace generation continues. Final native .3dsx and SD package still pending.

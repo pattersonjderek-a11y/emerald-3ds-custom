@@ -49,7 +49,7 @@ ifneq ($(wildcard $(ROOT)/include/custom_random_core.h),)
 APP_TITLE := Emerald 3DS Custom Stage C
 endif
 ifneq ($(wildcard $(ROOT)/include/custom_difficulty.h),)
-APP_TITLE := Emerald 3DS Custom Stage D
+APP_TITLE := Emerald 3DS Custom Stage E v0.5.0
 endif
 SCRIPTS := ../tools/port_common
 EXESUFFIX := $(if $(filter Windows_NT,$(OS)),.exe,)
@@ -492,6 +492,7 @@ verify-custom-random:
 	"$(PYTHON)" tests/upstream_expansion_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/optional_rules_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/follower_palette_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
+	"$(PYTHON)" tests/follower_context_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/expansion_split_test.py --tree "$(ROOT)" --cc "$(HOSTCC)"
 	"$(PYTHON)" tests/custom_random_pool_test.py --tree "$(ROOT)" --gdb "$(DEVKITARM)/bin/arm-none-eabi-gdb" --output build/randomizer-pool.json
 endif

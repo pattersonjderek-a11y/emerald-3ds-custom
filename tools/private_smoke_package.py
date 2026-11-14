@@ -81,6 +81,7 @@ def main():
         pack_info = {'bytes': pack.stat().st_size, 'sha256': sha(pack), 'entries': count}
     files = {f'3ds/{namespace}/Emerald3DS.3dsx': app,
              f'3ds/{namespace}/Emerald3DS.smdh': port / 'emerald3ds.smdh'}
+    toolchain = ROOT / ('docs/STAGE_E_TOOLCHAIN_PACKAGES.txt' if args.stage=='E' else 'docs/TOOLCHAIN_PACKAGES.txt')
     report = {
         'private_content_bearing': True, 'stage': args.stage, 'variant': args.variant, 'namespace': namespace,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -88,7 +89,7 @@ def main():
         'engine_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=tree, text=True).strip(),
         'upstream_lock_sha256': sha(ROOT / 'upstream.lock'),
         'expansion_patch_sha256': sha(ROOT / 'patches/pokeemerald-expansion/0001-port.patch'),
-        'toolchain_manifest_sha256': sha(ROOT / 'docs/TOOLCHAIN_PACKAGES.txt'),
+        'toolchain_manifest_sha256': sha(toolchain),
         'build_config_sha256': sha(port / 'build/config'),
         'engine_build_info_sha256': sha(port / 'build/buildinfo.c'),
         'engine_abi': f'{abi:08x}', 'game_data_files': len(items),
@@ -99,7 +100,9 @@ def main():
         'pack': pack_info,
         'files': {name: {'bytes': p.stat().st_size, 'sha256': sha(p)} for name, p in files.items()},
         'native_verified': True, 'emulator_tested': False, 'hardware_tested': False,
-        'limitations': 'Generated asset inventory is not a complete Gen 1-9/follower coverage audit.',
+        'limitations': 'Linked data/index coverage is not visual, mechanic, emulator or physical-console acceptance.',
+        'graphics_upstream': 'v0.5.0 / bcae4b70dac61419fc933084084469f6cfbe344b' if args.stage=='E' else None,
+        'randomizer_policy': 'v0.5.0 global editable settings; 1025 National Dex permutation; optional domains v1' if args.stage=='E' else None,
     }
     out = ROOT / (f'work/stage-{args.stage.lower()}-private' if args.stage != 'A' else 'work/private-smoke')
     if args.variant == 'visual-fixes':
@@ -115,7 +118,7 @@ def main():
             archive.write(path, name)
         archive.writestr(f'3ds/{namespace}/debug.txt', '')
         archive.writestr(f'STAGE_{args.stage}_MANIFEST.json', manifest)
-        archive.write(ROOT / 'docs/TOOLCHAIN_PACKAGES.txt', 'TOOLCHAIN_PACKAGES.txt')
+        archive.write(toolchain, 'TOOLCHAIN_PACKAGES.txt')
         archive.write(ROOT / 'docs/DEVICE_TESTS.md', 'READ_ME_FIRST.md')
     print(manifest)
     print(f'PRIVATE package: {zip_path} ({zip_path.stat().st_size} bytes); SHA-256 {sha(zip_path)}')

@@ -132,6 +132,7 @@ struct CtrDexView { u8 state, national, data[300]; };
         source += define((ROOT / 'src/3ds_bottom_game.inc').read_text(encoding='utf-8'), name)
     for name in ('OPT_PANEL_Y', 'OPT_PANEL_H'):
         source += define(options, name)
+    source += '#include "3ds_engine_compat.h"\n'
     source += r'''
 typedef struct { s16 x, y, w, h; u8 id; } Hit;
 static Hit sHits[64];

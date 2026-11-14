@@ -40,6 +40,12 @@ int main(void){
  for(unsigned i=1;i<=1025;++i){u16 n=first.map[i];assert(n&&n<=1025&&!seen[n]);seen[n]=true;if(n>=906)++gen9;}
  assert(gen9==120); // every National Dex number appears exactly once
  CtrRandomizer_Build(&second,43);assert(memcmp(first.map,second.map,sizeof(first.map)));
+ for(unsigned proof=0;proof<10000;++proof){
+  CtrRandomizerTable preview;CtrRandomizer_Build(&preview,proof);
+  if(preview.map[252]>=906 || preview.map[255]>=906 || preview.map[258]>=906){
+   printf("Gen 9 console proof seed %u: starter National Dex %u / %u / %u (prediction, hardware pending)\n",proof,preview.map[252],preview.map[255],preview.map[258]);break;
+  }
+ }
  assert(!CtrRandomizer_MapNational(NULL,1)&&!CtrRandomizer_MapNational(&first,1026));
  seed=42;assert(CtrRandomizer_Species(CTR_RANDOMIZE_WILD,252)==252);
  settings[0]=settings[1]=settings[2]=1;

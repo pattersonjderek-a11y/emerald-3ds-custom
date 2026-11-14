@@ -38,7 +38,7 @@ class FrenchPayloadTests(unittest.TestCase):
             for rom, folder in cases:
                 with self.subTest(code=rom.code):
                     output = root / (rom.code + ".pak")
-                    info = build_pack(rom.source, Payload(base), output, rom=rom)
+                    info = build_pack(rom.source, Payload(base), output, rom=rom, follower_fetcher=False)
                     selected = info["payload"]
                     self.assertEqual(selected.root, folder)
                     self.assertEqual(selected.voxelgen, base / "voxelgen")
@@ -63,6 +63,6 @@ class FrenchPayloadTests(unittest.TestCase):
             rom = romlib.Rom(b"synthetic", "11" * 20, "SYNTHETIC", "BPEF", root / "fixture")
             output = root / "output.pak"
             with self.assertRaises(BuilderError) as error:
-                build_pack(rom.source, Payload(root), output, rom=rom)
+                build_pack(rom.source, Payload(root), output, rom=rom, follower_fetcher=False)
             self.assertEqual(error.exception.code, "rom_mismatch")
             self.assertFalse(output.exists())

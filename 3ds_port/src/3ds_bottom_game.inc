@@ -858,7 +858,7 @@ static void DrawSummaryMoveRows(const ViewState *s, int x, int y, int w, int h)
         StyledStr(&sSmall, Number(effect->appeal / 10, 1, STR_CONV_MODE_LEFT_ALIGN), x + 62, oy + 3, STYLE_INK);
         StyledStr(&sSmall, Ascii(CTR_TEXT("JAM", "INTERF.", "PERTURB.", "INTRALC.", "INTERF.", "STÖREN", "ぼうがい")), x + 90, oy + 3, STYLE_GRAY);
         StyledStr(&sSmall, Number(effect->jam / 10, 1, STR_CONV_MODE_LEFT_ALIGN), x + 150, oy + 3, STYLE_INK);
-        TextLines(gContestEffects[GetMoveContestEffect(cursorMove)].description, x + 10, oy + 16, w - 20, 12, descLines,
+        TextLines(CtrContestDescription(cursorMove), x + 10, oy + 16, w - 20, 12, descLines,
                   &sSmall, STYLE_INK, TRUE);
     }
     else

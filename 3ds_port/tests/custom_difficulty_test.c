@@ -152,6 +152,40 @@ static void Composition(void)
     }
     puts("production party factory: Normal/Hard/Custom templates before seeded species; boss randomization survives, legal moves, retained levels/size, doubles, stable species with native personality RNG, no context leaks PASS");
 }
+static void HeaderRules(void)
+{
+    static struct WildPokemon slots[TIMES_OF_DAY_COUNT][5][12];
+    static struct WildPokemonInfo infos[TIMES_OF_DAY_COUNT][5];
+    gWildMonHeaders[0].mapGroup=1;gWildMonHeaders[0].mapNum=2;
+    for(unsigned t=0;t<TIMES_OF_DAY_COUNT;++t){
+        for(unsigned area=0;area<5;++area){
+            infos[t][area]=(struct WildPokemonInfo){.encounterRate=10+t,.wildPokemon=slots[t][area]};
+            for(unsigned i=0;i<12;++i)slots[t][area][i]=(struct WildPokemon){.species=7+i,.minLevel=2+t,.maxLevel=5+t};
+        }
+        gWildMonHeaders[0].encounterTypes[t]=(struct WildEncounterTypes){&infos[t][0],&infos[t][1],&infos[t][2],&infos[t][3],&infos[t][4]};
+    }
+    upstreamWild=false;assert(CustomRandom_Header(0)==&gWildMonHeaders[0]);
+    upstreamWild=true;timed=false;
+    const struct WildPokemonHeader *h=CustomRandom_Header(0);
+    assert(h!=&gWildMonHeaders[0] && h==CustomRandom_Header(0));
+    for(unsigned t=0;t<TIMES_OF_DAY_COUNT;++t){
+        const struct WildEncounterTypes *type=&h->encounterTypes[t];
+        const struct WildPokemonInfo *tables[]={type->landMonsInfo,type->waterMonsInfo,type->rockSmashMonsInfo,type->fishingMonsInfo,type->hiddenMonsInfo};
+        const unsigned counts[]={12,5,5,10,3};
+        for(unsigned area=0;area<5;++area)for(unsigned i=0;i<counts[area];++i){
+            const struct WildPokemon *mon=&tables[area]->wildPokemon[i];
+            assert(mon->species==CtrRandomizer_Species(CTR_RANDOMIZE_WILD,7+i));
+            assert(mon->minLevel==2+t && mon->maxLevel==5+t);
+        }
+    }
+    timed=true;clockSeconds=0;h=CustomRandom_Header(0);
+    assert(h->encounterTypes[0].landMonsInfo->wildPokemon[0].species==CtrRandomizer_Species(CTR_RANDOMIZE_WILD,1));
+    clockSeconds=100;h=CustomRandom_Header(0);
+    assert(h->encounterTypes[0].landMonsInfo->wildPokemon[0].species==CtrRandomizer_Species(CTR_RANDOMIZE_WILD,2));
+    assert(gWildMonHeaders[0].encounterTypes[0].landMonsInfo->wildPokemon[0].species==7);
+    upstreamWild=false;timed=false;
+    puts("Production native wild-header adapter PASS: all methods/times/levels, toggle isolation, timed projection before mapping, phase invalidation, immutable native tables");
+}
 static void MenuRules(void)
 {
     struct CRMenu m; char lines[12][36];
@@ -171,4 +205,4 @@ static void MenuRules(void)
     assert(CR_MenuInput(&m,CR_A,0)==CR_ACCEPTED);
     puts("production setup: Standard + independent Custom rules, soft caps, style, separate bag policies, AI, prepared bosses, readable confirmation PASS");
 }
-int main(void) { Setup();SavedRules();Caps();ItemsAndAi();Composition();MenuRules();ActualItemCallback();CandiesAndDaycare();return 0; }
+int main(void) { Setup();SavedRules();Caps();ItemsAndAi();Composition();HeaderRules();MenuRules();ActualItemCallback();CandiesAndDaycare();return 0; }

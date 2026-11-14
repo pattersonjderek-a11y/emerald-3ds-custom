@@ -16,7 +16,7 @@
  * The port's own interface follows the game's language, or Brazilian
  * Portuguese over the English game when built with PORT_LANG=pt_br
  * (CTR_LANG_PT_BR); the game's own texts stay those of its ROM. */
-#if defined(PORT_EXPANSION)
+#if defined(PORT_EXPANSION) || !defined(GAME_LANGUAGE) || !defined(LANGUAGE_ENGLISH)
 #define CTR_TEXT7(english, spanish, french, italian, portuguese, german, japanese) (english)
 #elif CTR_LANG_PT_BR
 #define CTR_TEXT7(english, spanish, french, italian, portuguese, german, japanese) (portuguese)

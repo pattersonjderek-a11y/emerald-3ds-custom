@@ -1,3 +1,5 @@
+Stage E/v0.5.0 current policy: see RULES.md and SAVE_FORMAT.md. Native expansion is English; multiplayer remains outside the verified scope. Optional ability/field/held rules default OFF in MODES → OPTIONAL RULES.
+
 # Expansion settings audit
 
 The expansion uses its own battle, evolution, field-move and follower systems.
@@ -16,7 +18,7 @@ port supplies the remaining renderer, clock and inventory controls.
 | Repel prompt | `sprays.c`: enables the native repel/lure reuse menu; OFF only displays the expiry message. |
 | Infinite TMs | `party_menu.c`: successful TM teaching retains the item. |
 | Run indoors | `bike.c`: permits indoor running while retaining tile and movement restrictions. |
-| Physical/special split | Always active natively. OPTIONS displays `ON (NATIVE)`; it is not a switch. Category graphics use expansion's 16x16 format. |
+| Physical/special split | v0.5.0 precedence: actual OFF/ON switch; native central category accessor uses Gen 3 type categories when OFF and native move categories when ON. Category graphics retain the safe 16x16 native format. |
 | Wild encounter rate | `wild_encounter.c`: scales random checks and visible spawn timing using NORMAL/OFF/¼/½/2×. |
 | Shiny odds | `pokemon.c`: native player-owned generation uses the selected threshold. Native shiny locks, forced flags and bonus rolls remain. Visible encounters retain the shiny state shown before battle. |
 | Always catch | `battle_script_commands.c`: native permitted ball throws take the guaranteed capture path. Trainer/tutorial restrictions remain. |

@@ -28,6 +28,7 @@ sys.path.insert(0, str(HERE.parents[2] / "tools"))
 import build_web_payload  # noqa: E402
 from emerald3ds_builder import cli, pak, rom as romlib, web  # noqa: E402
 from emerald3ds_builder.build import EXECUTABLE_NAMES, Payload, build_pack, select_payload  # noqa: E402
+from emerald3ds_builder.install import APP_DIR
 from emerald3ds_builder.errors import BuilderError  # noqa: E402
 
 REAL_BUILD_PACK = build_pack
@@ -180,7 +181,7 @@ class CliVariantTests(VariantPayloadMixin, unittest.TestCase):
     def test_build_leaves_an_earlier_output_untouched(self):
         self.remove_es(EXECUTABLE_NAMES[0])
         output = self.tmp / "output"
-        app = output / "3ds" / "emerald3ds"
+        app = output / APP_DIR
         app.mkdir(parents=True)
         (app / EXECUTABLE_NAMES[0]).write_bytes(b"stale English executable")
         (app / "emerald3ds.pak").write_bytes(b"stale English pack")
@@ -201,7 +202,7 @@ class CliVariantTests(VariantPayloadMixin, unittest.TestCase):
 
     def test_build_copies_the_variant_executables(self):
         output = self.tmp / "output"
-        app = output / "3ds" / "emerald3ds"
+        app = output / APP_DIR
         app.mkdir(parents=True)
         (app / EXECUTABLE_NAMES[0]).write_bytes(b"stale English executable")
         code, err = self.run_cli("build", "--rom", str(self.synthetic["rom_es"]), "--output", str(output))
@@ -221,7 +222,7 @@ class CliVariantTests(VariantPayloadMixin, unittest.TestCase):
         code, err = self.run_cli("build", "--rom", str(self.synthetic["rom"]), "--output", str(output),
                                  rom=self.rom_en)
         self.assertEqual(code, 0, err)
-        app = output / "3ds" / "emerald3ds"
+        app = output / APP_DIR
         self.assertEqual(sorted(p.name for p in app.iterdir()), ["emerald3ds.pak"])
         with pak.PakReader(app / "emerald3ds.pak") as reader:
             reader.verify()
@@ -233,7 +234,7 @@ class CliVariantTests(VariantPayloadMixin, unittest.TestCase):
         code, err = self.run_cli("build", "--rom", str(self.synthetic["rom"]), "--output", str(output),
                                  rom=self.rom_en)
         self.assertEqual(code, 0, err)
-        app = output / "3ds" / "emerald3ds"
+        app = output / APP_DIR
         for name in EXECUTABLE_NAMES:
             self.assertEqual((app / name).read_bytes(), (self.root / name).read_bytes(), name)
 

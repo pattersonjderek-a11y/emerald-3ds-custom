@@ -57,21 +57,25 @@ int main(void) {
 ''')
 
     def test_visible_contact_respects_setting_water_and_lifecycle(self):
-        actual = function((GAME / 'wild_encounter.c').read_text(), 'bool8 VisibleWild_StepOnto(void)')
+        water = function((ROOT/'3ds_port/src/3ds_encounters.c').read_text(),'bool CtrEncounters_PlayerInWater(')
+        water += function((GAME/'wild_encounter.c').read_text(),'static bool8 VisiblePlayerInWater(')
+        actual = water + function((GAME / 'wild_encounter.c').read_text(), 'bool8 VisibleWild_StepOnto(void)')
         self.run_c('''
 #include <assert.h>
+#include <stdbool.h>
 typedef int bool8; typedef short s16; typedef unsigned u32;
 #define TRUE 1
 #define FALSE 0
 #define VW_MAX 6
 #define VW_NONE 64
 #define PLAYER_AVATAR_FLAG_SURFING 8
+#define PLAYER_AVATAR_FLAG_UNDERWATER 16
 static int enabled=1, surfing, battles, sWildEncountersDisabled;
 #define VISIBLE_MOST() enabled
 static struct ObjectEvent { struct { s16 x,y; } currentCoords; } gObjectEvents[1] = {{{10,20}}};
 static struct { int objectEventId; } gPlayerAvatar;
 static struct VisibleWild { int active,vanishing,spriteId,water,x,y,progress,dx,dy; } sVisible[VW_MAX];
-static int TestPlayerAvatarFlags(int flag) { assert(flag==8); return surfing; }
+static int TestPlayerAvatarFlags(int flag) { return flag==8 ? surfing : 0; }
 static void VisibleStartBattle(struct VisibleWild *v) { assert(v==sVisible); battles++; }
 ''' + actual + '''
 int main(void) {
@@ -129,7 +133,7 @@ int main(void) {
             'follower': 'event_object_movement.c',
         }
         shared = {'speed', 'audio_clock', 'voxel_stereo', 'voxel_depth',
-                  'day_night', 'clock_speed', 'timed_encounters', 'show_clock',
+                  'day_night', 'clock_speed', 'timed_encounters', 'show_clock', 'clock_sync', 'classic_menus',
                   'dex_hoenn', 'dex_national_on', 'dex_national',
                   'give_open', 'give_back', 'give_pocket', 'give_item', 'give_count', 'give_now'}
         registered = set(re.findall(r'\), "([a-z_]+)",', (ROOT / '3ds_port/src/3ds_extras.c').read_text()))
@@ -244,6 +248,7 @@ static unsigned totalMinutes, seconds;
 static uint64_t now;
 uint64_t CtrPlatform_Milliseconds(void) { return now; }
 int64_t CtrPlatform_WallSeconds(void) { return 1700000000; }
+void CtrSettings_SetInt(const char *key,int value) { (void)key;(void)value; }
 bool CtrGame_IsOutdoor(void) { return true; }
 bool CtrGame_LocalTimeSeconds(unsigned *value) { *value=seconds; return true; }
 int CtrSettings_GetInt(const char *key,int fallback) {
@@ -265,7 +270,7 @@ int main(void) {
 ''', [ROOT / '3ds_port/src/3ds_daynight.c'])
 
     def test_category_drawing_stays_inside_three_expansion_icons(self):
-        actual = function((ROOT / '3ds_port/src/3ds_bottom_ui.c').read_text(), 'static void DrawCategoryIcon(u16 move, int x, int y)')
+        actual = function((ROOT / '3ds_port/src/3ds_bottom_ui.c').read_text(), 'static void DrawCategoryIcon(u16 move, int x, int y)\n{')
         self.run_c('''
 #include <assert.h>
 #include <stddef.h>

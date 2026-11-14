@@ -27,9 +27,8 @@ _Static_assert(SPECIES_OLD_UNOWN_Z + 1 == CTR_RANDOMIZER_SPECIES_FIRST_HOENN, "s
 _Static_assert(SPECIES_TREECKO == CTR_RANDOMIZER_SPECIES_FIRST_HOENN, "species layout");
 _Static_assert(SPECIES_CHIMECHO == CTR_RANDOMIZER_SPECIES_LAST_HOENN, "species layout");
 _Static_assert(SPECIES_EGG == CTR_RANDOMIZER_SPECIES_LAST_HOENN + 1, "species layout");
-_Static_assert(NATIONAL_DEX_COUNT == CTR_RANDOMIZER_NATIONAL_COUNT, "national dex size");
-
 #endif
+_Static_assert(NATIONAL_DEX_COUNT == CTR_RANDOMIZER_NATIONAL_COUNT, "national dex size");
 
 static const char *const sKindKeys[CTR_RANDOMIZE_KINDS] = {"rand_wild", "rand_starters", "rand_trainers"};
 

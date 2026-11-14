@@ -107,6 +107,14 @@ static const OptRowDef sRowsRandom[] = {
     EXTRA_ROW("rand_seed"),
     EXTRA_ROW("rand_new_seed"),
 };
+#ifdef PORT_EXPANSION
+static const OptRowDef sRowsOptional[] = {
+    EXTRA_ROW("rand_abilities"),
+    EXTRA_ROW("rand_field_items"),
+    EXTRA_ROW("rand_held_items"),
+    {ROW_INFO,0,NULL,"GLOBAL: CHANGES EXISTING MONS"},
+};
+#endif
 static const OptRowDef sRowsCatch[] = {
     EXTRA_ROW("encounter_rate"),
     EXTRA_ROW("shiny_odds"),
@@ -147,6 +155,9 @@ static const OptGroupDef sGroupsBattle[] = {
 static const OptGroupDef sGroupsModes[] = {
     GROUP("NUZLOCKE", sRowsNuzlocke),
     GROUP(CTR_TEXT("RANDOMIZER", "ALEATORIO", "ALÉATOIRE", "CASUALE", "ALEATÓRIO", "ZUFALL", "ランダム"), sRowsRandom),
+#ifdef PORT_EXPANSION
+    GROUP("OPTIONAL RULES",sRowsOptional),
+#endif
 };
 static const OptGroupDef sGroupsCheats[] = {
     GROUP(CTR_TEXT("CATCHING", "CAPTURA", "CAPTURE", "CATTURA", "CAPTURA", "FANGEN", "ほかく"), sRowsCatch),

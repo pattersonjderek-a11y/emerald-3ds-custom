@@ -102,10 +102,26 @@ static void BlendPalette(u16 offset, u16 count, u8 coeff, u32 color)
     }
 }
 '''
-    for signature in ('void TransferPlttBuffer(void)', 'u8 UpdatePaletteFade(void)',
-                      'bool8 BeginNormalPaletteFade(u32 selectedPalettes, s8 delay, u8 startY, u8 targetY, u16 blendColor)', 'void ResetPaletteFadeControl(void)',
-                      'static u8 UpdateNormalPaletteFade(void)', 'static bool8 IsSoftwarePaletteFadeFinishing(void)'):
-        source += function(palette, signature)
+    native = 'UpdateNormalPaletteFade_Alternate' in palette
+    if native:
+        source=source.replace('typedef uint8_t bool8;','typedef uint8_t bool8;typedef uint32_t bool32;')
+        source=source.replace('#include "palette.h"','#include "palette.h"\n#define PLTT_BUFFER_ALLOC PLTT_BUFFER_SIZE')
+        source=source.replace('NORMAL_FADE, FAST_FADE, HARDWARE_FADE','NORMAL_FADE, FAST_FADE, HARDWARE_FADE, TIME_OF_DAY_FADE')
+        source=source.replace('#define DmaCopy16(', '#define DmaCopy16Defvars(channel,src,dest,size) memcpy((dest),(src),(size))\n#define DmaCopy16(')
+        source=source.replace('static u8 UpdateNormalPaletteFade(void);','static u32 UpdateNormalPaletteFade(void);')
+        source=source.replace('static bool8 IsSoftwarePaletteFadeFinishing(void);','static bool32 IsSoftwarePaletteFadeFinishing(void);')
+        source+='bool8 Port_HoldPaletteFade(void);\nstatic u8 UpdateTimeOfDayPaletteFade(void){return PALETTE_FADE_STATUS_DONE;}\n'
+        signatures=('void TransferPlttBuffer(void)','u32 UpdatePaletteFade(void)',
+          'bool32 BeginNormalPaletteFade(u32 selectedPalettes, s8 delay, u8 startY, u8 targetY, u32 blendColor)',
+          'void ResetPaletteFadeControl(void)','static u32 UpdateNormalPaletteFade_Alternate(void)',
+          'static u32 UpdateNormalPaletteFade_Simultaneous(void)', 'static u32 UpdateNormalPaletteFade(void)',
+          'static bool32 IsSoftwarePaletteFadeFinishing(void)')
+    else:
+        signatures=('void TransferPlttBuffer(void)', 'u8 UpdatePaletteFade(void)',
+          'bool8 BeginNormalPaletteFade(u32 selectedPalettes, s8 delay, u8 startY, u8 targetY, u16 blendColor)',
+          'void ResetPaletteFadeControl(void)','static u8 UpdateNormalPaletteFade(void)',
+          'static bool8 IsSoftwarePaletteFadeFinishing(void)')
+    for signature in signatures:source+=function(palette,signature)
     source += r'''
 /* What 3ds_game_full.c has around the functions taken from it. */
 #define CTR_LOG_VIDEO 0

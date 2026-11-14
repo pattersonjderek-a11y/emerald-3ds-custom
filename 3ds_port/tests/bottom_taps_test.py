@@ -436,6 +436,16 @@ def main():
         "MESSAGEPAGE": message_page,
     }
     source = HARNESS
+    if 'nextPrinter' in text_h:
+        # The expansion owns a linked printer list and native template ABI.
+        prelude = '#define DEPRECATED(msg)\n'
+        prelude += block(text_h,r'^enum PACKED TextPrinterType').replace('PACKED','')+';\n'
+        prelude += block(text_h,r'^union TextColor')+';\n'
+        source=source.replace('@TEMPLATE@;',prelude+'@TEMPLATE@;\ntypedef void (*TextPrinterCallback)(struct TextPrinterTemplate *,u16);')
+        source=source.replace('static struct TextPrinter sTextPrinters[WINDOWS_MAX];',
+          'static struct TextPrinter sTextPrinters[WINDOWS_MAX];\nstatic struct TextPrinter *sFirstTextPrinter=&sTextPrinters[WIN_MSG];')
+        source=source.replace('    sTextPrinters[WIN_MSG].active = TRUE;',
+          '    sTextPrinters[WIN_MSG].active = TRUE;\n    sTextPrinters[WIN_MSG].printerTemplate.windowId=WIN_MSG;')
     for key, value in parts.items():
         source = source.replace("@" + key + "@", value)
     assert not re.search(r'@[A-Z_]+@', source), "unfilled placeholder"

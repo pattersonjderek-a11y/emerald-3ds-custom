@@ -27,6 +27,7 @@ sys.path.insert(0, str(HERE.parent))
 import build_web_payload  # noqa: E402
 from emerald3ds_builder import cli, pak, web, webmanifest  # noqa: E402
 from emerald3ds_builder.build import EXECUTABLE_NAMES, Payload, build_pack, select_payload  # noqa: E402
+from emerald3ds_builder.install import APP_DIR
 from emerald3ds_builder.errors import BuilderError  # noqa: E402
 from emerald3ds_builder.recipe import Recipe  # noqa: E402
 from test_manifest_errors import SHA1_EN, add_variant, file_ref, legacy_manifest, variant  # noqa: E402
@@ -173,7 +174,7 @@ class SharedRomPayloadTests(unittest.TestCase):
             code = cli.main(["--payload", str(self.root), "build", "--rom", str(self.synthetic["rom"]),
                              "--output", str(output), "--language", "pt"])
             self.assertEqual(code, 0, err.getvalue())
-            app = output / "3ds" / "emerald3ds"
+            app = output / APP_DIR
             for name in EXECUTABLE_NAMES:
                 self.assertEqual((app / name).read_bytes(), (self.pt_dir / name).read_bytes(), name)
             self.assertEqual(cli.main(["--payload", str(self.root), "verify", "--pak",

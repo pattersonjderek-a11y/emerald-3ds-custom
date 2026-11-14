@@ -237,12 +237,12 @@ class RegionalBuildTests(unittest.TestCase):
             recipe.save(root / "emerald3ds.recipe")
             output = root / "output.pak"
             with self.assertRaises(BuilderError) as ctx:
-                build_pack(source, Payload(root), output)
+                build_pack(source, Payload(root), output, follower_fetcher=False)
             self.assertIn(code, str(ctx.exception))
             self.assertFalse(output.exists())
             recipe.rom_sha1 = sha
             recipe.save(root / "emerald3ds.recipe")
-            build_pack(source, Payload(root), output)
+            build_pack(source, Payload(root), output, follower_fetcher=False)
             with pak.PakReader(output) as reader:
                 self.assertEqual(reader.read("game/test.bin"), b"TEST")
                 self.assertEqual(reader.rom_sha1, bytes.fromhex(sha))
@@ -264,7 +264,7 @@ class VariantPayloadTests(unittest.TestCase):
                 sha = hashlib.sha1(data).hexdigest()
                 checked = romlib.Rom(data=data, sha1=sha, title="SYNTHETIC", code="TEST", source=rom)
                 info = build_pack(rom, payload, Path(tmp) / ("%s.pak" % name), runner="inprocess",
-                                  rom=checked)
+                                  rom=checked, follower_fetcher=False)
                 self.assertEqual(info["payload"].root.name, name)
                 self.assertEqual(info["payload"].voxelgen, synthetic["payload"] / "voxelgen")
                 with pak.PakReader(Path(tmp) / ("%s.pak" % name)) as reader:

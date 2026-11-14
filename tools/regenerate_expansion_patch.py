@@ -36,6 +36,15 @@ def main():
             parser.error(f'not an engine source path: {name}')
         if relative.suffix not in ('.c', '.h', '.inc', '.s', '.json'):
             parser.error(f'not a supported source addition: {name}')
+    # New edits to upstream-owned files also need --add the first time.
+    # Refuse to silently omit an implementation just because that path was
+    # absent from the previous patch (fresh-bootstrap item-ball regression).
+    dirty = subprocess.check_output(['git','-C',str(tree),'diff','--name-only'],text=True).splitlines()
+    unlisted = [name for name in dirty if name not in paths
+                and Path(name).parts[0] in ('src','include','data')
+                and Path(name).suffix in ('.c','.h','.s','.inc','.json')]
+    if unlisted:
+        parser.error('Unlisted engine edits; inspect and pass --add: ' + ' '.join(unlisted))
     subprocess.run(['git', '-C', str(tree), 'add', '-f', '--', *paths], check=True)
     staged = subprocess.check_output(['git', '-C', str(tree), 'diff', '--cached', '--name-only', pin], text=True).splitlines()
     unexpected = set(staged) - set(paths)
