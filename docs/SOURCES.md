@@ -125,3 +125,31 @@ modifications when integration is actually performed; this inspection does
 not relicense existing project or game material. The current lock and existing
 notices remain unchanged. See [UPSTREAM_REFRESH.md](UPSTREAM_REFRESH.md) for
 source findings, version differences and the unverified local Stage E handoff.
+
+
+## Stage E + v0.5.0 source integration (13 November 2026)
+
+User-authorized precedence: original Emerald 3DS v0.5.0 features override any
+clashing implemented/planned custom features, now and in future work. Source:
+https://github.com/ZallaxDev/emerald-3ds at
+`bcae4b70dac61419fc933084084469f6cfbe344b` (tag v0.5.0).
+Full upstream history is merged; platform/build/builder/tools/art authored for
+the port are reused with their notices. Native expansion APIs, compression,
+font/palette paths, IDs and isolated runtime storage are adapted. Its own
+species randomizer is retained and its National Dex range is extended to
+Gen 1–9 through the existing expansion converters. Optional E ability/item
+resolvers and host fixtures are new project work. No donor engine merge,
+ROM, save or firmware. The pinned expansion data remains the same integration.
+
+`LICENSE-PORT.md` and `NOTICE.md` now preserve upstream v0.5.0's CC BY-NC-SA 4.0
+terms and attribution to **Emerald 3DS by Zallax and contributors**, including
+the credited UI, renderer, model, builder and randomizer contributors in the
+upstream changelog. New modified port contributions follow those terms;
+previous published MIT versions retain their original licence. Separately
+licensed components and game material retain their own notices/rights.
+No missing follower artwork was downloaded or represented as complete art.
+
+Engine platform hooks adapted from the same upstream revision are captured in
+`patches/pokeemerald-expansion/0001-port.patch`; native battle/species/save
+formats and expansion-specific gameplay interfaces are retained. Current
+integration limitations and actual validation state are in STATUS.md.

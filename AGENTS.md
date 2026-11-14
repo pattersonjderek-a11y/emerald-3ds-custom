@@ -1,5 +1,16 @@
 # AGENTS.md
 
+## Current Stage E / v0.5.0 precedence
+
+Derek explicitly directs that v0.5.0 wins overlapping implemented or planned
+features, now and in future work. Its UI, global editable species randomizer,
+settings and Nuzlocke tracker supersede conflicting custom designs. Retain
+Gen 1–9 expansion engine/API adapters and isolated runtime storage. Stage E
+extends upstream with abilities/items, without a second species resolver.
+Work on project/stage-e-v050 / build/stage-e. Historical D is preserved remotely.
+New namespace: /3ds/emerald3ds-custom-stage-e-v050/. No save import. Record
+actual host/native/data/device evidence separately. Hardware acceptance pending.
+
 ## Emerald 3DS Custom
 
 Read `PROJECT_BLUEPRINT.md` and `docs/STATUS.md` before new work. Stage A

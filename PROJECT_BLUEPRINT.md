@@ -2,6 +2,18 @@
 
 Prepared for Derek • 21 October 2026 • Initial specification, not a playable release
 
+## User amendment — 13 November 2026
+
+Derek directs that original Emerald 3DS v0.5.0 takes precedence over clashing
+features already implemented or planned, including future work. This overrides
+conflicting requirements below: use upstream menus and editable global core
+randomizer settings rather than the prior immutable custom core randomizer.
+Keep the existing expanded Gen 1–9 engine and adapt upstream platform APIs.
+Stage E adds optional ability/field/hidden/held-item rules and content/follower
+audits to that authoritative upstream foundation. Difficulty remains save-bound
+where upstream has no corresponding gameplay enforcement. Preserve isolated
+storage, prior source branches and private-artifact publication requirements.
+
 ## 1. Decision and how to use this document
 
 Build a native Nintendo 3DS homebrew game based on **Emerald 3DS with pokeemerald-expansion**, retaining Hoenn's adventure. Preserve its pixel-art presentation, optional voxel scenery, tilt-shift blur, richer colors, lighting, particles, dual-screen interface, and existing quality-of-life settings. Add an optional, customizable in-game randomizer and difficulty controls. Keep Pokémon followers and audit their expanded-species coverage.

@@ -80,8 +80,6 @@ uint8_t LocalLink_InSession(void); /* in a session, or looking for one */
 void LocalLink_LeaveBeforeSleep(void);
 /* And it woke: the wireless service is started again for the next session. */
 void LocalLink_AfterWake(void);
-/* Players in our session, us included (0 if not in one). */
-uint8_t LocalLink_SessionSize(void);
 
 #endif /* PORT_EXPANSION */
 

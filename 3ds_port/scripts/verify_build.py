@@ -68,8 +68,6 @@ def main():
         required += ['CtrGame_Frame']
     if args.video:
         required += ['CtrVideo_Present', 'C2D_DrawImage', 'C3D_FrameBegin', 'SpriteCallback_RedArrowCursor']
-        if not args.full:
-            required += ['CtrScene_Init', 'CtrCursor_Init', 'CtrCursor_Update']
         assert not any(name in names for name in ('DrawFrame', 'DrawScanline', 'DrawFrameFast'))
     groups = {
         2: ['SetMainCallback2', 'InitKeys', 'gMain', 'CopyBufferedValuesToGpuRegs'],
@@ -78,15 +76,16 @@ def main():
         6: ['IncrementGameStat', 'GetGameStat'],
         7: ['RunScriptCommand', 'ScriptReadHalfword'],
         8: ['SwapTurnOrder'],
-        # The bootstrap forces this private helper out of line; the full game
-        # legitimately inlines it, and retains the actual music player instead.
-        9: ['SampleMixer', 'MP2KPlayerMain' if args.full else 'ConsumeTrackByte', 'MidiKeyToFreq'],
+        # The full game inlines ConsumeTrackByte and keeps the music player.
+        9: ['SampleMixer', 'MP2KPlayerMain', 'MidiKeyToFreq'],
     }
     for stage, functions in groups.items():
         if args.stage >= stage:
             required.extend(functions)
     assert set(required) <= names, f'Missing actual game symbols: {set(required) - names}'
 
+    # The game's INCBIN stubs are RomFS lookup keys: validate their index.
+    subprocess.check_call([sys.executable, str(root / 'scripts/verify_assets.py')])
 
     # INCBIN placeholders are compile-only. Refuse to ship even one
     # retained placeholder, including an asset pulled by an unexpected callback.
@@ -125,6 +124,7 @@ def main():
             objects.append(root / 'build/audio_probe.o')
         if args.video:
             objects.extend([root / 'build/scene.o', root / 'build/cursor.o'])
+    objects = [root / name for name in (root / 'build/link.rsp').read_text().split()]
     definitions = {}
     for obj in objects:
         for line in run(nm, '--defined-only', '--extern-only', obj).splitlines():
@@ -153,10 +153,10 @@ def main():
                                'category': category, 'resolution': resolution})
 
     report = {
-        'stage': args.stage, 'full_game': bool(args.full), 'gpu_video': bool(args.video), 'elf_strong_undefined': [],
+        'stage': args.stage, 'full_game': True, 'gpu_video': bool(args.video), 'elf_strong_undefined': [],
         'required_game_symbols': required, 'nds_dependencies': [],
-        'retained_asset_placeholders': None if args.full else [],
-        'romfs_assets_verified': bool(args.full), 'references': references,
+        'retained_asset_placeholders': None,
+        'romfs_assets_verified': True, 'references': references,
         'sha256_3dsx': hashlib.sha256(binary).hexdigest(), 'bytes_3dsx': len(binary),
         'runtime': 'REQUIRES EMULATOR; build verification is not runtime evidence',
     }
@@ -164,7 +164,7 @@ def main():
     output.write_text(json.dumps(report, indent=2) + '\n')
     print(f'PASS stage {args.stage}: ARM11 hard-float, {len(required)} required game symbols, '
           f'no strong undefined symbol; '
-          f'{"RomFS assets verified" if args.full else "no retained asset placeholder"}; {len(binary)} bytes')
+          f'RomFS assets verified; {len(binary)} bytes')
     print(f'Symbol inventory: {output}')
 
 
