@@ -10,6 +10,14 @@ F title: **Emerald 3DS Custom Stage F v0.5.0**.
 Folder: `3ds/emerald3ds-custom-stage-f-v050/`. Keep matching executable, pack and
 CUSTOM_INSTALL.json together. No save/settings/clock/tracker import from E.
 
+Host/native preparation completed: native compile + make verify, actual pack
+through production C parser, 278 builder tests / 4 skips, fresh-source production
+fixtures and real-bundle installation/update/recovery on a temporary Linux host
+directory. State bytes were synthetic. This does not fill any device row below.
+The extracted portable installer also verifies successfully. Frozen package:
+22,022,981 bytes, SHA-256 c2043807e6b2bbc78125e18886348bd681237397d05654e5cdb8c198a8bda86a.
+Its compiled source is b2cd7f6; engine ABI 9ef120da. See STAGE_F_BUILD_OUTPUTS.json.
+
 First use Normal with every randomizer OFF. Confirm cancellation with an existing
 saved F run, New Game initialization, starter/first battles, save/restart/Continue.
 For Gen 9 proof without seed setup, catch wild Lechonk (#915) on Route 101,

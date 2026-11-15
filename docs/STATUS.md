@@ -1,4 +1,4 @@
-# Stage F — campaign and packaging engineering in progress
+# Stage F — private campaign/package build ready; device acceptance pending
 
 Worktree `/workspace/emerald-3ds-stage-f`, branch `project/stage-f-campaign`.
 Stage E source, compiled outputs and frozen ZIP remain in their separate worktree;
@@ -21,16 +21,42 @@ backup including settings/sidecars, and roll back interrupted updates. The porta
 installer needs Python 3.11+ only. This is distinct from the upstream retail-ROM
 recipe; a public ROM-only expansion content supply/recipe is still unresolved.
 
-Passed so far: full builder suite 278 tests / 4 inherited skips; 24 focused
-campaign/installer checks are included. Fresh-bootstrap production save,
-difficulty and optional-rule fixtures pass. Source publication audit passes.
-The compiled-data audit inventories 155 fixed land species across Gen 1–9 in
-124 native headers and verifies all 51 additions. These are host/data results;
-native application packaging is still waiting on v0.5.0 voxel generation.
-Final gate and package metadata will be recorded when complete.
+Final verified source/package checkpoint: `b2cd7f67eea112eec2e5cdd86cc85aebfabeace3`.
+Native ARM11 compilation and full `make verify` passed: 60 required symbols,
+no strong undefined symbols, 17,534 linked assets / 1,451 aliases. Full builder
+suite: 278 tests, four inherited skips; all nine enhancement adapters executed.
+24 focused campaign/installer tests pass. Fresh bootstrap compares 307 engine
+paths and 878 canonical overlay files; production save/difficulty/optional-rule
+fixtures pass there. This is not a second fresh native build.
+
+Engine-only release + matching pack use ABI `9ef120da`, 17,511 data files.
+The actual pack passes the production console C parser on the host under
+ASan/UBSan, including every payload CRC and wrong ABI/profile rejection. The
+actual-bundle host rehearsal passes first install, compatible update, complete
+backup and interrupted-commit recovery with 11 synthetic state files. Legacy/E
+sentinels remain unchanged. The extracted portable installer passes `--verify`
+with host Python 3.12.14. No mounted physical SD card or real player save was used.
+Source and engine-only ZIP publication audits pass. Generated voxel validation
+reports 188 interiors, zero failures, 77 inherited allowances and zero device
+approvals. Full commands/logs/hashes: STAGE_F_BUILD_OUTPUTS.json.
+
+Frozen PRIVATE test ZIP: `work/stage-f-private/Emerald3DS-Custom-StageF-private.zip`
+(22,022,981 bytes), SHA-256
+`c2043807e6b2bbc78125e18886348bd681237397d05654e5cdb8c198a8bda86a`.
+Read-back CRC and all archive-entry hashes pass. It includes the paired engine,
+pack, install receipt, portable installer and instructions/licenses. It has not
+been uploaded to Dropbox or GitHub. The E Dropbox file remains unchanged.
+Metadata follow-up commits do not rebuild or replace this frozen F ZIP.
+
 Original-XL boot, rendering, progression through Champion and representative
 postgame, actual SD recovery and performance remain PENDING. No emulator used.
 Stage F cannot be called accepted until those device results are supplied.
+The other final-release blocker is a validated retail-ROM-only expanded-content
+recipe: audit/attribute its additional asset inputs, then implement parity-tested
+extraction/build without a content-bearing literal pool. The working private
+source-build pipeline does not establish that public release route.
+Next action: use STAGE_F_INSTALL.md and the F campaign/device checklist; fix
+reported regressions in a separate checkpoint/package, preserving this baseline.
 
 ---
 

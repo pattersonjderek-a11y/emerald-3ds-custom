@@ -54,6 +54,32 @@ assets. Never upload private content-bearing packs, embedded apps or ZIPs to
 GitHub or CI artifacts. CI additionally exercises the F campaign/installer
 fixtures and compiled-data audit; published artifacts remain engine-only.
 
+Actual F execution completed: `make -C build/stage-f/3ds_port -j6 PYTHON=python3`,
+`make ... verify`, `make ... release pak`, the recipe/build commands above,
+`custom_pack_test.py --bundle work/stage-f-bundle`,
+`rehearse_custom_install.py --bundle work/stage-f-bundle --output work/stage-f-install-rehearsal.json`,
+and `package_stage_f.py`. The latter freezes clean checkpoint b2cd7f6; metadata
+follow-up commits do not alter it. Exact sizes/hashes/paths/logs are recorded in
+STAGE_F_BUILD_OUTPUTS.json; the host rehearsal is STAGE_F_INSTALL_REHEARSAL.json.
+The compiled launcher title was independently decoded from its SMDH.
+
+The F native tree was seeded with a separate copy of E's build cache, then
+recompiled. E files were not linked or edited in place. Fresh-source verification
+used a new Git checkout of the exact existing local pinned object, set origin
+back to the locked GitHub repository, applied the canonical patch and compared
+307 engine paths / 878 overlays. Host production tests ran there; no second
+fresh native compilation is claimed. No source pin or SDK upgrade occurred.
+
+Native on-demand generation still logs inherited missing extra/form/FRLG art;
+required asset checks and all newly placed species' indexed pictures passed.
+Follower/art completeness remains limited as in CONTENT_AUDIT.md. The new GDB
+inventory initially encountered an optimized-away extern array extent; it now
+derives its bound from the linked symbol byte size and native header type.
+No ARM execution is performed by that audit. Portable installer extraction and
+verification were executed using Linux Python 3.12.14; Windows/macOS and real SD
+behavior remain untested. The SDK uses Python 3.13.17 / Pillow 12.3.0 and the
+unchanged devkitARM 16.1.0 compiler; actual versions are in work/toolchain-f.txt.
+
 Historical build instructions and actual prior-stage evidence follow.
 
 ---

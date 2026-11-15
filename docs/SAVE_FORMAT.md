@@ -18,8 +18,10 @@ never establishes isolation.
 The checked installer uses a durable journal outside the app folder and complete
 old-folder backup; recovery rolls back either rename boundary. This is packaging
 recovery, separate from native save-sector and clock/tracker recovery. Host
-interruption fixtures passed; real FAT power loss, console save/load after an
-update and full rollback rehearsal remain pending. See STAGE_F_INSTALL.md.
+interruption fixtures and an actual-bundle temporary-host rehearsal passed,
+including complete backup/update and interrupted-commit rollback with 11 synthetic
+state files. Real FAT power loss, console save/load after an update and physical
+SD rollback rehearsal remain pending. See STAGE_F_INSTALL.md.
 
 Earlier-stage storage descriptions follow for historical reference.
 

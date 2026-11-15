@@ -1,0 +1,97 @@
+{
+  "path": "work/stage-f-private/Emerald3DS-Custom-StageF-private.zip",
+  "bytes": 22022981,
+  "sha256": "c2043807e6b2bbc78125e18886348bd681237397d05654e5cdb8c198a8bda86a",
+  "source_commit": "b2cd7f67eea112eec2e5cdd86cc85aebfabeace3",
+  "engine_abi": 2666602714,
+  "files": {
+    "build/stage-f/3ds_port/emerald3ds.3dsx": {
+      "bytes": 79125592,
+      "sha256": "b06392a279ee121f10196ff8d04f31117d7b4e94e943147169088200c3a7fe79"
+    },
+    "build/stage-f/3ds_port/emerald3ds.smdh": {
+      "bytes": 14016,
+      "sha256": "f1b748d6846ffbd8f85f6ae637ecfa2728933a252bb6ba19e26189622829aecb"
+    },
+    "build/stage-f/3ds_port/emerald3ds.elf": {
+      "bytes": 73879412,
+      "sha256": "717734bfeec10fced98e7e2f576fd3b1d64b488efb6e74b62a97558d9430ae37"
+    },
+    "build/stage-f/3ds_port/build/gamedata_image.elf": {
+      "bytes": 87848956,
+      "sha256": "0c7d088f6bda04e493fa4fc2956307f441a3b1c253635f9c224bc1112f30f76d"
+    },
+    "build/stage-f/3ds_port/dist/Emerald3DS.3dsx": {
+      "bytes": 8331048,
+      "sha256": "8922418f897870420d5e994b1d20a8c8a4dbdafe82db5f3b768cef1c96d79a4b"
+    },
+    "build/stage-f/3ds_port/dist/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "f1b748d6846ffbd8f85f6ae637ecfa2728933a252bb6ba19e26189622829aecb"
+    },
+    "build/stage-f/3ds_port/build/emerald3ds.pak": {
+      "bytes": 70056960,
+      "sha256": "4b03404ebbccd36dcf9984766066ab56701f4c1e06bbea94cd47afd9bf5fb2e1"
+    },
+    "work/stage-f-source-recipe.json": {
+      "bytes": 3441376,
+      "sha256": "b5ea01c970fbad9319c74099aeab74ad049d298ea4bc65ce718d560f7f1d18f1"
+    },
+    "work/stage-f-engine-only.zip": {
+      "bytes": 2927886,
+      "sha256": "e8460617ef951bc4facd40098e61dc54629978250546ab1644a9e57946b9c3fa"
+    },
+    "work/stage-f-private/Emerald3DS-Custom-StageF-private.zip": {
+      "bytes": 22022981,
+      "sha256": "c2043807e6b2bbc78125e18886348bd681237397d05654e5cdb8c198a8bda86a"
+    }
+  },
+  "hardware_tested": false,
+  "emulator_tested": false,
+  "data_recipe_sha256": "b5ea01c970fbad9319c74099aeab74ad049d298ea4bc65ce718d560f7f1d18f1",
+  "namespace": "emerald3ds-custom-stage-f-v050",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine_abi_hex": "9ef120da",
+  "expansion_pin": "dfb0f84374230f4d462191601179b742f9f077df",
+  "graphics_pin": "bcae4b70dac61419fc933084084469f6cfbe344b",
+  "save_schema": 1,
+  "content_rules_hex": "00050050",
+  "canonical_patch_sha256": "f905b11a7c47d35d6823290e16e14247332ed92d890c32d9e72e8274b3a778c9",
+  "game_data_files": 17511,
+  "evidence": {
+    "native_3ds_compilation": "passed",
+    "make_verify": "passed",
+    "host_builder_tests": 278,
+    "host_builder_skipped": 4,
+    "focused_campaign_installer_tests": 24,
+    "enhancement_adapters_executed": 9,
+    "fresh_engine_paths": 307,
+    "fresh_overlay_files": 878,
+    "fresh_source_and_production_host_fixtures": "passed; not a second fresh native compile",
+    "production_console_C_pack_parser_on_host": "17511 actual payload CRCs; ASan/UBSan",
+    "actual_bundle_host_install_update_recovery": "passed; 11 synthetic state files",
+    "portable_extracted_installer": "verified with host Python 3.12.14",
+    "emulator": "not performed",
+    "physical_console": "pending",
+    "campaign": "pending"
+  },
+  "logs": [
+    "work/native-f-1.log",
+    "work/verify-f-final.log",
+    "work/builder-f-final.log",
+    "work/adapters-f-final.log",
+    "work/fresh-f-bootstrap.log",
+    "work/fresh-f-compare.log",
+    "work/fresh-f-tests.log",
+    "work/campaign-f-final.log",
+    "work/release-f-final.log",
+    "work/bundle-f-final.log",
+    "work/package-f-final.log"
+  ],
+  "baseline_E_preserved_sha256": "bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a",
+  "limitations": [
+    "Original-XL hardware/campaign/real-SD acceptance pending",
+    "Public retail-ROM-only expansion recipe and attributed expanded-asset supply unresolved",
+    "Follower/form/art/trade/performance limitations from E remain; no new artwork"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "evidence": "host filesystem rehearsal; synthetic state; actual compiled engine/data",
+  "host": "Linux",
+  "source_commit": "b2cd7f67eea112eec2e5cdd86cc85aebfabeace3",
+  "engine_abi": 2666602714,
+  "first_install": "passed",
+  "compatible_update": "passed",
+  "whole_folder_backup": "passed",
+  "preserved_state_files": 11,
+  "interruption_after_directory_commit": "passed",
+  "rollback": "passed",
+  "repeat_recovery": "no pending transaction",
+  "legacy_and_e_sentinels": "unchanged",
+  "physical_sd": "pending",
+  "hardware": "pending"
+}
