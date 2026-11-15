@@ -1,3 +1,40 @@
+# Stage F release validation — installer fixes in progress
+
+The current blueprint defines A–F and has no next stage letter. This follow-up
+finishes independent release engineering on `fix/stage-f-release-validation`,
+preserving the frozen F baseline and all prior E source/build/Dropbox artifacts.
+No new gameplay, renderer, settings, roster or difficulty behavior is introduced.
+The seven native F outputs match their verified b2cd7f6 baseline hashes; they are
+reused, not newly compiled. The F namespace/schema/rules remain unchanged.
+
+Three production failures were reproduced with synthetic data: same-length
+corruption of copied settings was accepted; compressed pack entries passed the
+Python installer although the console rejects them; and interruption while
+recursively removing a failed app could strand recovery. Fixes now read back all
+user state, validate pack layout/compression/ranges before writes, and recover
+using directory renames while preserving failed copies for inspection. Fault
+tests cover interruption of recovery itself and repeat recovery.
+
+The previous campaign audit referenced image 07640000 from before the final
+verification relink. Re-auditing actual final image 0c7d088f passes with identical
+51 placements / 155 fixed land species / 124 headers. Packaging now requires an
+audit matching the current compiled image, and optional native reuse requires
+all seven recorded binary hashes. No native game data was changed to fix this.
+
+Verified follow-up checks: 286 host/builder tests passed with the same four
+inherited skips, including 28 package/installer/evidence tests. Fresh source
+comparison passes for 307 engine paths and 880 canonical overlay files. The
+actual original F portable installer was used to create a host installation;
+the hardened update, preservation of 11 synthetic state files, interrupted
+recovery, repeated recovery and original/E sentinels all pass. The production
+console C parser passes all 17,511 actual pack payloads on the host under
+ASan/UBSan. Seven native baseline hashes match; no native compile was rerun.
+The separately named private InstallerFix ZIP is prepared next from this clean
+source checkpoint; its final metadata will be recorded after freezing. Physical console, campaign and public ROM-only recipe gates are
+still pending. There is no supplied E/F device result and no emulator result.
+
+---
+
 # Stage F — private campaign/package build ready; device acceptance pending
 
 Worktree `/workspace/emerald-3ds-stage-f`, branch `project/stage-f-campaign`.

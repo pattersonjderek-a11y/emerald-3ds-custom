@@ -1,5 +1,22 @@
 # AGENTS.md
 
+## Stage F release-validation follow-up
+
+The blueprint ends at F; do not invent Stage G or claim device acceptance.
+Branch `fix/stage-f-release-validation` preserves the original E/F ZIPs and F
+gameplay/namespace/schema/rules. Only installer/packaging and host checks change.
+Native outputs must match all seven hashes in STAGE_F_BUILD_OUTPUTS.json before
+reusing them; report reuse separately from native recompilation. Campaign data
+audits must match the final `gamedata_image.elf`, including after a relink.
+
+Recovery renames failed copies to `.emerald3ds-custom-stage-f-v050.rejected-<token>`
+before restoring the backup; never recursively delete the active folder while
+a journal is pending. Keep failed copies for inspection. Hash/read back all user
+state before committing an update. Python pack validation must reject unsupported
+compression, sizes and ranges before an SD write. The follow-up ZIP uses a new
+name/output directory and includes the hardened portable installer; do not rebuild
+or replace the frozen original F ZIP. Console/public-ROM-recipe gates remain open.
+
 ## Stage F campaign / private installer
 
 Work on `project/stage-f-campaign` in `/workspace/emerald-3ds-stage-f`,

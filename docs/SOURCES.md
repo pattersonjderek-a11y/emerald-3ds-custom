@@ -1,3 +1,14 @@
+# Stage F release-validation follow-up
+
+The native engine, expansion patch, v0.5.0 graphics pin and generated game pack
+are unchanged from verified F. Changes are project Python installer/packaging
+code and synthetic host tests; no new dependency, donor, asset or license source
+is introduced. All seven native output hashes are checked when reusing them.
+The updated campaign metadata reads the final existing linked image; no content
+is replaced. Original private E/F artifacts remain frozen and separate.
+
+---
+
 # Stage F additions
 
 Graphics remains Emerald 3DS v0.5.0 bcae4b70dac61419fc933084084469f6cfbe344b;

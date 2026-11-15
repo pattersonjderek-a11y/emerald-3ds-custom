@@ -1,3 +1,33 @@
+# Stage F installer/package validation follow-up
+
+Branch `fix/stage-f-release-validation`; original F ZIP and E outputs remain
+frozen. This changes Python installation/packaging and tests only. Native F
+engine/data outputs are reused after all seven hashes match
+STAGE_F_BUILD_OUTPUTS.json. No native recompilation or engine patch change is
+claimed; upstream.lock, SDK, renderer and gameplay are unchanged.
+
+Host commands: `python3 -m unittest discover -s builder/tests -v`,
+`python3 tools/rehearse_custom_install.py --bundle work/stage-f-bundle --baseline-zip work/stage-f-private/Emerald3DS-Custom-StageF-private.zip --output work/release-validation/original-upgrade.json`,
+and the original production C pack parser. The rehearsal runs the original
+frozen portable installer first, then checks a hardened compatible update,
+complete state backup and an interruption during recovery, using only synthetic
+state in a temporary host directory. Physical SD behavior remains untested.
+
+`tools/campaign_audit.py` must run against the final linked image after any
+relink; the prior 07640000 audit metadata was stale relative to final 0c7d088f.
+All reported placements/counts remain unchanged. `package_stage_f.py` now refuses
+stale evidence and accepts explicit `--bundle`, `--campaign-report`, `--output`,
+and optional `--native-baseline` paths. Output must remain under ignored work/;
+an existing frozen ZIP or manifest is never overwritten. The standard F wrapper
+passes the just-generated work/stage-f-campaign.json rather than stale docs.
+
+A new hash-only recipe/bundle and private InstallerFix ZIP use separate paths
+under work/release-validation/ and work/stage-f-installer-fix-private/. The
+matching engine/pack bytes remain identical to original F. No ROM was obtained
+and no content-bearing output is committed or uploaded to GitHub/CI.
+
+---
+
 # Stage F developer workflow
 
 Branch `project/stage-f-campaign`, worktree `/workspace/emerald-3ds-stage-f`.

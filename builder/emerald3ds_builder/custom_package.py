@@ -91,10 +91,17 @@ def validate_bundle(folder):
         raise PackageError('bundle must not be a symlink')
     try:
         meta = json.loads((folder / MANIFEST).read_text())
+        if not isinstance(meta, dict):
+            raise PackageError('install receipt must be an object')
+        for key in ('schema', 'save_schema', 'rules', 'engine_abi', 'data_files'):
+            if type(meta.get(key)) is not int:
+                raise PackageError('invalid integer in install receipt: ' + key)
+        if not 0 < meta['engine_abi'] <= 0xffffffff or not 0 < meta['data_files'] <= (1 << 20):
+            raise PackageError('invalid ABI or data count')
         if (meta['schema'] != 1 or meta['namespace'] != APP or meta['rules'] != RULES
                 or meta['save_schema'] != 1 or meta['private_content_bearing'] is not True):
             raise PackageError('unsupported package, namespace or save rules')
-        if set(meta['files']) != set(FILES):
+        if not isinstance(meta['files'], dict) or set(meta['files']) != set(FILES):
             raise PackageError('unexpected package file list')
         if {p.name for p in folder.iterdir()} != {*FILES, MANIFEST}:
             raise PackageError('bundle contains unexpected files; state cannot be installed')
@@ -164,6 +171,12 @@ def _paths(sd):
     return sd / '3ds', sd / '3ds' / APP
 
 
+def _state_snapshot(folder):
+    return {p.relative_to(folder).as_posix(): sha(p) for p in folder.rglob('*')
+            if p.is_file() and p.relative_to(folder).as_posix() not in
+            (*FILES, MANIFEST, '.install-token')}
+
+
 def recover(sd):
     """Roll back a journaled interrupted install. Never resume a mixed pair."""
     parent, dest = _paths(sd)
@@ -173,30 +186,45 @@ def recover(sd):
     if journal.is_symlink():
         raise PackageError('unsafe recovery journal')
     tx = json.loads(journal.read_text())
+    if not isinstance(tx, dict):
+        raise PackageError('invalid recovery journal; files preserved')
     token = tx.get('token', '')
-    if (tx.get('schema') != 1 or not re.fullmatch('[0-9a-f]{32}', token)
+    if (type(tx.get('schema')) is not int or tx['schema'] != 1
+            or not isinstance(token, str) or not re.fullmatch('[0-9a-f]{32}', token)
             or type(tx.get('had_previous')) is not bool):
         raise PackageError('invalid recovery journal; inspect without changing files')
     stage = parent / ('.' + APP + '.' + token + '.staging')
     backup = parent / ('.' + APP + '.backup-' + token)
-    for p in (dest, stage, backup):
+    rejected = parent / ('.' + APP + '.rejected-' + token)
+    for p in (dest, stage, backup, rejected):
         if p.exists() or p.is_symlink():
             _regular_tree(p)
-    # The marker is not game state; only a directory built by this transaction
-    # can be removed. A backup retains the complete old app + all user files.
-    if (dest.exists() and (dest / '.install-token').is_file()
-            and (dest / '.install-token').read_text() == token):
+    current = (dest.exists() and (dest / '.install-token').is_file()
+               and (dest / '.install-token').read_text() == token)
+    if not tx['had_previous'] and backup.exists():
+        raise PackageError('unexpected backup for a first install; files preserved')
+    if current:
         if tx['had_previous'] and not backup.exists():
             raise PackageError('recovery backup missing; destination preserved')
-        shutil.rmtree(dest)
+        if rejected.exists() or stage.exists():
+            raise PackageError('ambiguous pending folders; files preserved')
+        # Never recursively delete the live destination while a recovery is
+        # pending: interruption could erase its identity marker halfway through.
+        # A rename keeps the failed copy inspectable and can be retried safely.
+        os.replace(dest, rejected)
+        _sync_dir(parent)
     if backup.exists():
         if dest.exists():
             raise PackageError('both previous destination and backup exist; inspect manually')
         os.replace(backup, dest)
+        _sync_dir(parent)
     elif tx['had_previous'] and not dest.exists():
         raise PackageError('previous install and backup missing')
     if stage.exists():
-        shutil.rmtree(stage)
+        if rejected.exists():
+            raise PackageError('both staging and rejected folders exist; files preserved')
+        os.replace(stage, rejected)
+        _sync_dir(parent)
     journal.unlink()
     _sync_dir(parent)
     return True
@@ -222,8 +250,14 @@ def install_bundle(sd, bundle):
             old = json.loads((dest / MANIFEST).read_text())
         except (OSError, ValueError) as exc:
             raise PackageError('existing folder has no valid F install receipt; refusing import') from exc
-        if any(old.get(k) != meta[k] for k in ('namespace', 'save_schema', 'rules')):
+        if (not isinstance(old, dict)
+                or any(type(old.get(k)) is not int for k in ('schema', 'save_schema', 'rules'))
+                or any(old.get(k) != meta[k] for k in ('schema', 'namespace', 'save_schema', 'rules'))):
             raise PackageError('save rules changed; use a separate namespace')
+    # Snapshot every user file, not just the executable/pack. A same-length
+    # damaged copy of settings or a save must abort before the old folder moves.
+    state = _state_snapshot(dest) if previous else {}
+    receipt_sha = sha(Path(bundle) / MANIFEST)
     parent.mkdir(parents=True, exist_ok=True)
     need = sum(p.stat().st_size for p in Path(bundle).iterdir())
     if previous:
@@ -257,6 +291,10 @@ def install_bundle(sd, bundle):
         for name in FILES:
             if sha(stage / name) != meta['files'][name]['sha256']:
                 raise PackageError('staged file changed: ' + name)
+        if sha(stage / MANIFEST) != receipt_sha:
+            raise PackageError('staged install receipt changed')
+        if _state_snapshot(stage) != state or (previous and _state_snapshot(dest) != state):
+            raise PackageError('user state changed or was corrupted while staging')
         _sync_dir(stage)
         if previous:
             os.replace(dest, backup)

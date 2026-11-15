@@ -1,3 +1,20 @@
+# Stage F InstallerFix follow-up — console results still PENDING
+
+The new private InstallerFix ZIP keeps the exact verified F engine/pack and
+existing F saves/rules. It updates only the laptop installer/packaging checks.
+Use STAGE_F_INSTALL.md. Back up the full F folder, run the new portable installer
+for an update, then check Continue, party/progress, difficulty, global seed/options,
+clock/tracker, save and restart on the original 3DS XL. Preserve the printed
+whole-folder backup. No E save import is supported.
+
+Host tests exercise copied-state corruption, malformed packs and interruption
+of recovery itself. A temporary-host rehearsal upgrades an installation created
+by the original frozen F installer. These are not physical SD, console save,
+frame-rate or campaign results. All F campaign/visual/device rows below remain
+pending; the public ROM-only expanded-content recipe is also still unresolved.
+
+---
+
 # Stage F device acceptance — every result PENDING
 
 Derek's original 3DS XL. Stage E was delivered to private Dropbox; no E/F

@@ -116,6 +116,81 @@ class CustomPackageTests(unittest.TestCase):
         self.assertNotEqual((self.dest/cp.FILES[0]).read_bytes(),old[cp.FILES[0]])
         self.assertFalse(cp.recover(self.sd))
 
+    def test_corrupted_state_copy_aborts_before_replacing_old_install(self):
+        old = self.install_old()
+        copyfile = cp.shutil.copyfile
+        def corrupt(src, target, *args, **kwargs):
+            result = copyfile(src, target, *args, **kwargs)
+            if Path(target).name == 'settings.txt':
+                p = Path(target); data = bytearray(p.read_bytes()); data[0] ^= 1; p.write_bytes(data)
+            return result
+        with patch.object(cp.shutil, 'copyfile', side_effect=corrupt):
+            with self.assertRaises(cp.PackageError):
+                cp.install_bundle(self.sd, self.bundle)
+        self.assertEqual(self.snapshot(self.dest), old)
+
+    def test_compressed_index_is_refused_before_sd_write(self):
+        p = self.bundle / cp.FILES[2]
+        data = bytearray(p.read_bytes())
+        index = struct.unpack_from('<Q', data, 40)[0]
+        struct.pack_into('<I', data, index + 12, 1)  # unsupported compression
+        struct.pack_into('<I', data, 56, zlib.crc32(data[index:index+pak.ENTRY.size]))
+        struct.pack_into('<I', data, 60, zlib.crc32(data[:60]))
+        p.write_bytes(data); self.receipt()
+        with self.assertRaises(pak.PakError):
+            cp.install_bundle(self.sd, self.bundle)
+        self.assertEqual(list(self.sd.iterdir()), [])
+
+    def test_interruption_during_recovery_never_strands_half_deleted_new_folder(self):
+        old = self.install_old()
+        replace = os.replace
+        class PowerLoss(BaseException): pass
+        def publish_then_interrupt(src, target):
+            replace(src, target)
+            if str(src).endswith('.staging'): raise PowerLoss()
+        with patch.object(cp.os, 'replace', side_effect=publish_then_interrupt):
+            with self.assertRaises(PowerLoss): cp.install_bundle(self.sd, self.bundle)
+        rmtree = cp.shutil.rmtree
+        def delete_marker_then_interrupt(path, *args, **kwargs):
+            if Path(path) == self.dest:
+                (self.dest / '.install-token').unlink()
+                raise PowerLoss()
+            return rmtree(path, *args, **kwargs)
+        with patch.object(cp.shutil, 'rmtree', side_effect=delete_marker_then_interrupt):
+            try: cp.recover(self.sd)
+            except PowerLoss: pass
+        cp.recover(self.sd)
+        self.assertEqual(self.snapshot(self.dest), old)
+
+    def test_recovery_is_repeatable_at_every_directory_rename_boundary(self):
+        replace = os.replace
+        class PowerLoss(BaseException): pass
+        for boundary in ('before_reject', 'after_reject', 'after_restore'):
+            with self.subTest(boundary=boundary):
+                self.sd=self.root/boundary;self.sd.mkdir()
+                self.dest=self.sd/'3ds'/cp.APP
+                old=self.install_old()
+                def publish(src,target):
+                    replace(src,target)
+                    if str(src).endswith('.staging'):raise PowerLoss()
+                with patch.object(cp.os,'replace',side_effect=publish):
+                    with self.assertRaises(PowerLoss):cp.install_bundle(self.sd,self.bundle)
+                def interrupt(src,target):
+                    if boundary=='before_reject' and Path(src)==self.dest:raise PowerLoss()
+                    replace(src,target)
+                    if boundary=='after_reject' and Path(src)==self.dest:raise PowerLoss()
+                    if boundary=='after_restore' and '.backup-' in str(src):raise PowerLoss()
+                with patch.object(cp.os,'replace',side_effect=interrupt):
+                    with self.assertRaises(PowerLoss):cp.recover(self.sd)
+                self.assertTrue(cp.recover(self.sd))
+                self.assertEqual(self.snapshot(self.dest),old)
+                rejected=list(self.dest.parent.glob('.'+cp.APP+'.rejected-*'))
+                self.assertEqual(len(rejected),1)
+                for name,data in old.items():
+                    if name not in (*cp.FILES,cp.MANIFEST,'.install-token'):
+                        self.assertEqual((rejected[0]/name).read_bytes(),data)
+                self.assertFalse(cp.recover(self.sd))
+
     def test_corrupt_file_rejected_before_any_sd_write(self):
         p=self.bundle/cp.FILES[2]; p.write_bytes(p.read_bytes()+b'corrupt')
         with self.assertRaises(cp.PackageError): cp.install_bundle(self.sd,self.bundle)
@@ -137,7 +212,8 @@ class CustomPackageTests(unittest.TestCase):
         with self.assertRaises(pak.PakError): cp.validate_bundle(self.bundle)
 
     def test_unknown_schema_rules_and_state_payload_rejected(self):
-        for key,value in (('schema',2),('rules',0x00040050),('save_schema',2),('namespace','emerald3ds')):
+        for key,value in (('schema',2),('rules',0x00040050),('save_schema',2),('namespace','emerald3ds'),
+                          ('schema',True),('save_schema',True),('engine_abi',True),('data_files',True)):
             old=self.meta[key];self.meta[key]=value;self.receipt()
             with self.subTest(key=key),self.assertRaises(cp.PackageError): cp.validate_bundle(self.bundle)
             self.meta[key]=old

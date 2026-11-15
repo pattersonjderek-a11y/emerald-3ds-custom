@@ -1,3 +1,21 @@
+# Stage F installer recovery follow-up
+
+No native save field, CRC range, flag, variable, difficulty record or global
+settings policy changes. F still uses schema 1, rules 0x00050050 and its own
+namespace. Existing compatible F runs can use the hardened installer; no E
+import or new-game reset is introduced. All native artifacts remain unchanged.
+
+The installer hashes every existing user file and compares the staged copy and
+original before committing, including settings/seed, native save and clock/tracker
+companions. It also verifies the staged receipt. Recovery understands the original
+schema-1 journal and uses renames to preserve the failed copy in a hidden
+rejected-<token> folder before restoring the complete backup. It never deletes
+the active directory midway through a pending rollback. Repeated/interrupted
+recovery has host fault tests; physical FAT/power-loss acceptance remains pending.
+This journal remains an installer tool file, not a new gameplay/save sidecar.
+
+---
+
 # Stage F persistence and update policy
 
 F keeps the Stage E layout (schema 1, 52-byte SaveBlock1 record at 0x988,

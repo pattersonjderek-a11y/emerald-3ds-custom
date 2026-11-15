@@ -1,3 +1,28 @@
+# Stage F installer fixes — preferred private package
+
+Use `Emerald3DS-Custom-StageF-InstallerFix-private.zip` for new installations and
+compatible F updates. The game executable, data pack, launcher title, namespace
+and save rules are byte-identical to the verified original F build. This package
+updates the laptop installer and packaging checks. Keep the original ZIP as a
+baseline. Do not import E saves. Hardware/campaign acceptance remains pending.
+
+The installer now verifies every copied user file, including settings/seed and
+clock/tracker state, before replacing the app. Pack checks reject layouts the
+console cannot load even when the package hashes/checksums have been refreshed.
+Recovery can itself be interrupted and retried at each rename boundary. It moves
+a failed copy to a hidden `3ds/.emerald3ds-custom-stage-f-v050.rejected-<token>/`
+folder, then restores the complete backup. Failed copies remain for inspection;
+leave them until the restored game and backups are confirmed. This recovery
+also understands the original F installer's schema-1 journal.
+
+Installation, Python commands and console checklist below apply to this package.
+For an existing F installation, use the new extracted portable installer rather
+than copying over the app manually. The native game has not been recompiled for
+this installer-only update. Actual console/FAT, Windows and macOS results remain
+pending; host validation does not fill those gaps.
+
+---
+
 # Stage F private test package
 
 This is a new, isolated Hoenn campaign test build for Derek's original 3DS XL.
@@ -9,7 +34,7 @@ Keep the Stage E ZIP and its existing installation unchanged.
 ## First installation on your laptop
 
 1. Back up the SD card's existing Emerald folders to the laptop.
-2. Extract `Emerald3DS-Custom-StageF-private.zip` on the laptop.
+2. Extract `Emerald3DS-Custom-StageF-InstallerFix-private.zip` on the laptop.
 3. Copy its `3ds` folder to the SD root. This adds only
    `3ds/emerald3ds-custom-stage-f-v050/`. Do not copy old saves, settings,
    clock/tracker files, ROMs or firmware into F. The matching pack is included.
@@ -74,7 +99,9 @@ python3 installer/install_custom.py --recover --sd /Volumes/SDCARD
 ```
 
 Recovery uses the persistent transaction journal to restore the complete old
-folder after either directory-rename boundary; a failed first install is removed.
+folder after either directory-rename boundary. Failed staged/new copies are
+renamed to the hidden rejected folder; they are preserved rather than recursively
+deleted during recovery. A failed first install leaves no active app folder.
 Then retry the verified installation. If the journal is damaged or the backup
 is missing, recovery stops and preserves the files for inspection; keep the card
 and report the error. Host fault injection covers these boundaries; actual FAT

@@ -155,6 +155,14 @@ class PakReader:
          index_crc, _) = HEADER.unpack(head)
         if self.schema != SCHEMA:
             raise PakError("unsupported schema %d" % self.schema)
+        self._file.seek(0, 2)
+        file_size = self._file.tell()
+        if count == 0 or count > (1 << 20):
+            raise PakError("invalid entry count")
+        index_end = index_offset + count * ENTRY.size
+        if (index_offset < HEADER.size or index_end > file_size
+                or self.data_offset < index_end or self.data_offset > file_size):
+            raise PakError("index/data range outside pack")
         self._file.seek(index_offset)
         index = self._file.read(count * ENTRY.size)
         if len(index) != count * ENTRY.size or zlib.crc32(index) & 0xFFFFFFFF != index_crc:
@@ -165,6 +173,10 @@ class PakReader:
             pid, typ, flags, off, stored, raw, crc, _ = ENTRY.unpack_from(index, i * ENTRY.size)
             if pid <= last:
                 raise PakError("index not sorted")
+            if flags != 0 or stored != raw:
+                raise PakError("unsupported compression or stored size")
+            if off < self.data_offset or off % ALIGN or off > file_size or raw > file_size - off:
+                raise PakError("payload range outside pack or unaligned")
             last = pid
             self.entries[pid] = Entry(None, pid, typ, flags, off, stored, raw, crc)
 
@@ -183,7 +195,7 @@ class PakReader:
             raise KeyError(path)
         self._file.seek(entry.offset)
         data = self._file.read(entry.raw_size)
-        if zlib.crc32(data) & 0xFFFFFFFF != entry.crc32:
+        if len(data) != entry.raw_size or zlib.crc32(data) & 0xFFFFFFFF != entry.crc32:
             raise PakError("CRC mismatch in %s" % path)
         return data
 

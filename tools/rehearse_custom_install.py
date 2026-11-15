@@ -7,8 +7,10 @@ import argparse
 import json
 from pathlib import Path
 import platform
+import subprocess
 import sys
 import tempfile
+import zipfile
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +26,11 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--bundle',type=Path,required=True)
     ap.add_argument('--output',type=Path,required=True)
+    ap.add_argument('--baseline-zip',type=Path,help='verify upgrade from the frozen original F installer')
     a=ap.parse_args();meta=cp.validate_bundle(a.bundle)
+    if a.baseline_zip:
+        baseline=json.loads((ROOT/'docs/STAGE_F_BUILD_OUTPUTS.json').read_text())
+        assert cp.sha(a.baseline_zip)==baseline['sha256'], 'baseline ZIP hash mismatch'
     (ROOT/'work').mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='f-host-sd-',dir=ROOT/'work') as tmp:
         sd=Path(tmp)
@@ -33,7 +39,20 @@ def main():
             folder=sd/'3ds'/app;folder.mkdir(parents=True)
             for n in ('emerald3ds.sav','settings.txt','emerald3ds.clock','emerald3ds.nuzlocke'):
                 p=folder/n;p.write_bytes(b'SYNTHETIC LEGACY STATE: '+app.encode()+n.encode());protected[p]=cp.sha(p)
-        first=cp.install_bundle(sd,a.bundle);dest=Path(first['destination'])
+        if a.baseline_zip:
+            extracted=sd/'baseline-package';extracted.mkdir()
+            names=[f'3ds/{cp.APP}/{n}' for n in (*cp.FILES,cp.MANIFEST)]
+            names+=['installer/install_custom.py']+[
+                'installer/emerald3ds_builder/'+n for n in ('__init__.py','custom_package.py','pak.py')]
+            with zipfile.ZipFile(a.baseline_zip) as z:
+                for name in names:
+                    target=extracted/name;target.parent.mkdir(parents=True,exist_ok=True)
+                    target.write_bytes(z.read(name))
+            subprocess.run([sys.executable,str(extracted/'installer/install_custom.py'),
+                            '--sd',str(sd)],check=True,capture_output=True,text=True)
+            dest=sd/'3ds'/cp.APP
+        else:
+            first=cp.install_bundle(sd,a.bundle);dest=Path(first['destination'])
         state={}
         for n in ('emerald3ds.sav','settings.txt','settings.txt.tmp','emerald3ds.clock',
                   'emerald3ds.clock.tmp','emerald3ds.clock.bak','emerald3ds.nuzlocke',
@@ -55,6 +74,15 @@ def main():
             pass
         else:
             raise AssertionError('interruption did not reach directory commit')
+        def interrupt_recovery(src,target):
+            replace(src,target)
+            if '.rejected-' in str(target):raise ProcessInterrupted()
+        try:
+            with patch.object(cp.os,'replace',side_effect=interrupt_recovery):cp.recover(sd)
+        except ProcessInterrupted:
+            pass
+        else:
+            raise AssertionError('interruption did not reach recovery rename')
         assert cp.recover(sd)
         assert snapshot(dest)==pre_interrupt
         assert not cp.recover(sd)
@@ -63,8 +91,10 @@ def main():
         'host':platform.system(),'source_commit':meta['source_commit'],'engine_abi':meta['engine_abi'],
         'first_install':'passed','compatible_update':'passed','whole_folder_backup':'passed',
         'preserved_state_files':len(state),'interruption_after_directory_commit':'passed',
+        'interruption_during_recovery':'passed',
         'rollback':'passed','repeat_recovery':'no pending transaction',
         'legacy_and_e_sentinels':'unchanged','physical_sd':'pending','hardware':'pending'}
+    if a.baseline_zip:report['baseline_installer_upgrade']='passed from original frozen F ZIP'
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
 
