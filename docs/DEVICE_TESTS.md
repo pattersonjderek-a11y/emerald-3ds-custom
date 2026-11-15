@@ -1,3 +1,51 @@
+# Stage F device acceptance — every result PENDING
+
+Derek's original 3DS XL. Stage E was delivered to private Dropbox; no E/F
+console results have been provided. Host tests, native compilation and GDB
+metadata checks do not establish boot, rendering, frame rate or campaign play.
+STAGE_F_INSTALL.md describes first installation and the checked update workflow.
+Preserve the frozen E ZIP/installation and start a new isolated F run.
+
+F title: **Emerald 3DS Custom Stage F v0.5.0**.
+Folder: `3ds/emerald3ds-custom-stage-f-v050/`. Keep matching executable, pack and
+CUSTOM_INSTALL.json together. No save/settings/clock/tracker import from E.
+
+First use Normal with every randomizer OFF. Confirm cancellation with an existing
+saved F run, New Game initialization, starter/first battles, save/restart/Continue.
+For Gen 9 proof without seed setup, catch wild Lechonk (#915) on Route 101,
+level 3 (10% land slot), then summary/cry/follower/PC/save/restart. Check 2D and
+voxel tree boundaries, correct Torchic follower and encounter-site scenic wild
+battles in Littleroot/Routes 101–103. Check Options persistence and both screens.
+
+| Campaign/SD check | Result | Required observation |
+| --- | --- | --- |
+| Boot, intro, cancellation, starter, first catch and Continue | PENDING | Model, receipt, all options, logs |
+| 2D/voxel/follower/scenic, doors, stairs, bike/surf, battle return | PENDING | Map/lead/toggles, frame pacing and memory |
+| Early later-gen captures and evolutions; summary/PC/restart | PENDING | Name/art/cry/ability/moves stay consistent |
+| Roxanne/Brawly/Wattson/Flannery; Cut/Rock Smash/Strength | PENDING | Story rewards, blocked paths, HM access, caps 15/19/24/29/31 |
+| Norman/Winona; Surf, Weather Institute, rival/partner battles | PENDING | Native progression and caps 33/42 |
+| Tate/Liza doubles, Mossdeep partner fight, Dive | PENDING | Four healthboxes, replacements, story flags, cap 46 |
+| Seafloor/Sootopolis/Juan; Waterfall; Victory Road/Wally | PENDING | Story resolution and entry to League, cap 58 |
+| Sidney/Phoebe/Glacia/Drake/Wallace + save/retry | PENDING | League cap 58 until Champion, then 100 |
+| Hall of Fame/Continue; National Dex/ship/Steven/Desert Underpass | PENDING | Postgame rewards, rematches, new fixed captures |
+| Representative Frontier/facility; Safari; one rematch | PENDING | Protected native formats and rules |
+| Randomized + Hard representative bosses/doubles | PENDING | v0.5 seed/toggles recorded, difficulty composes |
+| Ability/field/hidden/held rules independently | PENDING | Protected items, summary/battle/AI consistency |
+| Compatible F update then Continue/save/restart | PENDING | Same party/progress/difficulty + exact settings/clock/tracker |
+| Installer backup/recovery and complete rollback on actual SD | PENDING | Old app/pack/state restored together |
+| Original installation and E sentinels unchanged | PENDING | Compare laptop backups after testing |
+
+Do not test New Game over valuable progress; back up the full F folder first.
+Keep global settings with the save: seed/ability changes outside battle can
+change owned abilities under the authoritative v0.5.0 model. Record the receipt's
+source commit and engine ABI plus map, steps, expected/actual result and logs.
+Keep player saves and diagnostics private. No campaign completion or performance
+numbers may be filled in without actual console evidence.
+
+Historical stage checklists/evidence remain below for their original builds.
+
+---
+
 # Stage E + v0.5.0 console checklist — ALL RESULTS PENDING
 
 Target: Derek's **original 3DS XL**. No emulator, console boot, frame rate or

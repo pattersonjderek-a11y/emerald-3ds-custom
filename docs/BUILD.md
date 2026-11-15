@@ -1,3 +1,58 @@
+# Stage F developer workflow
+
+Branch `project/stage-f-campaign`, worktree `/workspace/emerald-3ds-stage-f`.
+Keep the frozen E tree/ZIP unchanged. F uses the same devkitARM/Python SDK image
+and unchanged upstream.lock (graphics v0.5.0, expansion dfb0f843). No dependency
+upgrade or donor merge is introduced. Tool versions remain recorded in
+STAGE_E_TOOLCHAIN_PACKAGES.txt.
+
+```sh
+docker --host=unix:///var/run/docker.sock exec emerald-stage-f tools/stage_f.sh build
+docker --host=unix:///var/run/docker.sock exec emerald-stage-f tools/stage_f.sh test
+docker --host=unix:///var/run/docker.sock exec emerald-stage-f tools/stage_f.sh fresh
+# Checkpoint clean source, then freeze a new private deliverable:
+docker --host=unix:///var/run/docker.sock exec emerald-stage-f tools/stage_f.sh package
+```
+
+Native outputs: `build/stage-f/3ds_port/emerald3ds.3dsx`, `.smdh`, `.elf`;
+engine-only `build/stage-f/3ds_port/dist/Emerald3DS.3dsx` and `.smdh`;
+matching generated pack `build/stage-f/3ds_port/build/emerald3ds.pak`.
+Linked metadata must be read from `build/gamedata_image.elf` under that port.
+These paths are separate from E. The F application title and all state/data
+paths use the F namespace. No CIA/forwarder is built for private testing.
+
+`campaign_audit.py --tree build/stage-f --gdb /opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb`
+checks source preservation and linked encounter/attack/art data; it does not run
+ARM code. `stage_f.sh fresh` compares 307 engine paths and canonical overlays,
+then runs actual save/difficulty/optional-rule code against a fresh bootstrap.
+That is source reproduction plus host tests, not a second native compilation.
+
+The local-source recipe and bundle commands (after `make ... release pak`):
+
+```sh
+python3 tools/custom_payload.py recipe --tree build/stage-f --out work/stage-f-source-recipe.json
+python3 tools/custom_payload.py build --recipe work/stage-f-source-recipe.json --romfs build/stage-f/3ds_port/romfs --engine-dir build/stage-f/3ds_port/dist --out work/stage-f-bundle
+python3 tools/custom_payload.py verify --bundle work/stage-f-bundle
+```
+
+The recipe contains paths/sizes/hashes only; generated data is read from the
+matching local source build. It validates engine hashes and exact data inventory,
+then recomputes ABI and every pack CRC. `package_stage_f.py` requires the same
+clean source checkpoint, refuses to overwrite a frozen ZIP and reads back every
+archive entry. Outputs stay ignored: `work/stage-f-private/`.
+A repeated bundle build must use a new output path; no silent replacement.
+
+Use STAGE_F_INSTALL.md for laptop/SD installation, backup/update/recovery and
+public-release blockers. The upstream public ROM recipe and literal audit are
+preserved; no claim that a clean Emerald ROM contains the expansion's Gen 4–9
+assets. Never upload private content-bearing packs, embedded apps or ZIPs to
+GitHub or CI artifacts. CI additionally exercises the F campaign/installer
+fixtures and compiled-data audit; published artifacts remain engine-only.
+
+Historical build instructions and actual prior-stage evidence follow.
+
+---
+
 # Stage E + v0.5.0 build record (14 November 2026)
 
 Current source branch: `project/stage-e-v050`; working tree:

@@ -49,7 +49,7 @@ ifneq ($(wildcard $(ROOT)/include/custom_random_core.h),)
 APP_TITLE := Emerald 3DS Custom Stage C
 endif
 ifneq ($(wildcard $(ROOT)/include/custom_difficulty.h),)
-APP_TITLE := Emerald 3DS Custom Stage E v0.5.0
+APP_TITLE := Emerald 3DS Custom Stage F v0.5.0
 endif
 SCRIPTS := ../tools/port_common
 EXESUFFIX := $(if $(filter Windows_NT,$(OS)),.exe,)

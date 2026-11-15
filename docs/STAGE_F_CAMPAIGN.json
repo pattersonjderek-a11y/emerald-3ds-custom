@@ -1,0 +1,848 @@
+{
+  "revision": "hoenn-expanded-f1",
+  "source_audit": "passed",
+  "native_data_audit": "passed",
+  "hardware": "pending",
+  "campaign_playthrough": "pending",
+  "image_sha256": "07640000b81382ac6c070b04f00983b703b9281c093e5f757caacbd5dc58b2cf",
+  "native_header_count": 124,
+  "native_fixed_land_unique_dex": 155,
+  "native_fixed_land_generations": {
+    "1": 23,
+    "2": 25,
+    "3": 57,
+    "4": 8,
+    "5": 6,
+    "6": 7,
+    "7": 6,
+    "8": 11,
+    "9": 12
+  },
+  "generations_added": {
+    "9": 12,
+    "4": 8,
+    "6": 7,
+    "7": 6,
+    "5": 6,
+    "8": 11,
+    "2": 1
+  },
+  "placements": [
+    {
+      "map": "MAP_ROUTE101",
+      "base_label": "gRoute101",
+      "method": "land_mons",
+      "slot": 3,
+      "before": {
+        "min_level": 3,
+        "max_level": 3,
+        "species": "SPECIES_WURMPLE"
+      },
+      "species": "SPECIES_LECHONK",
+      "phase": "campaign",
+      "national": 915,
+      "generation": 9,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_ROUTE101",
+      "base_label": "gRoute101",
+      "method": "land_mons",
+      "slot": 10,
+      "before": {
+        "min_level": 3,
+        "max_level": 3,
+        "species": "SPECIES_ZIGZAGOON"
+      },
+      "species": "SPECIES_BIDOOF",
+      "phase": "campaign",
+      "national": 399,
+      "generation": 4,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_ROUTE102",
+      "base_label": "gRoute102",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 3,
+        "max_level": 3,
+        "species": "SPECIES_ZIGZAGOON"
+      },
+      "species": "SPECIES_SHINX",
+      "phase": "campaign",
+      "national": 403,
+      "generation": 4,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_ROUTE102",
+      "base_label": "gRoute102",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 4,
+        "max_level": 4,
+        "species": "SPECIES_ZIGZAGOON"
+      },
+      "species": "SPECIES_FIDOUGH",
+      "phase": "campaign",
+      "national": 926,
+      "generation": 9,
+      "legal_attacks": 2
+    },
+    {
+      "map": "MAP_ROUTE104",
+      "base_label": "gRoute104",
+      "method": "land_mons",
+      "slot": 0,
+      "before": {
+        "min_level": 4,
+        "max_level": 4,
+        "species": "SPECIES_POOCHYENA"
+      },
+      "species": "SPECIES_STARLY",
+      "phase": "campaign",
+      "national": 396,
+      "generation": 4,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_ROUTE104",
+      "base_label": "gRoute104",
+      "method": "land_mons",
+      "slot": 9,
+      "before": {
+        "min_level": 4,
+        "max_level": 4,
+        "species": "SPECIES_WINGULL"
+      },
+      "species": "SPECIES_FLETCHLING",
+      "phase": "campaign",
+      "national": 661,
+      "generation": 6,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_PETALBURG_WOODS",
+      "base_label": "gPetalburgWoods",
+      "method": "land_mons",
+      "slot": 0,
+      "before": {
+        "min_level": 5,
+        "max_level": 5,
+        "species": "SPECIES_POOCHYENA"
+      },
+      "species": "SPECIES_GRUBBIN",
+      "phase": "campaign",
+      "national": 736,
+      "generation": 7,
+      "legal_attacks": 2
+    },
+    {
+      "map": "MAP_PETALBURG_WOODS",
+      "base_label": "gPetalburgWoods",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 6,
+        "max_level": 6,
+        "species": "SPECIES_WURMPLE"
+      },
+      "species": "SPECIES_SEWADDLE",
+      "phase": "campaign",
+      "national": 540,
+      "generation": 5,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_ROUTE116",
+      "base_label": "gRoute116",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 7,
+        "max_level": 7,
+        "species": "SPECIES_POOCHYENA"
+      },
+      "species": "SPECIES_ROOKIDEE",
+      "phase": "campaign",
+      "national": 821,
+      "generation": 8,
+      "legal_attacks": 2
+    },
+    {
+      "map": "MAP_ROUTE116",
+      "base_label": "gRoute116",
+      "method": "land_mons",
+      "slot": 9,
+      "before": {
+        "min_level": 8,
+        "max_level": 8,
+        "species": "SPECIES_POOCHYENA"
+      },
+      "species": "SPECIES_YAMPER",
+      "phase": "campaign",
+      "national": 835,
+      "generation": 8,
+      "legal_attacks": 2
+    },
+    {
+      "map": "MAP_ROUTE116",
+      "base_label": "gRoute116",
+      "method": "land_mons",
+      "slot": 11,
+      "before": {
+        "min_level": 8,
+        "max_level": 8,
+        "species": "SPECIES_SKITTY"
+      },
+      "species": "SPECIES_NACLI",
+      "phase": "campaign",
+      "national": 932,
+      "generation": 9,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE110",
+      "base_label": "gRoute110",
+      "method": "land_mons",
+      "slot": 2,
+      "before": {
+        "min_level": 12,
+        "max_level": 12,
+        "species": "SPECIES_GULPIN"
+      },
+      "species": "SPECIES_PAWMI",
+      "phase": "campaign",
+      "national": 921,
+      "generation": 9,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE110",
+      "base_label": "gRoute110",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 13,
+        "max_level": 13,
+        "species": "SPECIES_MINUN"
+      },
+      "species": "SPECIES_TOXEL",
+      "phase": "campaign",
+      "national": 848,
+      "generation": 8,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE110",
+      "base_label": "gRoute110",
+      "method": "land_mons",
+      "slot": 9,
+      "before": {
+        "min_level": 12,
+        "max_level": 12,
+        "species": "SPECIES_WINGULL"
+      },
+      "species": "SPECIES_WATTREL",
+      "phase": "campaign",
+      "national": 940,
+      "generation": 9,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE117",
+      "base_label": "gRoute117",
+      "method": "land_mons",
+      "slot": 2,
+      "before": {
+        "min_level": 14,
+        "max_level": 14,
+        "species": "SPECIES_POOCHYENA"
+      },
+      "species": "SPECIES_BUDEW",
+      "phase": "campaign",
+      "national": 406,
+      "generation": 4,
+      "legal_attacks": 1
+    },
+    {
+      "map": "MAP_ROUTE117",
+      "base_label": "gRoute117",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 14,
+        "max_level": 14,
+        "species": "SPECIES_ILLUMISE"
+      },
+      "species": "SPECIES_SMOLIV",
+      "phase": "campaign",
+      "national": 928,
+      "generation": 9,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE117",
+      "base_label": "gRoute117",
+      "method": "land_mons",
+      "slot": 9,
+      "before": {
+        "min_level": 14,
+        "max_level": 14,
+        "species": "SPECIES_ILLUMISE"
+      },
+      "species": "SPECIES_CUTIEFLY",
+      "phase": "campaign",
+      "national": 742,
+      "generation": 7,
+      "legal_attacks": 2
+    },
+    {
+      "map": "MAP_ROUTE112",
+      "base_label": "gRoute112",
+      "method": "land_mons",
+      "slot": 3,
+      "before": {
+        "min_level": 14,
+        "max_level": 14,
+        "species": "SPECIES_NUMEL"
+      },
+      "species": "SPECIES_LITLEO",
+      "phase": "campaign",
+      "national": 667,
+      "generation": 6,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE112",
+      "base_label": "gRoute112",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 16,
+        "max_level": 16,
+        "species": "SPECIES_NUMEL"
+      },
+      "species": "SPECIES_ROLYCOLY",
+      "phase": "campaign",
+      "national": 837,
+      "generation": 8,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_FIERY_PATH",
+      "base_label": "gFieryPath",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 16,
+        "max_level": 16,
+        "species": "SPECIES_KOFFING"
+      },
+      "species": "SPECIES_SALANDIT",
+      "phase": "campaign",
+      "national": 757,
+      "generation": 7,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_FIERY_PATH",
+      "base_label": "gFieryPath",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 14,
+        "max_level": 14,
+        "species": "SPECIES_TORKOAL"
+      },
+      "species": "SPECIES_CHARCADET",
+      "phase": "campaign",
+      "national": 935,
+      "generation": 9,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE113",
+      "base_label": "gRoute113",
+      "method": "land_mons",
+      "slot": 4,
+      "before": {
+        "min_level": 14,
+        "max_level": 14,
+        "species": "SPECIES_SPINDA"
+      },
+      "species": "SPECIES_SNOM",
+      "phase": "campaign",
+      "national": 872,
+      "generation": 8,
+      "legal_attacks": 2
+    },
+    {
+      "map": "MAP_ROUTE113",
+      "base_label": "gRoute113",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 16,
+        "max_level": 16,
+        "species": "SPECIES_SPINDA"
+      },
+      "species": "SPECIES_SNOVER",
+      "phase": "campaign",
+      "national": 459,
+      "generation": 4,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_METEOR_FALLS_1F_1R",
+      "base_label": "gMeteorFalls_1F_1R",
+      "method": "land_mons",
+      "slot": 1,
+      "before": {
+        "min_level": 17,
+        "max_level": 17,
+        "species": "SPECIES_ZUBAT"
+      },
+      "species": "SPECIES_NOIBAT",
+      "phase": "campaign",
+      "national": 714,
+      "generation": 6,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_METEOR_FALLS_1F_1R",
+      "base_label": "gMeteorFalls_1F_1R",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 19,
+        "max_level": 19,
+        "species": "SPECIES_ZUBAT"
+      },
+      "species": "SPECIES_CARBINK",
+      "phase": "campaign",
+      "national": 703,
+      "generation": 6,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE111",
+      "base_label": "gRoute111",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 19,
+        "max_level": 19,
+        "species": "SPECIES_SANDSHREW"
+      },
+      "species": "SPECIES_SANDILE",
+      "phase": "campaign",
+      "national": 551,
+      "generation": 5,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE111",
+      "base_label": "gRoute111",
+      "method": "land_mons",
+      "slot": 7,
+      "before": {
+        "min_level": 19,
+        "max_level": 19,
+        "species": "SPECIES_TRAPINCH"
+      },
+      "species": "SPECIES_SILICOBRA",
+      "phase": "campaign",
+      "national": 843,
+      "generation": 8,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE111",
+      "base_label": "gRoute111",
+      "method": "land_mons",
+      "slot": 10,
+      "before": {
+        "min_level": 22,
+        "max_level": 22,
+        "species": "SPECIES_CACNEA"
+      },
+      "species": "SPECIES_RELLOR",
+      "phase": "campaign",
+      "national": 953,
+      "generation": 9,
+      "legal_attacks": 5
+    },
+    {
+      "map": "MAP_ROUTE114",
+      "base_label": "gRoute114",
+      "method": "land_mons",
+      "slot": 2,
+      "before": {
+        "min_level": 17,
+        "max_level": 17,
+        "species": "SPECIES_SWABLU"
+      },
+      "species": "SPECIES_SKIDDO",
+      "phase": "campaign",
+      "national": 672,
+      "generation": 6,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE114",
+      "base_label": "gRoute114",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 16,
+        "max_level": 16,
+        "species": "SPECIES_LOMBRE"
+      },
+      "species": "SPECIES_DEERLING",
+      "phase": "campaign",
+      "national": 585,
+      "generation": 5,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE118",
+      "base_label": "gRoute118",
+      "method": "land_mons",
+      "slot": 7,
+      "before": {
+        "min_level": 25,
+        "max_level": 25,
+        "species": "SPECIES_WINGULL"
+      },
+      "species": "SPECIES_BUIZEL",
+      "phase": "campaign",
+      "national": 418,
+      "generation": 4,
+      "legal_attacks": 6
+    },
+    {
+      "map": "MAP_ROUTE118",
+      "base_label": "gRoute118",
+      "method": "land_mons",
+      "slot": 9,
+      "before": {
+        "min_level": 26,
+        "max_level": 26,
+        "species": "SPECIES_WINGULL"
+      },
+      "species": "SPECIES_KILOWATTREL",
+      "phase": "campaign",
+      "national": 941,
+      "generation": 9,
+      "legal_attacks": 7
+    },
+    {
+      "map": "MAP_ROUTE119",
+      "base_label": "gRoute119",
+      "method": "land_mons",
+      "slot": 4,
+      "before": {
+        "min_level": 27,
+        "max_level": 27,
+        "species": "SPECIES_LINOONE"
+      },
+      "species": "SPECIES_FOMANTIS",
+      "phase": "campaign",
+      "national": 753,
+      "generation": 7,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE119",
+      "base_label": "gRoute119",
+      "method": "land_mons",
+      "slot": 9,
+      "before": {
+        "min_level": 26,
+        "max_level": 26,
+        "species": "SPECIES_TROPIUS"
+      },
+      "species": "SPECIES_GOOMY",
+      "phase": "campaign",
+      "national": 704,
+      "generation": 6,
+      "legal_attacks": 6
+    },
+    {
+      "map": "MAP_ROUTE120",
+      "base_label": "gRoute120",
+      "method": "land_mons",
+      "slot": 2,
+      "before": {
+        "min_level": 27,
+        "max_level": 27,
+        "species": "SPECIES_MIGHTYENA"
+      },
+      "species": "SPECIES_IMPIDIMP",
+      "phase": "campaign",
+      "national": 859,
+      "generation": 8,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE120",
+      "base_label": "gRoute120",
+      "method": "land_mons",
+      "slot": 7,
+      "before": {
+        "min_level": 27,
+        "max_level": 27,
+        "species": "SPECIES_MARILL"
+      },
+      "species": "SPECIES_HATENNA",
+      "phase": "campaign",
+      "national": 856,
+      "generation": 8,
+      "legal_attacks": 3
+    },
+    {
+      "map": "MAP_ROUTE121",
+      "base_label": "gRoute121",
+      "method": "land_mons",
+      "slot": 4,
+      "before": {
+        "min_level": 28,
+        "max_level": 28,
+        "species": "SPECIES_MIGHTYENA"
+      },
+      "species": "SPECIES_MURKROW",
+      "phase": "campaign",
+      "national": 198,
+      "generation": 2,
+      "legal_attacks": 6
+    },
+    {
+      "map": "MAP_ROUTE121",
+      "base_label": "gRoute121",
+      "method": "land_mons",
+      "slot": 10,
+      "before": {
+        "min_level": 28,
+        "max_level": 28,
+        "species": "SPECIES_WINGULL"
+      },
+      "species": "SPECIES_DREEPY",
+      "phase": "campaign",
+      "national": 885,
+      "generation": 8,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE123",
+      "base_label": "gRoute123",
+      "method": "land_mons",
+      "slot": 4,
+      "before": {
+        "min_level": 28,
+        "max_level": 28,
+        "species": "SPECIES_MIGHTYENA"
+      },
+      "species": "SPECIES_SKWOVET",
+      "phase": "campaign",
+      "national": 819,
+      "generation": 8,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_ROUTE123",
+      "base_label": "gRoute123",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 28,
+        "max_level": 28,
+        "species": "SPECIES_ODDISH"
+      },
+      "species": "SPECIES_MORELULL",
+      "phase": "campaign",
+      "national": 755,
+      "generation": 7,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_MT_PYRE_1F",
+      "base_label": "gMtPyre_1F",
+      "method": "land_mons",
+      "slot": 4,
+      "before": {
+        "min_level": 29,
+        "max_level": 29,
+        "species": "SPECIES_SHUPPET"
+      },
+      "species": "SPECIES_LITWICK",
+      "phase": "campaign",
+      "national": 607,
+      "generation": 5,
+      "legal_attacks": 6
+    },
+    {
+      "map": "MAP_MT_PYRE_1F",
+      "base_label": "gMtPyre_1F",
+      "method": "land_mons",
+      "slot": 8,
+      "before": {
+        "min_level": 29,
+        "max_level": 29,
+        "species": "SPECIES_SHUPPET"
+      },
+      "species": "SPECIES_GREAVARD",
+      "phase": "campaign",
+      "national": 971,
+      "generation": 9,
+      "legal_attacks": 6
+    },
+    {
+      "map": "MAP_MT_PYRE_1F",
+      "base_label": "gMtPyre_1F",
+      "method": "land_mons",
+      "slot": 10,
+      "before": {
+        "min_level": 29,
+        "max_level": 29,
+        "species": "SPECIES_SHUPPET"
+      },
+      "species": "SPECIES_MIMIKYU",
+      "phase": "campaign",
+      "national": 778,
+      "generation": 7,
+      "legal_attacks": 4
+    },
+    {
+      "map": "MAP_SHOAL_CAVE_LOW_TIDE_INNER_ROOM",
+      "base_label": "gShoalCave_LowTideInnerRoom",
+      "method": "land_mons",
+      "slot": 4,
+      "before": {
+        "min_level": 30,
+        "max_level": 30,
+        "species": "SPECIES_ZUBAT"
+      },
+      "species": "SPECIES_BERGMITE",
+      "phase": "campaign",
+      "national": 712,
+      "generation": 6,
+      "legal_attacks": 7
+    },
+    {
+      "map": "MAP_SHOAL_CAVE_LOW_TIDE_INNER_ROOM",
+      "base_label": "gShoalCave_LowTideInnerRoom",
+      "method": "land_mons",
+      "slot": 11,
+      "before": {
+        "min_level": 32,
+        "max_level": 32,
+        "species": "SPECIES_SPHEAL"
+      },
+      "species": "SPECIES_CETODDLE",
+      "phase": "campaign",
+      "national": 974,
+      "generation": 9,
+      "legal_attacks": 8
+    },
+    {
+      "map": "MAP_VICTORY_ROAD_1F",
+      "base_label": "gVictoryRoad_1F",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 38,
+        "max_level": 38,
+        "species": "SPECIES_GOLBAT"
+      },
+      "species": "SPECIES_RIOLU",
+      "phase": "campaign",
+      "national": 447,
+      "generation": 4,
+      "legal_attacks": 7
+    },
+    {
+      "map": "MAP_VICTORY_ROAD_1F",
+      "base_label": "gVictoryRoad_1F",
+      "method": "land_mons",
+      "slot": 7,
+      "before": {
+        "min_level": 38,
+        "max_level": 38,
+        "species": "SPECIES_HARIYAMA"
+      },
+      "species": "SPECIES_FRIGIBAX",
+      "phase": "campaign",
+      "national": 996,
+      "generation": 9,
+      "legal_attacks": 8
+    },
+    {
+      "map": "MAP_VICTORY_ROAD_1F",
+      "base_label": "gVictoryRoad_1F",
+      "method": "land_mons",
+      "slot": 10,
+      "before": {
+        "min_level": 36,
+        "max_level": 36,
+        "species": "SPECIES_ARON"
+      },
+      "species": "SPECIES_DEINO",
+      "phase": "campaign",
+      "national": 633,
+      "generation": 5,
+      "legal_attacks": 7
+    },
+    {
+      "map": "MAP_DESERT_UNDERPASS",
+      "base_label": "gDesertUnderpass",
+      "method": "land_mons",
+      "slot": 2,
+      "before": {
+        "min_level": 40,
+        "max_level": 40,
+        "species": "SPECIES_DITTO"
+      },
+      "species": "SPECIES_GIBLE",
+      "phase": "postgame",
+      "national": 443,
+      "generation": 4,
+      "legal_attacks": 7
+    },
+    {
+      "map": "MAP_DESERT_UNDERPASS",
+      "base_label": "gDesertUnderpass",
+      "method": "land_mons",
+      "slot": 6,
+      "before": {
+        "min_level": 38,
+        "max_level": 38,
+        "species": "SPECIES_LOUDRED"
+      },
+      "species": "SPECIES_DRILBUR",
+      "phase": "postgame",
+      "national": 529,
+      "generation": 5,
+      "legal_attacks": 8
+    },
+    {
+      "map": "MAP_DESERT_UNDERPASS",
+      "base_label": "gDesertUnderpass",
+      "method": "land_mons",
+      "slot": 10,
+      "before": {
+        "min_level": 44,
+        "max_level": 44,
+        "species": "SPECIES_LOUDRED"
+      },
+      "species": "SPECIES_DURALUDON",
+      "phase": "postgame",
+      "national": 884,
+      "generation": 8,
+      "legal_attacks": 4
+    }
+  ]
+}

@@ -1,3 +1,33 @@
+# Stage F — campaign and packaging engineering in progress
+
+Worktree `/workspace/emerald-3ds-stage-f`, branch `project/stage-f-campaign`.
+Stage E source, compiled outputs and frozen ZIP remain in their separate worktree;
+its private Dropbox delivery succeeded. No E or F device results have been supplied.
+
+F adds 51 fixed wild slots in 22 Hoenn areas (Gen 4–9 plus Murkrow), retaining
+all original local species, levels, rates, slot weights and v0.5.0 timed slots.
+The native data audit reads actual compiled headers and confirms the placements,
+legal attacks at minimum levels and indexed pictures. Standard trainers, all
+progression scripts/rewards/HMs, rematches and postgame structures are retained.
+See STAGE_F_CAMPAIGN.md and the generated metadata report.
+
+New `/3ds/emerald3ds-custom-stage-f-v050/` namespace; no old-stage save import.
+Save schema remains 1 / 52 bytes, rules ID `0x00050050`. No flags or variables
+allocated. v0.5.0 global seed/settings policy remains authoritative.
+
+A production private source-data recipe builder and laptop installer are added.
+They verify executable RomFS ABI + pack CRCs/hashes, keep a complete old-folder
+backup including settings/sidecars, and roll back interrupted updates. The portable
+installer needs Python 3.11+ only. This is distinct from the upstream retail-ROM
+recipe; a public ROM-only expansion content supply/recipe is still unresolved.
+
+Verification and package metadata will be recorded below when final gates finish.
+Original-XL boot, rendering, progression through Champion and representative
+postgame, actual SD recovery and performance remain PENDING. No emulator used.
+Stage F cannot be called accepted until those device results are supplied.
+
+---
+
 # Stage E + Emerald 3DS v0.5.0 — engineering implemented; device testing pending
 
 Branch: `project/stage-e-v050` in `/workspace/emerald-3ds-stage-e`.

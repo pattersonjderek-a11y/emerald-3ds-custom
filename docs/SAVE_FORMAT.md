@@ -1,3 +1,30 @@
+# Stage F persistence and update policy
+
+F keeps the Stage E layout (schema 1, 52-byte SaveBlock1 record at 0x988,
+CRC/trainer binding/native sector transaction). New content-rules ID is
+`0x00050050`; no flags, variables or checksum ranges are added. Flags 0x20–0x2C
+remain reserved by inherited features. Difficulty remains save-bound; v0.5.0
+seed/species options and Stage E ability/item switches remain global/editable.
+
+F starts separately under `/3ds/emerald3ds-custom-stage-f-v050/`. No A/B/C/D/E
+save import or migration is offered. Compatible subsequent F updates must keep
+schema/rules/namespace, preserve the native record and retain the whole runtime
+folder, including settings.txt, clock and Nuzlocke sidecars. The installer records
+that compatibility in CUSTOM_INSTALL.json and rejects mismatched updates before
+replacing the existing app. A new campaign rules change requires a separate
+namespace or an explicitly designed migration; changing a folder label alone
+never establishes isolation.
+
+The checked installer uses a durable journal outside the app folder and complete
+old-folder backup; recovery rolls back either rename boundary. This is packaging
+recovery, separate from native save-sector and clock/tracker recovery. Host
+interruption fixtures passed; real FAT power loss, console save/load after an
+update and full rollback rehearsal remain pending. See STAGE_F_INSTALL.md.
+
+Earlier-stage storage descriptions follow for historical reference.
+
+---
+
 # Stage E / v0.5.0 persistence amendment
 
 The user explicitly makes upstream v0.5.0 authoritative over clashing current

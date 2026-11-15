@@ -1,3 +1,20 @@
+# Stage F fixed campaign amendment
+
+With wild randomization OFF, native Hoenn tables include the 51 placements in
+STAGE_F_CAMPAIGN.md. Original local species, native levels/rates/slot weights,
+water/fishing/rocks, scripted gifts/tutorials and upstream v0.5.0 timed slots are
+retained. No trainer/story/HM/reward edits are made for the fixed roster. These
+placements apply to Normal/Hard/Custom; difficulty then retains its existing
+battle/cap rules. Enabling v0.5.0 wild randomization permutes the selected species
+through the existing global mapping. No second fixed/random resolver is added.
+
+F records content-rules ID 0x00050050 and uses a new isolated namespace. v0.5.0
+precedence and global seed/settings behavior remain as documented below. A fixed
+expanded campaign is not a promise that every Gen 1–9 species is obtainable.
+Champion/postgame balance and campaign acceptance remain device-dependent.
+
+---
+
 # Stage E + v0.5.0 current rules
 
 User precedence amendment supersedes the historical custom C species policy.

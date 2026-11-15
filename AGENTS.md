@@ -1,5 +1,28 @@
 # AGENTS.md
 
+## Stage F campaign / private installer
+
+Work on `project/stage-f-campaign` in `/workspace/emerald-3ds-stage-f`,
+using `tools/stage_f.sh` and `build/stage-f`. Preserve the frozen E worktree,
+ZIP and Dropbox file. New namespace `/3ds/emerald3ds-custom-stage-f-v050/`;
+no save import from any older stage. Difficulty schema stays 1 / 52 bytes;
+new rules ID `0x00050050`. No new flags/variables. Upstream v0.5.0 still wins.
+
+`tools/campaign_f.json` owns the 51 fixed placements; engine changes live in
+canonical expansion patch, including `src/data/wild_encounters.json`, never
+the generated header. `campaign_audit.py` checks inverse baseline, all existing
+local species, levels/rates and upstream timed slots; GDB verifies linked slots,
+legal early moves and indexed art. This is not a console playthrough.
+
+`tools/custom_payload.py` builds hash-only recipes from local pinned source
+outputs, then a verified private engine+pack bundle. It is NOT the upstream
+ROM extraction recipe. Never relax literal audits to distribute Gen 4–9 art.
+`tools/install_custom.py` checks hashes + actual engine RomFS ABI + pack CRCs,
+stages the complete F directory and keeps a full old-folder backup, including
+global settings/clock/tracker. Interruptions require `--recover` before launch.
+No ROM, save, firmware, generated pack or embedded app belongs in Git/CI uploads.
+Keep device and campaign acceptance pending until Derek supplies actual results.
+
 ## Current Stage E / v0.5.0 precedence
 
 Derek explicitly directs that v0.5.0 wins overlapping implemented or planned

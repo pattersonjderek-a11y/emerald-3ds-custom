@@ -96,6 +96,14 @@ jobs:
           docker exec -i emerald-ci bash -se <<'CHECK'
           python3 3ds_port/tests/encounter_tables_test.py --tree build/${{ matrix.tree }}
           CHECK
+      - name: Custom fixed campaign and private installer checks
+        if: matrix.upstream == 'pokeemerald-expansion'
+        run: |
+          docker exec -i emerald-ci bash -se <<'CHECK'
+          export EMERALD3DS_EXPANSION_TREE="$PWD/build/expansion"
+          python3 -m unittest builder.tests.test_campaign_policy builder.tests.test_custom_package -v
+          python3 tools/campaign_audit.py --tree build/expansion --gdb /opt/devkitpro/devkitARM/bin/arm-none-eabi-gdb --output work/stage-f-campaign.json
+          CHECK
       - name: Production berry clock integration
         if: matrix.upstream == 'pokeemerald'
         run: |

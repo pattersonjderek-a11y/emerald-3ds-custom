@@ -1,3 +1,22 @@
+# Stage F additions
+
+Graphics remains Emerald 3DS v0.5.0 bcae4b70dac61419fc933084084469f6cfbe344b;
+expansion remains dfb0f84374230f4d462191601179b742f9f077df. upstream.lock and
+the frozen toolchain are unchanged. No donor merge or new art/audio asset source
+was added. The 51 fixed Hoenn placements are original project metadata selecting
+existing native expansion species; existing attribution/license notices apply.
+The expanded species/cry/follower limitations in CONTENT_AUDIT.md still apply.
+
+custom_package.py, custom_payload.py, campaign_audit.py and the portable installer
+are project code reusing the upstream pack writer/reader and staging ABI. They
+build a private local-source-data bundle with a hash-only recipe. They do not
+establish a retail-ROM-only expansion extraction recipe or a right to publish
+generated Pokémon content. No ROM, save or firmware was obtained or committed.
+Source and engine-only publication audits remain separate from private test ZIPs.
+The Stage E private Dropbox delivery is preserved and is not replaced by F work.
+
+---
+
 # Sources and attribution
 
 ## Stage D provenance
