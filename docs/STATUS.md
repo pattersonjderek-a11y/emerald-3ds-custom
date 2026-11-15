@@ -21,7 +21,13 @@ backup including settings/sidecars, and roll back interrupted updates. The porta
 installer needs Python 3.11+ only. This is distinct from the upstream retail-ROM
 recipe; a public ROM-only expansion content supply/recipe is still unresolved.
 
-Verification and package metadata will be recorded below when final gates finish.
+Passed so far: full builder suite 278 tests / 4 inherited skips; 24 focused
+campaign/installer checks are included. Fresh-bootstrap production save,
+difficulty and optional-rule fixtures pass. Source publication audit passes.
+The compiled-data audit inventories 155 fixed land species across Gen 1–9 in
+124 native headers and verifies all 51 additions. These are host/data results;
+native application packaging is still waiting on v0.5.0 voxel generation.
+Final gate and package metadata will be recorded when complete.
 Original-XL boot, rendering, progression through Champion and representative
 postgame, actual SD recovery and performance remain PENDING. No emulator used.
 Stage F cannot be called accepted until those device results are supplied.

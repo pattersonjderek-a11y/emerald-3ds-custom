@@ -31,6 +31,7 @@ case "${1:-build}" in
   python3 tools/custom_payload.py recipe --tree build/stage-f --out work/stage-f-source-recipe.json
   python3 tools/custom_payload.py build --recipe work/stage-f-source-recipe.json --romfs build/stage-f/3ds_port/romfs --engine-dir build/stage-f/3ds_port/dist --out work/stage-f-bundle
   python3 3ds_port/tests/custom_pack_test.py --bundle work/stage-f-bundle
+  python3 tools/rehearse_custom_install.py --bundle work/stage-f-bundle --output work/stage-f-install-rehearsal.json
   python3 tools/package_stage_f.py
   ;;
  versions) tools/stage_a.sh versions ;;

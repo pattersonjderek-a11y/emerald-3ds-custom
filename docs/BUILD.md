@@ -35,6 +35,11 @@ python3 tools/custom_payload.py build --recipe work/stage-f-source-recipe.json -
 python3 tools/custom_payload.py verify --bundle work/stage-f-bundle
 ```
 
+The package gate also reads the actual pack through the production console C
+parser under host ASan/UBSan and rehearses first install, full-state update and
+interrupted-update rollback against temporary host directories with synthetic
+state. Neither check exercises ARM, an emulator, FAT power loss or the console.
+
 The recipe contains paths/sizes/hashes only; generated data is read from the
 matching local source build. It validates engine hashes and exact data inventory,
 then recomputes ABI and every pack CRC. `package_stage_f.py` requires the same

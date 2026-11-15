@@ -62,7 +62,7 @@ def audit_linked(tree, spec, gdb):
     for n, row in enumerate(spec['placements']):
         m = row['map']
         lines += ['set $i=0', 'set $h=0',
-                  'while gWildMonHeaders[$i].mapGroup != 255',
+                  f'while $i < {header_bytes}/sizeof(struct WildPokemonHeader) && gWildMonHeaders[$i].mapGroup != 255',
                   f' if gWildMonHeaders[$i].mapGroup == {m}_GROUP && gWildMonHeaders[$i].mapNum == {m}_NUM',
                   '  set $h=&gWildMonHeaders[$i]', '  loop_break', ' end', ' set $i=$i+1', 'end',
                   'if !$h', f' printf "MISSING,{n}\\n"', 'else',
@@ -137,6 +137,7 @@ def audit_linked(tree, spec, gdb):
         assert all(assets.get(ptr, 0) > 1 for ptr in pics), f'unindexed art: {row}'
         generation = next(g for g, end in enumerate((151, 251, 386, 493, 649, 721, 809, 905, 1025), 1) if national <= end)
         result.append({**row, 'national': national, 'generation': generation, 'legal_attacks': attacks[i]})
+    assert all(1 <= n <= 1025 for n in land_dex), 'invalid species in native land tables'
     land_generations = Counter(next(g for g,end in enumerate((151,251,386,493,649,721,809,905,1025),1) if n<=end) for n in land_dex)
     assert set(land_generations) == set(range(1,10)), land_generations
     return {'image_sha256': hashlib.sha256(elf.read_bytes()).hexdigest(),

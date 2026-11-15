@@ -36,7 +36,9 @@ extracted folder, open a terminal and first verify without changing the card:
 python3 installer/install_custom.py --verify
 ```
 
-On Windows use `py -3` in place of `python3`. Install/update by selecting the
+On Windows use `py -3` in place of `python3`. The implementation and fault
+fixtures run on Linux; Windows/macOS commands and real SD-driver behavior
+still require laptop/device verification. Install/update by selecting the
 actual SD root (replace the example path with yours):
 
 ```sh
@@ -52,7 +54,8 @@ For an existing compatible F installation it stages a copy of the complete
 folder, including the save, global `settings.txt` (the seed and randomizer
 switches), clock, Nuzlocke state, logs and existing backups. It retains the
 entire old folder at `3ds/.emerald3ds-custom-stage-f-v050.backup-<token>/`.
-The terminal prints that exact backup path. Do not delete the backup until the
+The terminal prints that exact backup path. This backup is hidden; show hidden
+files on the laptop or open the printed path. Do not delete the backup until the
 updated game has loaded, saved and restarted correctly. The installer never
 converts an E save or changes the game's difficulty-record layout.
 
