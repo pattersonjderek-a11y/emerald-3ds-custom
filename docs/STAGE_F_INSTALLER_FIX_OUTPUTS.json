@@ -1,0 +1,53 @@
+{
+  "path": "work/stage-f-installer-fix-private/Emerald3DS-Custom-StageF-InstallerFix-private.zip",
+  "bytes": 22029491,
+  "sha256": "d1c77fcb150e02ac5ce9b5671e4293dafe532bef8cf7bf958ee01eb5265e610d",
+  "source_commit": "c36f1a01b6e0e9f00d165cf9d672a3c2d4872f45",
+  "engine_abi": 2666602714,
+  "files": {
+    "Emerald3DS.3dsx": {
+      "bytes": 8331048,
+      "sha256": "8922418f897870420d5e994b1d20a8c8a4dbdafe82db5f3b768cef1c96d79a4b"
+    },
+    "Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "f1b748d6846ffbd8f85f6ae637ecfa2728933a252bb6ba19e26189622829aecb"
+    },
+    "emerald3ds.pak": {
+      "bytes": 70056960,
+      "sha256": "4b03404ebbccd36dcf9984766066ab56701f4c1e06bbea94cd47afd9bf5fb2e1"
+    }
+  },
+  "hardware_tested": false,
+  "emulator_tested": false,
+  "data_recipe_sha256": "7506536a9b41ee6b93a796105a4324a0b407dfea1162eff5564061c7ffc5ab11",
+  "campaign_image_sha256": "0c7d088f6bda04e493fa4fc2956307f441a3b1c253635f9c224bc1112f30f76d",
+  "native_baseline_source": "b2cd7f67eea112eec2e5cdd86cc85aebfabeace3",
+  "native_recompiled": false,
+  "native_game_changed": false,
+  "native_artifacts_verified_against_baseline": 7,
+  "host_builder_tests": 286,
+  "host_builder_skips": 4,
+  "focused_package_installer_tests": 28,
+  "fresh_source_engine_paths": 307,
+  "fresh_source_overlay_files": 880,
+  "native_pack_parser_host": "passed under ASan/UBSan; all 17511 payload CRCs",
+  "original_installer_upgrade_host": "passed; 11 synthetic state files; interrupted recovery/retry",
+  "portable_extraction_verified": true,
+  "portable_verification_python": "3.12.14",
+  "archive_entries": 18,
+  "physical_sd": "pending",
+  "campaign": "pending",
+  "public_retail_rom_recipe": "unvalidated",
+  "original_F_zip_unchanged_sha256": "c2043807e6b2bbc78125e18886348bd681237397d05654e5cdb8c198a8bda86a",
+  "original_E_zip_unchanged_sha256": "bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a",
+  "logs": [
+    "work/release-validation/reproductions.log",
+    "work/release-validation/fixes-3.log",
+    "work/release-validation/builder-final.log",
+    "work/release-validation/fresh-source.log",
+    "work/release-validation/campaign.log",
+    "work/release-validation/native-parser.log",
+    "work/release-validation/package-final.log"
+  ]
+}

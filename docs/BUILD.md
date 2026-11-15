@@ -26,6 +26,32 @@ under work/release-validation/ and work/stage-f-installer-fix-private/. The
 matching engine/pack bytes remain identical to original F. No ROM was obtained
 and no content-bearing output is committed or uploaded to GitHub/CI.
 
+Verified follow-up results: 286 builder/host tests / four inherited skips; all
+nine expansion adapters execute in that suite. Focused package/installer/evidence
+suite: 28 tests. Fresh source: 307 engine paths / 880 overlays. The actual original
+F portable installer → hardened update → interrupted recovery rehearsal passed
+on temporary Linux directories using synthetic state. Real pack CRCs also pass
+the production C parser under host ASan/UBSan. No native compilation was rerun;
+all seven compiled outputs match the prior verified hashes.
+
+From clean checkpoint c36f1a0, the final package used these commands in the SDK:
+
+```sh
+python3 tools/custom_payload.py recipe --tree build/stage-f --out work/release-validation/source-recipe.json
+python3 tools/custom_payload.py build --recipe work/release-validation/source-recipe.json --romfs build/stage-f/3ds_port/romfs --engine-dir build/stage-f/3ds_port/dist --out work/release-validation/bundle
+python3 3ds_port/tests/custom_pack_test.py --bundle work/release-validation/bundle
+python3 tools/rehearse_custom_install.py --bundle work/release-validation/bundle --baseline-zip work/stage-f-private/Emerald3DS-Custom-StageF-private.zip --output work/release-validation/install-rehearsal.json
+python3 tools/package_stage_f.py --bundle work/release-validation/bundle --campaign-report work/release-validation/campaign.json --native-baseline docs/STAGE_F_BUILD_OUTPUTS.json --rehearsal-report work/release-validation/install-rehearsal.json --output work/stage-f-installer-fix-private/Emerald3DS-Custom-StageF-InstallerFix-private.zip
+```
+
+The archive is 22,029,491 bytes; exact SHA-256/native hashes and logs are in
+STAGE_F_INSTALLER_FIX_OUTPUTS.json. Its extracted portable installer passes
+verification on host Python 3.12.14. Windows/macOS/physical SD and console tests
+remain pending. If an original recovery was already stranded with a missing
+identity marker or ambiguous folders, recovery preserves them for manual
+inspection; these fixes prevent new recursive-deletion failures. Keep the
+rejected copy and complete backup until the restored run is verified.
+
 ---
 
 # Stage F developer workflow

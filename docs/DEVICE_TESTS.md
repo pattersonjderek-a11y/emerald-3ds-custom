@@ -10,8 +10,10 @@ whole-folder backup. No E save import is supported.
 Host tests exercise copied-state corruption, malformed packs and interruption
 of recovery itself. A temporary-host rehearsal upgrades an installation created
 by the original frozen F installer. These are not physical SD, console save,
-frame-rate or campaign results. All F campaign/visual/device rows below remain
-pending; the public ROM-only expanded-content recipe is also still unresolved.
+frame-rate or campaign results. The new archive is verified on the host (22,029,491 bytes, source c36f1a0,
+native source b2cd7f6, ABI 9ef120da). STAGE_F_INSTALLER_FIX_OUTPUTS.json records
+its checksum and byte-identical native artifacts. Original E/F ZIPs are retained.
+All F campaign/visual/device rows below remain pending; the public ROM-only expanded-content recipe is also still unresolved.
 
 ---
 

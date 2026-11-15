@@ -1,4 +1,4 @@
-# Stage F release validation — installer fixes in progress
+# Stage F release validation — installer fixes packaged; device results pending
 
 The current blueprint defines A–F and has no next stage letter. This follow-up
 finishes independent release engineering on `fix/stage-f-release-validation`,
@@ -29,8 +29,17 @@ the hardened update, preservation of 11 synthetic state files, interrupted
 recovery, repeated recovery and original/E sentinels all pass. The production
 console C parser passes all 17,511 actual pack payloads on the host under
 ASan/UBSan. Seven native baseline hashes match; no native compile was rerun.
-The separately named private InstallerFix ZIP is prepared next from this clean
-source checkpoint; its final metadata will be recorded after freezing. Physical console, campaign and public ROM-only recipe gates are
+Frozen follow-up source: c36f1a01b6e0e9f00d165cf9d672a3c2d4872f45; reused native
+source: b2cd7f6. New private ZIP:
+`work/stage-f-installer-fix-private/Emerald3DS-Custom-StageF-InstallerFix-private.zip`,
+22,029,491 bytes, SHA-256
+`d1c77fcb150e02ac5ce9b5671e4293dafe532bef8cf7bf958ee01eb5265e610d`.
+All archive entries were read back, and the extracted portable installer verifies
+using host Python 3.12.14. It contains current campaign, native-baseline and host
+rehearsal metadata. New-package native hashes equal original F; original E/F ZIP
+hashes remain unchanged. See STAGE_F_INSTALLER_FIX_OUTPUTS.json and
+STAGE_F_INSTALLER_FIX_REHEARSAL.json. Metadata follow-up commits do not replace
+this frozen ZIP. No Dropbox upload or public package publication was performed. Physical console, campaign and public ROM-only recipe gates are
 still pending. There is no supplied E/F device result and no emulator result.
 
 ---
