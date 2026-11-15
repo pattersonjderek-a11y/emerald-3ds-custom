@@ -515,3 +515,19 @@ The final private-package gate caught an upstream plate-cache stat path in a
 the source isolation scan now covers `.c`, `.h` and `.inc`, and the compiled
 app is scanned for every legacy namespace before any ZIP is created. The ZIP
 also includes the port/voxel license notices and source attribution.
+
+## Frozen private test deliverable
+
+Compiled project source `4271253e38908a0bb9f44e163cf748773e31b3ac` was clean.
+`tools/stage_e.sh package` completed (work/package-e-final.log): native/link/asset
+checks, full regression gate, nine enhancement fixtures, matching pack payload
+verification, source audit, legacy-path scan and ZIP generation all passed.
+The ZIP is 21,751,803 bytes with SHA-256
+`bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a`.
+An independent archive readback verified CRCs and embedded app/manifest hashes.
+Engine ABI: `b049d7b0`; 17,511 matching data files (69,264,114 bytes).
+See STAGE_E_BUILD_OUTPUTS.json for compiled/release/pack paths and checksums.
+The in-app buildinfo describes the pinned engine tree and patch; the private
+manifest separately identifies the project source checkpoint. A subsequent
+metadata-only commit does not invalidate or replace this frozen artifact.
+No emulator or console evidence is claimed.

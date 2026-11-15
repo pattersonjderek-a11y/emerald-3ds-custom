@@ -4,7 +4,12 @@ Target: Derek's **original 3DS XL**. No emulator, console boot, frame rate or
 campaign result is claimed for this integration. Prior general C play does not
 accept E. Preserve the earlier C/VisualFixes/D packages separately.
 
-When the verified E private ZIP is available:
+Verified private ZIP: `work/stage-e-private/Emerald3DS-Custom-StageE-private.zip`,
+source `4271253`, SHA-256
+`bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a`.
+The archive contains a matching embedded app and no separate pack or firmware.
+
+Laptop/SD instructions:
 
 1. Back up existing Emerald folders on the laptop. Extract
    `Emerald3DS-Custom-StageE-private.zip`; copy its `3ds` directory to the SD root.

@@ -1,0 +1,105 @@
+{
+  "private_content_bearing": true,
+  "stage": "E",
+  "variant": "baseline",
+  "namespace": "emerald3ds-custom-stage-e-v050",
+  "source_commit": "4271253e38908a0bb9f44e163cf748773e31b3ac",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine_commit": "dfb0f84374230f4d462191601179b742f9f077df",
+  "upstream_lock_sha256": "a57c7a396af4c797c89cd2778e696559325f30efcb5591214df03ea372ded91c",
+  "expansion_patch_sha256": "02821f231e0f175260aebfd7797744f7a7a50b47a04b6ea0863298a2b844a846",
+  "toolchain_manifest_sha256": "0562bdaca1b868ca36a76f0772a873470ef24a65e8d39b83b0ca1ddf5403587d",
+  "build_config_sha256": "7532dbedeee686884c9aadd0a1ab0eb73fd03ea1e4b827e74ace71e74600ce57",
+  "engine_build_info_sha256": "36e956d16207f45ff679619ff20074ebdad5930e78b8edf660e1db5464153cdd",
+  "engine_abi": "b049d7b0",
+  "game_data_files": 17511,
+  "game_data_bytes": 69264114,
+  "asset_map_rows": 17535,
+  "asset_map_sha256": "9b39945fd685239cac4569053ffdd2f3912240606dd6494a8cf7a390a8055a7c",
+  "asset_index_entries": 17534,
+  "asset_pointer_entries": 1451,
+  "pack": {
+    "bytes": 70056960,
+    "sha256": "ae8d1698bdda7258dbe43dd76dff18fc895a9a50515e6c31761ee9057a2a33ea",
+    "entries": 17511
+  },
+  "files": {
+    "3ds/emerald3ds-custom-stage-e-v050/Emerald3DS.3dsx": {
+      "bytes": 79125592,
+      "sha256": "c4d93cd0fe506aa6101e854901fa1a810c0fa48e40597d440a00c85cad1260dc"
+    },
+    "3ds/emerald3ds-custom-stage-e-v050/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "a01e2333c63efcfccaa951aa1cf6b7d38bc18cf20e375ba250bffaf94ecf32a7"
+    }
+  },
+  "native_verified": true,
+  "emulator_tested": false,
+  "hardware_tested": false,
+  "limitations": "Linked data/index coverage is not visual, mechanic, emulator or physical-console acceptance.",
+  "graphics_upstream": "v0.5.0 / bcae4b70dac61419fc933084084469f6cfbe344b",
+  "randomizer_policy": "v0.5.0 global editable settings; 1025 National Dex permutation; optional domains v1",
+  "report_date_local": "2026-11-14",
+  "source_branch": "project/stage-e-v050",
+  "native_compilation_verified": true,
+  "host_tests_verified": true,
+  "fresh_source_reproduced": true,
+  "fresh_native_recompiled": false,
+  "physical_console_tested": false,
+  "campaign_completed": false,
+  "package": {
+    "path": "work/stage-e-private/Emerald3DS-Custom-StageE-private.zip",
+    "bytes": 21751803,
+    "sha256": "bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a"
+  },
+  "outputs": {
+    "emerald3ds.3dsx": {
+      "path": "build/stage-e/3ds_port/emerald3ds.3dsx",
+      "bytes": 79125592,
+      "sha256": "c4d93cd0fe506aa6101e854901fa1a810c0fa48e40597d440a00c85cad1260dc"
+    },
+    "emerald3ds.elf": {
+      "path": "build/stage-e/3ds_port/emerald3ds.elf",
+      "bytes": 73879412,
+      "sha256": "821567586abf0b2873ef1f068ffc260d15a54776d02b9c1262505c0709014062"
+    },
+    "build/gamedata_image.elf": {
+      "path": "build/stage-e/3ds_port/build/gamedata_image.elf",
+      "bytes": 87848956,
+      "sha256": "c9f956accccc8d1ba8e8c0e5a6c237d14b60a5704afe56f1d71bd20fd6cca120"
+    },
+    "emerald3ds.smdh": {
+      "path": "build/stage-e/3ds_port/emerald3ds.smdh",
+      "bytes": 14016,
+      "sha256": "a01e2333c63efcfccaa951aa1cf6b7d38bc18cf20e375ba250bffaf94ecf32a7"
+    },
+    "build/emerald3ds.pak": {
+      "path": "build/stage-e/3ds_port/build/emerald3ds.pak",
+      "bytes": 70056960,
+      "sha256": "ae8d1698bdda7258dbe43dd76dff18fc895a9a50515e6c31761ee9057a2a33ea"
+    },
+    "dist/Emerald3DS.3dsx": {
+      "path": "build/stage-e/3ds_port/dist/Emerald3DS.3dsx",
+      "bytes": 8331048,
+      "sha256": "ce09651899cde8a122c2bc261b2c7d53378d0471040997a39ab9407cd2c8bb6f"
+    },
+    "dist/Emerald3DS.smdh": {
+      "path": "build/stage-e/3ds_port/dist/Emerald3DS.smdh",
+      "bytes": 14016,
+      "sha256": "a01e2333c63efcfccaa951aa1cf6b7d38bc18cf20e375ba250bffaf94ecf32a7"
+    }
+  },
+  "checks": {
+    "native_and_regressions": "make -C build/stage-e/3ds_port verify PYTHON=python3 (work/package-e-final.log)",
+    "builder": "254 tests, 4 skips (work/builder-final.log)",
+    "enhancements": "9 executed and passed (work/package-e-final.log)",
+    "fresh": "306 engine paths + canonical overlays compared; production save/difficulty/optional/follower tests passed (work/fresh-handoff.log)",
+    "private_archive": "CRC, manifest and compiled payload hashes verified; no save/ROM/firmware/standalone pack",
+    "engine_publication_audit": "work/engine-release-audit-final.log: clean"
+  },
+  "notes": [
+    "In-app buildinfo identifies the pinned engine checkout and its applied patch; the project source checkpoint is the manifest source_commit.",
+    "Follow-up metadata commits do not change or rebuild this frozen private package.",
+    "No emulator or console execution has been performed."
+  ]
+}

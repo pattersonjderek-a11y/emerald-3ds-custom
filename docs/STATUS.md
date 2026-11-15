@@ -70,10 +70,16 @@ adapters are included. Raw/short palette support fixes native UI/Dex/bag decodin
 
 ## Remaining acceptance and next task
 
-Package the verified clean source checkpoint privately, preserving older test
-packages. The intended ZIP is
-`work/stage-e-private/Emerald3DS-Custom-StageE-private.zip`; the package manifest
-and STAGE_E_BUILD_OUTPUTS.json record its exact revision/hashes once created.
+The frozen private ZIP is ready:
+`work/stage-e-private/Emerald3DS-Custom-StageE-private.zip` (21,751,803 bytes).
+Compiled project source: `4271253e38908a0bb9f44e163cf748773e31b3ac`, clean at
+packaging. ZIP SHA-256:
+`bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a`.
+The archive was opened and CRC-checked; its application hashes match the compiled
+outputs and manifest. It includes attribution/license notices. Older packages
+remain separate. STAGE_E_BUILD_OUTPUTS.json records all output paths/hashes;
+the engine-only release audit passes separately. Metadata follow-up commits do
+not replace this frozen package.
 Use DEVICE_TESTS.md on the original XL. Seed 1 predicts Floragato (#907) in
 Torchic's ball, providing an easy Gen 9 device check without a developer grant.
 
