@@ -889,8 +889,8 @@ static void LoadResources(void)
 #endif
 
 #ifdef PORT_EXPANSION
-    sRes.holdTiles = DecompPath("build/assets/graphics/party_menu/hold_icons.png.4bpp.smol", NULL);
-    PalPath("build/assets/graphics/party_menu/hold_icons.pal.gbapal", &sRes.holdPal, 1);
+    sRes.holdTiles = ReadDataPath("build/assets/graphics/party_menu/hold_icons.png.4bpp", NULL);
+    PalPath("build/assets/graphics/party_menu/hold_icons.png.gbapal", &sRes.holdPal, 1);
 #else
     sRes.holdTiles = ReadRomfs("party_menu/hold_icons.4bpp", NULL);
     PalFile("party_menu/hold_icons.gbapal", &sRes.holdPal, 1, FALSE);

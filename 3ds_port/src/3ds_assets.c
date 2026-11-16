@@ -377,6 +377,25 @@ static s32 FindAssetIndexForSizedPointer(u32 ptr, u32 size, u32 *outOffset)
 
 /* ── Payload cache ──────────────────────────────────────────────────────── */
 
+static u8 *AllocatePayload(u32 size)
+{
+    if (size > UINT32_MAX - CTR_ASSET_READ_PADDING)
+        return NULL;
+    return calloc((size_t)size + CTR_ASSET_READ_PADDING, 1);
+}
+
+/* Keep room for atlas construction and runtime state on a constrained
+ * homebrew heap. The previous fixed 24 MiB limit exceeded the entire free
+ * heap of the reported original XL, so no payload was ever reclaimed. */
+static u32 CacheBudgetForRoom(u32 available, u32 cached)
+{
+    const u32 reserve = 1024u * 1024u;
+    u64 total = (u64)available + cached;
+    u32 ceiling = total < 8u * 1024u * 1024u ? 256u * 1024u : CTR_ASSET_CACHE_BUDGET;
+    u64 spare = total > reserve ? total - reserve : 0;
+    return spare < ceiling ? (u32)spare : ceiling;
+}
+
 /*
  * The game asks for a payload the moment it needs it, in the middle of a
  * frame: the scene loads of the intro and the title spent 11 ms of a frame
@@ -405,7 +424,7 @@ static u8 *ReadPayload(u32 idx)
         PORT_LOG("[ERROR] asset open failed: %s\n", path);
         return NULL;
     }
-    buffer = malloc(expected != 0 ? expected : 1);
+    buffer = AllocatePayload(expected);
     if (buffer == NULL)
     {
         fclose(file);
@@ -677,7 +696,7 @@ static void WarmPack(WarmEntry *list, unsigned count, u8 *run)
                 u32 idx = list[i].idx;
                 u8 *copy;
 
-                if (!sWarming[idx] || (copy = malloc(list[i].size ? list[i].size : 1)) == NULL)
+                if (!sWarming[idx] || (copy = AllocatePayload(list[i].size)) == NULL)
                     continue;
                 memcpy(copy, run + (list[i].offset - start), list[i].size);
                 CtrLock_Lock(&sLock);
@@ -746,6 +765,13 @@ void CtrAssets_StartWarmup(void)
 
     if (!LoadAssetMap() || sWarming != NULL)
         return;
+    sBudget = CacheBudgetForRoom(CtrPlatform_HeapAvailable(), sStats.bytes);
+    if (sBudget < 1024u * 1024u)
+    {
+        CtrLog_Write(CTR_LOG_FS, "assets: constrained heap, %lu KiB demand cache; background warm-up skipped",
+                     (unsigned long)(sBudget >> 10));
+        return;
+    }
     sWarming = calloc(sEntryCount, 1);
     list = malloc(sEntryCount * sizeof(*list));
     sWarmRunning = true;
@@ -781,6 +807,7 @@ void CtrAssets_Collect(void)
     u32 i;
 
     ++sStamp;
+    sBudget = CacheBudgetForRoom(CtrPlatform_HeapAvailable(), sStats.bytes);
     if (!sLoaded || sStats.bytes <= sBudget)
         return;
 
@@ -973,7 +1000,7 @@ bool Port_LoadAssetPointerToHeap(const void *ptr, u8 **outBuf, u32 *outSize)
     if (data == NULL || offset >= sPayloads[idx].size)
         return false;
     size = sPayloads[idx].size - offset;
-    copy = malloc(size);
+    copy = AllocatePayload(size);
     if (copy == NULL)
         return false;
     memcpy(copy, data + offset, size);
@@ -1140,7 +1167,7 @@ void *CtrAssets_PrefetchRead(const CtrAssetPrefetch *request)
 
     if (file == NULL)
         return NULL;
-    buffer = malloc(request->size != 0 ? request->size : 1);
+    buffer = AllocatePayload(request->size);
     if (buffer != NULL && fread(buffer, 1, request->size, file) != request->size)
     {
         free(buffer);

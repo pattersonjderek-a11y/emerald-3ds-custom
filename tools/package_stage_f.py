@@ -39,7 +39,9 @@ def main():
     ap.add_argument('--bundle', type=Path, default=ROOT/'work/stage-f-bundle')
     ap.add_argument('--tree', type=Path, default=ROOT/'build/stage-f')
     ap.add_argument('--campaign-report', type=Path, default=ROOT/'docs/STAGE_F_CAMPAIGN.json')
-    ap.add_argument('--native-baseline', type=Path, help='require byte-identical native outputs from a verified earlier build')
+    native = ap.add_mutually_exclusive_group()
+    native.add_argument('--native-baseline', type=Path, help='require byte-identical native outputs from a verified earlier build')
+    native.add_argument('--native-recompiled', action='store_true', help='record a new native compile, separately from verified reuse')
     ap.add_argument('--rehearsal-report', type=Path, help='require a matching successful installer/update/recovery rehearsal')
     ap.add_argument('--output', type=Path, default=ROOT/'work/stage-f-private/Emerald3DS-Custom-StageF-private.zip')
     args = ap.parse_args()
@@ -96,7 +98,8 @@ def main():
               'sha256':sha(target), 'source_commit':commit, 'engine_abi':meta['engine_abi'],
               'files':meta['files'], 'hardware_tested':False, 'emulator_tested':False,
               'data_recipe_sha256':meta['recipe_sha256'], 'campaign_image_sha256':image_sha,
-              'native_baseline_source':native_source, 'native_recompiled':False if native_source else None}
+              'native_baseline_source':native_source,
+              'native_recompiled':True if args.native_recompiled else (False if native_source else None)}
     (out/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))
 

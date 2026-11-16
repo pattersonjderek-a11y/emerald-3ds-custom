@@ -5,13 +5,15 @@
 #include <stdint.h>
 
 /*
- * Resident index, reclaimable payloads. 24 MiB is a deliberate ARM11 figure:
- * the whole referenced graphics set is smaller than the linear+application heap
- * available here, so the cache exists to bound growth, not to survive on 4 MiB.
+ * Resident index, reclaimable payloads. 24 MiB is the upper limit; the runtime
+ * lowers it on constrained libc heaps and reserves room for atlas scratch.
  */
 #define CTR_ASSET_CACHE_BUDGET (24u * 1024u * 1024u)
 /* Never reclaim something the game may still be holding from a recent frame. */
 #define CTR_ASSET_CACHE_GRACE_FRAMES 8u
+/* Native SMOL/tANS pipelines may speculatively read the following u32,
+ * as they could in contiguous GBA ROM. External payloads own that zero word. */
+#define CTR_ASSET_READ_PADDING 4u
 
 struct CtrAssetStats
 {
@@ -21,7 +23,7 @@ struct CtrAssetStats
 };
 
 void CtrAssets_Collect(void);
-/* Reads every payload into the cache from a background worker (see 3ds_assets.c). */
+/* Background warm-up is skipped when the remaining heap is constrained. */
 void CtrAssets_StartWarmup(void);
 /* Stops the warm-up before the file system closes (at exit). */
 void CtrAssets_StopWarmup(void);

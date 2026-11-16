@@ -1,4 +1,22 @@
-# Stage F installer recovery follow-up
+# Stage F graphics/boot repair compatibility
+
+The BootFix update recompiles the native engine and its matching data pack but
+does not change persistence: schema 1, 52-byte SaveBlock1 record at 0x988,
+rules 0x00050050 and `/3ds/emerald3ds-custom-stage-f-v050/`. No flags, variables,
+checksum ranges, difficulty/seed rules or sidecars are allocated or changed.
+Native save round trips/recovery remain part of the existing regression checks.
+
+Use the checked portable installer for an existing F installation. It preserves
+the complete folder, including save, global seed/settings, clock, tracker and
+debug marker/logs, and retains the original in a hidden whole-folder backup.
+Do not delete the F folder to address missing textures; those failures came
+from decoder rejection and heap exhaustion, not a demonstrated save defect.
+No older-stage import is added. Actual console Continue/save/restart after this
+repair remains pending; host synthetic preservation is separate evidence.
+
+---
+
+# Stage F installer recovery follow-up (historical)
 
 No native save field, CRC range, flag, variable, difficulty record or global
 settings policy changes. F still uses schema 1, rules 0x00050050 and its own

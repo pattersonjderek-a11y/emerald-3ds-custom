@@ -1,4 +1,50 @@
-# Stage F installer/package validation follow-up
+# Stage F original-XL graphics/boot repair
+
+Use `fix/stage-f-intro-boot` and `tools/stage_f_bootfix.sh`; the old F wrapper
+refuses this branch so it cannot overwrite the frozen baseline. Pins and SDK
+stay unchanged. Container: `emerald-stage-f`, image `emerald-stage-e-v050-sdk`;
+ARM GCC 16.1.0 / devkitARM r68, Python 3.13.17, Pillow 12.3.0. Host extracted
+installer checks use Python 3.12.14. No dependency upgrade was made.
+
+Commands actually used for the repair (inside that SDK container):
+
+```sh
+python3 tools/regenerate_expansion_patch.py --tree build/stage-f-boot
+python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-f-boot
+make -C build/stage-f-boot/3ds_port -j6 PYTHON=python3
+tools/stage_f_bootfix.sh test
+tools/stage_f_bootfix.sh fresh
+# After successful checks and a clean source checkpoint:
+tools/stage_f_bootfix.sh package
+```
+
+The initial native compile passed (`work/intro-boot/native-build.log`). Native
+outputs are `build/stage-f-boot/3ds_port/emerald3ds.3dsx`, `.elf`, `.smdh` and
+`build/gamedata_image.elf`; engine-only outputs use `dist/Emerald3DS.3dsx` and
+`dist/Emerald3DS.smdh`; matching pack is `build/emerald3ds.pak` under that port.
+They are separate from the original F outputs, and must be paired together.
+
+The new host graphics test extracts the actual native SMOL/tANS codec,
+compression-header wrappers, title entry calls and menu heap helper. It compares
+actual pack payloads with their raw native build inputs under ASan/UBSan. It
+reproduced rejected decodes before the dispatcher fix, then three word-lookahead
+overreads before allocation padding. All 176 selected compressed assets now
+match, including every compressed indexed tileset. Resolver/file/allocator
+boundaries are host shims; GPU/ARM execution is not simulated. The memory test
+executes production allocation, budget and eviction functions at recorded XL
+heap values, checks zero padding and preserves the eight-frame pointer grace.
+CI runs both checks and never uploads the generated expansion pack.
+
+Fresh-source checking uses a separate checkout of the exact locally available
+expansion object, with origin still the pinned upstream URL. It compares engine
+patch paths and canonical overlays and runs production host fixtures. This does
+not claim a second native compile from scratch. Private logs/evidence are under
+`work/intro-boot/`; BootFix bundle/ZIP have new paths and do not replace earlier
+deliverables. See DEVICE_TESTS.md for the actual failure evidence and retest.
+
+---
+
+# Stage F installer/package validation follow-up (historical)
 
 Branch `fix/stage-f-release-validation`; original F ZIP and E outputs remain
 frozen. This changes Python installation/packaging and tests only. Native F

@@ -385,8 +385,8 @@ void CtrLog_ShowFatal(const char *reason)
     consoleSelect(&sConsole);
     consoleSetWindow(&sConsole, 0, 0, 40, 30);
     consoleClear();
-    printf("\x1b[1;1HFATAL: %.32s", reason);
-    printf("\x1b[3;1HLog (if debug.txt exists): port.log");
-    printf("\x1b[5;1HSTART: exit");
+    printf("\x1b[1;1HFATAL: %.192s\n\n", reason);
+    printf("Log (if debug.txt exists): port.log\n\n");
+    printf("START: exit");
     LightLock_Unlock(&sConsoleLock);
 }

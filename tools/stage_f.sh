@@ -2,6 +2,10 @@
 # Stage F is separate from the frozen E source/build/ZIP/Dropbox delivery.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+if [[ -f tools/stage_f_bootfix.sh && "${1:-build}" != versions ]]; then
+ echo 'Use tools/stage_f_bootfix.sh on this branch; build/stage-f is the frozen baseline.' >&2
+ exit 2
+fi
 export DEVKITPRO="${DEVKITPRO:-/opt/devkitpro}"
 export DEVKITARM="${DEVKITARM:-$DEVKITPRO/devkitARM}"
 export PATH="$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH"

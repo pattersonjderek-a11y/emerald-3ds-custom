@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 
 #include "3ds_data.h"
+#include "3ds_assets.h"
 #include "3ds_pak.h"
 #include "3ds_platform.h"
 #include "3ds_locale.h"
@@ -482,7 +483,7 @@ static void *LoadNow(const char *path, uint32_t *outSize)
 
     if (!CtrData_Size(path, &size) || (file = CtrData_Open(path)) == NULL)
         return NULL;
-    buffer = malloc((size_t)size + 1);
+    buffer = calloc((size_t)size + CTR_ASSET_READ_PADDING, 1);
     if (buffer == NULL || fread(buffer, 1, size, file) != size)
     {
         fclose(file);
@@ -681,7 +682,7 @@ void *CtrData_Load(const char *path, uint32_t *outSize)
         svcSleepThread(200 * 1000);
         LightLock_Lock(&sAheadLock);
     }
-    if (slot != NULL && slot->state == AHEAD_READY && (copy = malloc((size_t)slot->size + 1)) != NULL)
+    if (slot != NULL && slot->state == AHEAD_READY && (copy = calloc((size_t)slot->size + CTR_ASSET_READ_PADDING, 1)) != NULL)
     {
         size = slot->size;
         memcpy(copy, slot->data, size);

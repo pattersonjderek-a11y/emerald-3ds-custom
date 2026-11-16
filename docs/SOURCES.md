@@ -1,4 +1,24 @@
-# Stage F release-validation follow-up
+# Stage F original-XL boot/graphics repair
+
+No pins, dependency versions, donor projects or art sources change. Native
+compression routing is restored from this same pinned expansion's menu.c and
+title_screen.c at dfb0f84374230f4d462191601179b742f9f077df, retaining all upstream
+codec implementation/credits. Root platform changes provide padded external
+inputs, constrained-heap cache policy, actual held-icon paths and readable fatal
+messages. New host regressions reuse this native production codec and compare
+local build inputs, rather than embedding game assets in tests or Git.
+
+Derek's uploaded port.log and photographs are private diagnostic input, not
+source instructions, assets or release content. Only non-content findings and
+hash metadata are recorded. The new private repair ZIP is separate from frozen
+E/F/InstallerFix files. Source and engine-only publication gates still exclude
+ROMs, saves, firmware, generated game data and content-bearing applications.
+Existing notices, expanded-content limitations and the unresolved public
+retail-ROM-only recipe requirement remain applicable.
+
+---
+
+# Stage F release-validation follow-up (historical)
 
 The native engine, expansion patch, v0.5.0 graphics pin and generated game pack
 are unchanged from verified F. Changes are project Python installer/packaging

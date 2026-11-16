@@ -788,7 +788,6 @@ void CtrGame_Init(void)
     /* Fail loudly here rather than letting the game read stub bytes as tiles,
      * or zeroes as script opcodes. */
     Port_AssetPreload();
-    CtrAssets_StartWarmup();
     if (!CtrScripts_Init())
         CtrAssets_Fatal("the script bundle is required before AgbMain");
     if (!CtrMaps_Init())
@@ -818,6 +817,9 @@ void CtrGame_Init(void)
      * hands out, and the first thing AgbMain does is allocate. Record what is
      * left before and during the first frames so a failure there is readable. */
     KeepGameAtStart();
+    /* Mandatory bundles/UI/reset storage take precedence over speculative
+     * asset reads. Choose the cache policy from the heap actually left. */
+    CtrAssets_StartWarmup();
     CtrPlatform_ReportMemory("before AgbMain");
     if (setjmp(sAgbMainEntry) == 0)
         CtrLog_Write(CTR_LOG_GAME, "entering AgbMain");

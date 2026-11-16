@@ -54,6 +54,8 @@ jobs:
           python 3ds_port/tests/voxel_night_test.py --cc gcc
       - name: Bottom map and clock footer
         run: python 3ds_port/tests/bottom_map_test.py
+      - name: Production payload padding and constrained heap reclamation
+        run: python 3ds_port/tests/asset_memory_test.py
 
   build-3ds:
     strategy:
@@ -114,6 +116,13 @@ jobs:
         run: |
           docker exec -i emerald-ci bash -se <<'CHECK'
           make -C build/${{ matrix.tree }}/3ds_port release PYTHON=python3
+          CHECK
+      - name: Expansion graphics decoded against their native raw inputs
+        if: matrix.upstream == 'pokeemerald-expansion'
+        run: |
+          docker exec -i emerald-ci bash -se <<'CHECK'
+          make -C build/expansion/3ds_port pak PYTHON=python3
+          python3 3ds_port/tests/intro_asset_decode_test.py --tree build/expansion --pak build/expansion/3ds_port/build/emerald3ds.pak
           CHECK
       - name: Audit the build outputs that would ship
         run: |

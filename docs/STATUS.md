@@ -1,4 +1,45 @@
-# Stage F release validation — installer fixes packaged; device results pending
+# Stage F boot/graphics repair — implementation verified on host; device retest pending
+
+Current branch: `fix/stage-f-intro-boot`; separate tree `build/stage-f-boot`.
+Derek supplied actual original-3DS-XL failures from the InstallerFix package:
+intermittent intro `[FS]` fatal errors, noisy logo/intro sprite boxes, missing
+map textures in both 2D and voxel, and ineffective voxel toggles. One later
+launch reached gameplay and exited cleanly; this is not a passing visual test.
+The private uploaded log identifies Old 3DS XL, matching engine/pack ABI
+9ef120da, repeated rejected SMOL headers in LZ-only loaders, and failed voxel
+atlas scratch allocation. Its heap room fell from 1,421 KiB to 280 KiB with
+1,491 KiB of cached assets. No short-read/CRC failure is present in that session;
+the earlier photographed boot fatal was not reproduced by this supplied log.
+
+The repair restores native expansion compression dispatch in the shared heap
+loader and title logo, adds owned zero-word padding for SMOL/tANS lookahead,
+and limits speculative caching on constrained heaps. Mandatory bundles/UI are
+loaded before selecting warm-up policy; low-memory launches use a demand cache
+of at most 256 KiB while reserving 1 MiB where reclaimable. The eight-frame
+pointer grace and upstream high-memory cache ceiling remain. Held-item icons
+use their actual native raw paths. Fatal messages now wrap the asset path.
+
+Native ARM11 compilation passed in the frozen SDK. Actual packed graphics pass
+176 production codec/heap-loader comparisons with native raw inputs under host
+ASan/UBSan, including intro/title, all compressed tilesets and representative
+Gen 1–9 art. Production allocation/cache tests pass using the observed XL heap
+values. Existing `make verify` and 286 builder tests pass (four inherited skips).
+Fresh bootstrap compares 307 engine paths and 883 canonical overlay files;
+production save/difficulty/optional-rule and actual-asset codec fixtures pass
+against that fresh engine source. This is not GPU execution, a successful
+console boot or a second clean native build. Final paired private packaging is
+recorded in BUILD.md and the repair output receipt when complete. Device retesting remains
+the next task; no emulator or physical SD test was performed here.
+
+Same F namespace/schema/rules; preserve existing F progress/settings with the
+checked installer. No new gameplay rules, dependency pins, donor content or save
+migration. Original E/F/InstallerFix outputs remain frozen. InstallerFix was
+delivered privately to Dropbox; it is the build that supplied these failures.
+Historical stage/checkpoint reports below describe their evidence at that time.
+
+---
+
+# Stage F release validation — historical InstallerFix checkpoint
 
 The current blueprint defines A–F and has no next stage letter. This follow-up
 finishes independent release engineering on `fix/stage-f-release-validation`,

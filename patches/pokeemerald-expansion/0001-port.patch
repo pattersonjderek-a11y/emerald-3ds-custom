@@ -26718,23 +26718,24 @@ index 801690ca..c6c2e424 100644
      if (y == 0)
      {
 diff --git c/src/menu.c w/src/menu.c
-index 2a2963d8..70182903 100644
+index 2a2963d8..c68aaae9 100644
 --- c/src/menu.c
 +++ w/src/menu.c
-@@ -27,6 +27,12 @@
+@@ -27,6 +27,13 @@
  #include "window.h"
  #include "constants/songs.h"
  
 +
 +#ifdef PORT_BRIDGE
 +#include "port_log.h"
++#include "3ds_assets.h"
 +#include "port_platform.h"
 +#endif
 +
  struct MenuInfoIcon
  {
      u8 width;
-@@ -70,6 +76,10 @@ static EWRAM_DATA struct Menu sMenu = {0};
+@@ -70,6 +77,10 @@ static EWRAM_DATA struct Menu sMenu = {0};
  static EWRAM_DATA u16 sTileNum = 0;
  static EWRAM_DATA u8 sPaletteNum = 0;
  static EWRAM_DATA u8 sYesNoWindowId = 0;
@@ -26745,7 +26746,7 @@ index 2a2963d8..70182903 100644
  static EWRAM_DATA u8 sHofPCTopBarWindowId = 0;
  static EWRAM_DATA bool8 sScheduledBgCopiesToVram[4] = {FALSE};
  static EWRAM_DATA u16 sTempTileDataBufferIdx = 0;
-@@ -81,8 +91,18 @@ static const struct WindowTemplate sStandardTextBox_WindowTemplates[] =
+@@ -81,8 +92,18 @@ static const struct WindowTemplate sStandardTextBox_WindowTemplates[] =
  {
      {
          .bg = 0,
@@ -26764,7 +26765,7 @@ index 2a2963d8..70182903 100644
          .width = 27,
          .height = 4,
          .paletteNum = 15,
-@@ -94,8 +114,15 @@ static const struct WindowTemplate sStandardTextBox_WindowTemplates[] =
+@@ -94,8 +115,15 @@ static const struct WindowTemplate sStandardTextBox_WindowTemplates[] =
  static const struct WindowTemplate sYesNo_WindowTemplates =
  {
      .bg = 0,
@@ -26780,7 +26781,7 @@ index 2a2963d8..70182903 100644
      .width = 5,
      .height = 4,
      .paletteNum = 15,
-@@ -645,6 +672,14 @@ static u8 InitMenu(u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8
+@@ -645,6 +673,14 @@ static u8 InitMenu(u8 windowId, u8 fontId, u8 left, u8 top, u8 cursorHeight, u8
      sMenu.fontId = fontId;
      sMenu.optionHeight = cursorHeight;
      sMenu.APressMuted = muteAPress;
@@ -26795,7 +26796,7 @@ index 2a2963d8..70182903 100644
  
      pos = initialCursorPos;
  
-@@ -720,8 +755,14 @@ s8 Menu_ProcessInput(void)
+@@ -720,8 +756,14 @@ s8 Menu_ProcessInput(void)
  {
      if (JOY_NEW(A_BUTTON))
      {
@@ -26810,7 +26811,7 @@ index 2a2963d8..70182903 100644
          return sMenu.cursorPos;
      }
      else if (JOY_NEW(B_BUTTON))
-@@ -937,6 +978,9 @@ void CreateYesNoMenuAtPos(const struct WindowTemplate *window, u8 fontId, u8 lef
+@@ -937,6 +979,9 @@ void CreateYesNoMenuAtPos(const struct WindowTemplate *window, u8 fontId, u8 lef
      AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);
  
      InitMenuNormal(sYesNoWindowId, fontId, left, top, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_HEIGHT), 2, initialCursorPos);
@@ -26820,7 +26821,7 @@ index 2a2963d8..70182903 100644
  }
  
  static void UNUSED CreateYesNoMenuInTopLeft(const struct WindowTemplate *window, u8 fontId, u16 baseTileNum, u8 paletteNum)
-@@ -947,6 +991,15 @@ static void UNUSED CreateYesNoMenuInTopLeft(const struct WindowTemplate *window,
+@@ -947,6 +992,15 @@ static void UNUSED CreateYesNoMenuInTopLeft(const struct WindowTemplate *window,
  s8 Menu_ProcessInputNoWrapClearOnChoose(void)
  {
      s8 result = Menu_ProcessInputNoWrap();
@@ -26836,7 +26837,7 @@ index 2a2963d8..70182903 100644
      if (result != MENU_NOTHING_CHOSEN)
          EraseYesNoWindow();
      return result;
-@@ -954,8 +1007,20 @@ s8 Menu_ProcessInputNoWrapClearOnChoose(void)
+@@ -954,8 +1008,20 @@ s8 Menu_ProcessInputNoWrapClearOnChoose(void)
  
  void EraseYesNoWindow(void)
  {
@@ -26857,7 +26858,7 @@ index 2a2963d8..70182903 100644
  }
  
  static void PrintMenuActionGridText(u8 windowId, u8 fontId, u8 left, u8 top, u8 width, u8 height, u8 columns, u8 rows, const struct MenuAction *menuActions)
-@@ -1303,6 +1368,14 @@ u8 InitMenuInUpperLeftCorner(u8 windowId, u8 itemCount, u8 initialCursorPos, boo
+@@ -1303,6 +1369,14 @@ u8 InitMenuInUpperLeftCorner(u8 windowId, u8 itemCount, u8 initialCursorPos, boo
      sMenu.fontId = FONT_NORMAL;
      sMenu.optionHeight = 16;
      sMenu.APressMuted = APressMuted;
@@ -26872,7 +26873,7 @@ index 2a2963d8..70182903 100644
  
      pos = initialCursorPos;
  
-@@ -1382,6 +1455,9 @@ void CreateYesNoMenu(const struct WindowTemplate *window, u16 baseTileNum, u8 pa
+@@ -1382,6 +1456,9 @@ void CreateYesNoMenu(const struct WindowTemplate *window, u16 baseTileNum, u8 pa
  
      AddTextPrinter(&printer, TEXT_SKIP_DRAW, NULL);
      InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos);
@@ -26882,7 +26883,7 @@ index 2a2963d8..70182903 100644
  }
  
  void PrintMenuGridTable(u8 windowId, u8 optionWidth, u8 columns, u8 rows, const struct MenuAction *menuActions)
-@@ -1523,11 +1599,24 @@ void *DecompressAndCopyTileDataToVram(u8 bgId, const void *src, u32 size, u16 of
+@@ -1523,11 +1600,24 @@ void *DecompressAndCopyTileDataToVram(u8 bgId, const void *src, u32 size, u16 of
      if (sTempTileDataBufferIdx < ARRAY_COUNT(sTempTileDataBuffer))
      {
          void *ptr = malloc_and_decompress(src, &sizeOut);
@@ -26907,7 +26908,7 @@ index 2a2963d8..70182903 100644
              sTempTileDataBuffer[sTempTileDataBufferIdx++] = ptr;
          }
          return ptr;
-@@ -1539,13 +1628,26 @@ void DecompressAndLoadBgGfxUsingHeap(u8 bgId, const void *src, u32 size, u16 off
+@@ -1539,13 +1629,26 @@ void DecompressAndLoadBgGfxUsingHeap(u8 bgId, const void *src, u32 size, u16 off
  {
      u32 sizeOut;
      void *ptr = malloc_and_decompress(src, &sizeOut);
@@ -26934,7 +26935,7 @@ index 2a2963d8..70182903 100644
      }
  }
  
-@@ -1561,15 +1663,77 @@ void task_free_buf_after_copying_tile_data_to_vram(u8 taskId)
+@@ -1561,15 +1664,78 @@ void task_free_buf_after_copying_tile_data_to_vram(u8 taskId)
  void *malloc_and_decompress(const void *src, u32 *size)
  {
      void *ptr;
@@ -26952,10 +26953,11 @@ index 2a2963d8..70182903 100644
 +            goto fail;
 +        // Own the complete input in the game heap. The BIOS asset path uses a
 +        // second, libc-heap allocation and cannot report a failed load to us.
-+        compressed = Alloc(compressedSize);
++        compressed = Alloc(compressedSize + CTR_ASSET_READ_PADDING);
 +        if (compressed == NULL
 +         || !Port_LoadAssetPointerToBufferSized(src, compressed, compressedSize))
 +            goto fail;
++        memset((u8 *)compressed + compressedSize, 0, CTR_ASSET_READ_PADDING);
 +        src = compressed;
 +    }
 +#endif
@@ -26974,8 +26976,7 @@ index 2a2963d8..70182903 100644
 +        goto fail;
 +#endif
      if (ptr)
--        DecompressDataWithHeaderWram(src, ptr);
-+        LZ77UnCompWram(src, ptr);
+         DecompressDataWithHeaderWram(src, ptr);
 +#if CTR_LANG_PT_BR
 +    /* Decompressed from a copy, which the port cannot name: named here by
 +     * the asset it was copied from (bios.c does it for the rest). */
@@ -27013,7 +27014,7 @@ index 2a2963d8..70182903 100644
  }
  
  u16 copy_decompressed_tile_data_to_vram(u8 bgId, const void *src, u16 size, u16 offset, u8 mode)
-@@ -1818,7 +1982,7 @@ void ListMenuLoadStdPalAt(u8 palOffset, u8 palId)
+@@ -1818,7 +1984,7 @@ void ListMenuLoadStdPalAt(u8 palOffset, u8 palId)
  
  void BlitMenuInfoIcon(u8 windowId, u8 iconId, u16 x, u16 y)
  {
@@ -27022,7 +27023,7 @@ index 2a2963d8..70182903 100644
  }
  
  void BufferSaveMenuText(u8 textId, u8 *dest, u8 color)
-@@ -1971,3 +2135,150 @@ static void Task_SmoothBlendLayers(u8 taskId)
+@@ -1971,3 +2137,150 @@ static void Task_SmoothBlendLayers(u8 taskId)
  #undef tEvBDelta
  #undef tEvWhich
  #undef tEvStepCount
@@ -44289,7 +44290,7 @@ index bee91512..2211e05e 100644
  }
  
 diff --git c/src/title_screen.c w/src/title_screen.c
-index cd85d7d6..9661251d 100644
+index cd85d7d6..7bb88525 100644
 --- c/src/title_screen.c
 +++ w/src/title_screen.c
 @@ -31,12 +31,43 @@ enum {
@@ -44445,14 +44446,10 @@ index cd85d7d6..9661251d 100644
  void CB2_InitTitleScreen(void)
  {
      if (IS_FRLG)
-@@ -595,15 +672,23 @@ void CB2_InitTitleScreen(void)
-         break;
-     case 1:
+@@ -597,13 +674,21 @@ void CB2_InitTitleScreen(void)
          // bg2
--        DecompressDataWithHeaderVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
--        DecompressDataWithHeaderVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
-+        LZ77UnCompVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
-+        LZ77UnCompVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
+         DecompressDataWithHeaderVram(gTitleScreenPokemonLogoGfx, (void *)(BG_CHAR_ADDR(0)));
+         DecompressDataWithHeaderVram(gTitleScreenPokemonLogoTilemap, (void *)(BG_SCREEN_ADDR(9)));
 +#ifdef JAPANESE_TITLE_SCREEN
 +        LoadPalette(gTitleScreenBgPalettes, BG_PLTT_ID(0), TITLE_BG_PALETTES * PLTT_SIZE_4BPP);
 +        LoadPalette(&gTitleScreenBgPalettes[TITLE_RAYQUAZA_PALETTE * 16], BG_PLTT_ID(14), PLTT_SIZE_4BPP);

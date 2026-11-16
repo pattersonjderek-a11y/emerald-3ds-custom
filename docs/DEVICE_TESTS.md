@@ -1,4 +1,47 @@
-# Stage F InstallerFix follow-up — console results still PENDING
+# Stage F BootFix retest — corrected build results PENDING
+
+Actual evidence from Derek's **original 3DS XL** on InstallerFix: copied the
+extracted `3ds` folder to SD root; repeated intro stops with truncated `[FS]`
+fatal paths and corrupted logo/forest sprite boxes. A later launch reached
+gameplay with black map surfaces, noisy boxes, and no visible change when voxel
+was toggled OFF/ON. The supplied log confirms SMOL rejected by LZ-only loaders
+and voxel scratch allocation failure; it ends with a clean gameplay shutdown.
+No console pass or campaign completion is implied. Historical pending reports
+below predate these supplied failures.
+
+Use the new BootFix ZIP and its portable installer, keeping the whole F backup.
+This is a compatible F update, not a fresh save namespace. First verify on the
+laptop, then install to the SD root as in STAGE_F_INSTALL.md. Keep executable,
+pack and receipt together. Preserve your existing F save/settings/clock/tracker.
+
+1. Leave/create an empty **`debug.txt`** in
+   `3ds/emerald3ds-custom-stage-f-v050/` **before launching**. It is only an
+   enable marker and stays empty. Output is **`port.log`**, with the preceding
+   session in `port-prev.log`; save a copy before another launch rotates it.
+2. Cold-launch three times. Check PRET/RHH sprites, forest animation, Pokémon
+   logo/title and reaching the menu. Photograph any fatal screen; the corrected
+   UI displays the full wrapped path. Do not delete any save to test this.
+3. Continue if a save exists. Verify indoor floors/walls and Littleroot paths,
+   grass and trees with voxel OFF first. Then enable voxel and check visible
+   camera/depth changes, house interiors and outdoor boundaries. Record toggles
+   and whether the map is still black.
+4. Check Torchic/lead follower art and stability, first wild battle and scenic
+   encounter-site background; return from battle, enter/leave houses and move
+   between Littleroot and Routes 101–103. Check a held-item party icon if available.
+5. Confirm party/progress, difficulty, global seed/options, clock/tracker survive
+   the update. Save, exit using **START+SELECT together for about one second**,
+   relaunch and Continue. The normal exit flushes the log; a crash is unnecessary.
+6. Copy `port.log` off the SD and report results even if nothing crashes. Keep
+   that log private. Confirm low-heap warm-up is skipped and no rejected decode,
+   atlas scratch failure or asset allocation/read error recurs.
+
+The host codec/cache checks, native compilation and installer rehearsal do not
+execute the PICA renderer or prove physical SD behavior. Corrected boot,
+rendering, performance, save/load and campaign acceptance all await this retest.
+
+---
+
+# Stage F InstallerFix follow-up — historical checklist
 
 The new private InstallerFix ZIP keeps the exact verified F engine/pack and
 existing F saves/rules. It updates only the laptop installer/packaging checks.

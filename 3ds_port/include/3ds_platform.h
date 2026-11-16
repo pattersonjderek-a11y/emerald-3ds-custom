@@ -46,6 +46,7 @@ uint64_t CtrPlatform_FrameCount(void);
 const CtrTiming *CtrPlatform_GetTiming(void);
 void CtrPlatform_NoteBottom(float ms);
 void CtrPlatform_ReportMemory(const char *stage);
+uint32_t CtrPlatform_HeapAvailable(void);
 /*
  * Threads and locks for the port's own workers, usable from game translation
  * units. A CtrLock is a libctru LightLock. A thread is started detached, one

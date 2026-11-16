@@ -134,6 +134,14 @@ void CtrPlatform_SetHooks(const CtrPlatformHooks *hooks)
  * has left is both. */
 extern char *fake_heap_end;
 
+uint32_t CtrPlatform_HeapAvailable(void)
+{
+    struct mallinfo info = mallinfo();
+    char *top = sbrk(0);
+    size_t grow = top != (char *)-1 && top < fake_heap_end ? (size_t)(fake_heap_end - top) : 0;
+    return (uint32_t)(info.fordblks + grow);
+}
+
 void CtrPlatform_ReportMemory(const char *stage)
 {
     struct mallinfo info = mallinfo();

@@ -1,5 +1,24 @@
 # AGENTS.md
 
+## Stage F original-XL boot/graphics repair
+
+Use branch `fix/stage-f-intro-boot`, wrapper `tools/stage_f_bootfix.sh` and
+`build/stage-f-boot`. Never bootstrap/build over frozen `build/stage-f` or E.
+Keep the original F, InstallerFix and E ZIPs/Dropbox files. This is a compatible
+F update: same namespace, 52-byte schema-1 record and rules 0x00050050.
+
+Derek supplied actual failing F hardware photos and port.log: SMOL assets
+rejected by LZ-only loaders, blank maps and voxel atlas heap exhaustion on Old
+3DS XL. Corrected device acceptance is still pending; no emulator was run.
+Native header dispatch must stay in menu.c/title_screen.c. External SMOL/tANS
+inputs need CTR_ASSET_READ_PADDING owned zero bytes for word lookahead. Retain
+the asset collector's eight-frame pointer grace and constrained-heap reserve.
+Run production asset_memory_test.py and intro_asset_decode_test.py against the
+actual matching pack, in addition to existing checks. Regenerate engine edits
+into the canonical expansion patch and compare a fresh bootstrap. Recompile
+the native app and build its matching pack; do not apply native-reuse evidence
+from the old F binary to this repair. Preserve the whole F folder on update.
+
 ## Stage F release-validation follow-up
 
 The blueprint ends at F; do not invent Stage G or claim device acceptance.

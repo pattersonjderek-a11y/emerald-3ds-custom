@@ -1,4 +1,39 @@
-# Stage F installer fixes — preferred private package
+# Stage F BootFix — compatible native graphics repair
+
+Use **`Emerald3DS-Custom-StageF-BootFix-private.zip`** for this retest. The older
+InstallerFix ZIP hardened installation but kept the old game binary; Derek has
+now reported its actual original-XL graphics/boot failures. BootFix recompiles
+the engine, corrects expansion asset decoding and constrains low-memory caching.
+Its physical-console acceptance remains pending. Keep all older ZIPs/backups.
+
+For an existing F installation, back up the whole F folder on your laptop,
+extract the new ZIP into a separate folder, and run its portable installer:
+
+```sh
+python3 installer/install_custom.py --verify
+python3 installer/install_custom.py --sd /Volumes/SDCARD
+```
+
+Replace `/Volumes/SDCARD` with the actual SD root. Windows example:
+`py -3 installer/install_custom.py --sd E:/`. Python 3.11+ is required. The
+installer preserves the whole F save/settings/clock/tracker folder and prints
+its retained hidden backup path. Do not mix old/new executable and pack, delete
+your F progress, or manually overwrite the existing installation for this update.
+No older-stage import or rules/namespace change is made.
+
+Eject the SD, launch **Emerald 3DS Custom Stage F v0.5.0** in Homebrew Launcher
+and follow the BootFix checklist in DEVICE_TESTS.md. An empty `debug.txt` in
+`3ds/emerald3ds-custom-stage-f-v050/` enables **`port.log`**; the marker stays
+empty. START+SELECT held together about one second exits normally and flushes
+the log. Keep `port.log` before another launch rotates it to `port-prev.log`.
+
+First-install, compatibility, backup and recovery details below still apply.
+The installer-recovery behavior is unchanged from the hardened InstallerFix.
+The following historical checkpoint descriptions refer to their original ZIPs.
+
+---
+
+# Stage F installer fixes — historical InstallerFix package
 
 Use `Emerald3DS-Custom-StageF-InstallerFix-private.zip` for new installations and
 compatible F updates. The game executable, data pack, launcher title, namespace
