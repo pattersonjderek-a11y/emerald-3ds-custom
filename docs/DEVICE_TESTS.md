@@ -38,6 +38,11 @@ pack and receipt together. Preserve your existing F save/settings/clock/tracker.
 The host codec/cache checks, native compilation and installer rehearsal do not
 execute the PICA renderer or prove physical SD behavior. Corrected boot,
 rendering, performance, save/load and campaign acceptance all await this retest.
+Frozen BootFix: 22,030,047 bytes, source `a327ca6`, ABI **a62520cf**;
+SHA-256 `d38b205034baa9755bc208e1cf8c63216ba6cdf622ddf752aad753a7add0785f`.
+STAGE_F_BOOTFIX_OUTPUTS.json records the matching native files. This replaces
+the running engine/pack together while keeping your compatible F state; it
+does not replace any earlier archived ZIP.
 
 ---
 

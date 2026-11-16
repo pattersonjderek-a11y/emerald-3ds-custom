@@ -1,0 +1,182 @@
+{
+  "path": "work/stage-f-bootfix-private/Emerald3DS-Custom-StageF-BootFix-private.zip",
+  "bytes": 22030047,
+  "sha256": "d38b205034baa9755bc208e1cf8c63216ba6cdf622ddf752aad753a7add0785f",
+  "source_commit": "a327ca6dff9549ad8b803ad26e90886def351c84",
+  "engine_abi": 2787451087,
+  "files": {
+    "Emerald3DS.3dsx": {
+      "bytes": 8331064,
+      "sha256": "671e4c05a19de0f1e2f244fa6025a91e99b1a70db7f233c3492e34394e8f695a"
+    },
+    "Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "f1b748d6846ffbd8f85f6ae637ecfa2728933a252bb6ba19e26189622829aecb"
+    },
+    "emerald3ds.pak": {
+      "bytes": 70056960,
+      "sha256": "967be70b947d8b165ed0791fba35e586115d752e5ccecce889f6a6c3959f1845"
+    }
+  },
+  "hardware_tested": false,
+  "emulator_tested": false,
+  "data_recipe_sha256": "024a74c4558d38fdc74b976331f26553faf5e0a5aa5baf993e4ac7a0b5cfcc09",
+  "campaign_image_sha256": "9defa8b409ae5715c76acd230560eb380050ff3c81f987399be94fb2f710a272",
+  "native_baseline_source": null,
+  "native_recompiled": true,
+  "engine_abi_hex": "a62520cf",
+  "native_outputs": {
+    "build/stage-f-boot/3ds_port/emerald3ds.3dsx": {
+      "bytes": 79125608,
+      "sha256": "32654f93da0cae3d063552a4b445ff3fdb3f2c43ff5e639e23adb49e28825e5f"
+    },
+    "build/stage-f-boot/3ds_port/emerald3ds.smdh": {
+      "bytes": 14016,
+      "sha256": "f1b748d6846ffbd8f85f6ae637ecfa2728933a252bb6ba19e26189622829aecb"
+    },
+    "build/stage-f-boot/3ds_port/emerald3ds.elf": {
+      "bytes": 73882664,
+      "sha256": "24f3cec58dfbf5399f24286577a98d3dc3547ebd93a6b2d0673152567f0595d9"
+    },
+    "build/stage-f-boot/3ds_port/build/gamedata_image.elf": {
+      "bytes": 87852208,
+      "sha256": "9defa8b409ae5715c76acd230560eb380050ff3c81f987399be94fb2f710a272"
+    },
+    "build/stage-f-boot/3ds_port/dist/Emerald3DS.3dsx": {
+      "bytes": 8331064,
+      "sha256": "671e4c05a19de0f1e2f244fa6025a91e99b1a70db7f233c3492e34394e8f695a"
+    },
+    "build/stage-f-boot/3ds_port/dist/Emerald3DS.smdh": {
+      "bytes": 14016,
+      "sha256": "f1b748d6846ffbd8f85f6ae637ecfa2728933a252bb6ba19e26189622829aecb"
+    },
+    "build/stage-f-boot/3ds_port/build/emerald3ds.pak": {
+      "bytes": 70056960,
+      "sha256": "967be70b947d8b165ed0791fba35e586115d752e5ccecce889f6a6c3959f1845"
+    }
+  },
+  "patch_sha256": "561637091163595f778dbbb11583d5e3f0d24ea6ab2055b02f89619a1dbfc88b",
+  "upstream": {
+    "graphics": "bcae4b70dac61419fc933084084469f6cfbe344b",
+    "expansion": "dfb0f84374230f4d462191601179b742f9f077df"
+  },
+  "evidence": {
+    "native_compilation": "passed; ARM11 hard-float, 60 required symbols, no strong undefined symbols",
+    "make_verify": "passed",
+    "builder_tests": {
+      "run": 286,
+      "skipped": 4,
+      "status": "passed"
+    },
+    "production_asset_decodes": {
+      "cases": 176,
+      "status": "passed; ASan/UBSan on host, actual packed inputs vs native raw data"
+    },
+    "production_cache_allocator": "passed; observed XL heap values, zero padding, budget/reclamation, eight-frame grace; ASan/UBSan host",
+    "fresh_source": {
+      "engine_paths": 307,
+      "overlay_files": 883,
+      "status": "passed; exact local pinned checkout + canonical patch/overlays; no second native compile"
+    },
+    "fresh_host_fixtures": "production save/difficulty/optional rules/176 actual asset codecs passed",
+    "campaign_linked_data": "51 fixed slots, 124 headers, 155 fixed land species passed; final image hash matches package",
+    "console_pack_parser": "all 17511 actual payloads passed host production C parser ASan/UBSan; ABI/profile rejection passed",
+    "portable_installer": "extracted ZIP verification passed on host Python 3.12.14",
+    "host_installer_rehearsal": "original frozen installer upgrade, 11 synthetic user files, complete backup, interrupted recovery and retry passed",
+    "source_publication_audit": "passed; no content artifacts committed",
+    "engine_only_publication_audit": "passed; separate engine-only ZIP",
+    "previous_console_evidence": "user-reported failing InstallerFix on Old 3DS XL; supplied log confirms rejected SMOL decodes and voxel scratch allocation failure; no fatal in this supplied clean-exit session",
+    "corrected_console_retest": "pending",
+    "emulator": "not performed",
+    "physical_sd": "not performed",
+    "public_rom_only_expansion_recipe": "unresolved; private source-build package is not that recipe"
+  },
+  "storage": {
+    "namespace": "/3ds/emerald3ds-custom-stage-f-v050/",
+    "schema": 1,
+    "bytes": 52,
+    "rules": "0x00050050",
+    "new_flags": 0,
+    "new_variables": 0,
+    "migration": "none; compatible F whole-folder-preserving update"
+  },
+  "commands": [
+    "python3 tools/regenerate_expansion_patch.py --tree build/stage-f-boot",
+    "python3 tools/bootstrap.py --upstream pokeemerald-expansion --dir build/stage-f-boot",
+    "make -C build/stage-f-boot/3ds_port -j6 PYTHON=python3",
+    "tools/stage_f_bootfix.sh test",
+    "tools/stage_f_bootfix.sh fresh",
+    "tools/stage_f_bootfix.sh package",
+    "python3 work/intro-boot/extracted/installer/install_custom.py --verify",
+    "python3 tools/release_audit.py --repo . --strict",
+    "python3 tools/release_audit.py --zip work/intro-boot/engine-only.zip --strict"
+  ],
+  "logs": {
+    "work/intro-boot/fresh-bootstrap.log": {
+      "bytes": 252,
+      "sha256": "e728e130a4ff93e02832ba99841d0e691170fdc34d0989ac94d7098a514a0111"
+    },
+    "work/intro-boot/verify.log": {
+      "bytes": 702017,
+      "sha256": "e8e6a21319c1ecb5efd56fcd31faa341c625c2739bbf12bdec9f38b311cb996b"
+    },
+    "work/intro-boot/final-verify.log": {
+      "bytes": 825812,
+      "sha256": "319bd9cb85353b4d0530ee0aea01721e10e541495445ca6f9cbe65838f8a1c52"
+    },
+    "work/intro-boot/regressions.log": {
+      "bytes": 667,
+      "sha256": "d0e893c195aa5a1bb0cbd7009c902b73e79514d5762ab7c916c305a5b0014ea4"
+    },
+    "work/intro-boot/decode-fixed.log": {
+      "bytes": 509,
+      "sha256": "a27f8011173dcb75b2ab9147a436fac5684967a8903d22df4205fb0f3c33d51f"
+    },
+    "work/intro-boot/package.log": {
+      "bytes": 2092,
+      "sha256": "57720889d1e2cae87d75cf95d8528b651891593af1bd385802baecdd3da2ac18"
+    },
+    "work/intro-boot/native-build.log": {
+      "bytes": 450597,
+      "sha256": "793a4096d92aa4e52429a5192c84720a7be717df7f2b0d8ed16d21f110b151fd"
+    },
+    "work/intro-boot/decode-after.log": {
+      "bytes": 8567,
+      "sha256": "944e3ef9108da146a33c88d728e674de8e6cd01144ac0d1ac23244c8e81f3582"
+    },
+    "work/intro-boot/fresh-final.log": {
+      "bytes": 3392,
+      "sha256": "74640c00640432ec292cd56f8f519f49b08ba7545b8bdc95f8029351133e923b"
+    },
+    "work/intro-boot/fresh-compare.log": {
+      "bytes": 150,
+      "sha256": "98d9a13e1114d22d50a0cc856749b5e78f3fc301b11ed0ce10c56f0b0a849a70"
+    },
+    "work/intro-boot/decode-before.log": {
+      "bytes": 18295,
+      "sha256": "42c034b9dce735f5d6b732516b9c8c992aa91a8a0d8999317c04c8db311da8c0"
+    },
+    "work/intro-boot/fresh-tests.log": {
+      "bytes": 2957,
+      "sha256": "705460b827bf823c080c9c6388a925e83587807706434cc1d1898a825adfb986"
+    },
+    "work/intro-boot/decode-all.log": {
+      "bytes": 510,
+      "sha256": "8fc184eb892ee5f4d45afbd482cc5d5151c49ae3b7eecad8f3e9aafbfa5e3d53"
+    }
+  },
+  "frozen_baselines": {
+    "work/stage-f-private/Emerald3DS-Custom-StageF-private.zip": {
+      "bytes": 22022981,
+      "sha256": "c2043807e6b2bbc78125e18886348bd681237397d05654e5cdb8c198a8bda86a",
+      "unchanged": true
+    },
+    "work/stage-f-installer-fix-private/Emerald3DS-Custom-StageF-InstallerFix-private.zip": {
+      "bytes": 22029491,
+      "sha256": "d1c77fcb150e02ac5ce9b5671e4293dafe532bef8cf7bf958ee01eb5265e610d",
+      "unchanged": true
+    }
+  },
+  "frozen_f_native_outputs": "all seven original hashes unchanged",
+  "frozen_e_zip": "verified unchanged; bfd79203e9832da87512221441c577c2c5e1392a91484e83e879ca9c1a49184a"
+}

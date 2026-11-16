@@ -42,6 +42,38 @@ not claim a second native compile from scratch. Private logs/evidence are under
 `work/intro-boot/`; BootFix bundle/ZIP have new paths and do not replace earlier
 deliverables. See DEVICE_TESTS.md for the actual failure evidence and retest.
 
+Final checks passed: `make verify` native/link and host suites; 286 builder
+tests with four inherited skips; 176 actual asset decode comparisons; production
+allocator/cache fixtures; 307 fresh engine paths / 883 canonical overlays; fresh
+production save/difficulty/optional-rule/codec fixtures. Final campaign audit
+reads image `9defa8b409ae5715c76acd230560eb380050ff3c81f987399be94fb2f710a272`:
+51 slots / 155 fixed land species / 124 headers. No ARM execution is claimed
+by GDB data inspection or host tests. Inherited game/compiler enum warnings and
+the host harness's BIOS pointer-type warning remain; checks completed normally.
+
+From clean checkpoint `a327ca6`, `tools/stage_f_bootfix.sh package` built and
+verified the new paired bundle at `work/stage-f-boot-bundle/`, ABI **a62520cf**.
+Its 17,511 payloads pass the actual console C parser on the host under ASan/UBSan.
+The host rehearsal upgrades an installation made by the original frozen F
+portable installer, preserves 11 synthetic state files, and checks whole-folder
+backup/interrupted recovery/retry. This does not use a mounted SD or player save.
+
+Frozen ZIP: `work/stage-f-bootfix-private/Emerald3DS-Custom-StageF-BootFix-private.zip`
+(22,030,047 bytes), SHA-256
+`d38b205034baa9755bc208e1cf8c63216ba6cdf622ddf752aad753a7add0785f`.
+All archive entries were read back and compared with source hashes. After
+extraction, this actual command passed on host Python 3.12.14:
+
+```sh
+python3 work/intro-boot/extracted/installer/install_custom.py --verify
+```
+
+STAGE_F_BOOTFIX_OUTPUTS.json records all seven compiled output paths/hashes,
+the actual commands and private log locations; STAGE_F_BOOTFIX_REHEARSAL.json
+records the host update/recovery results. All seven original F output hashes and
+the original E/F/InstallerFix ZIP hashes still match. Metadata-only commits do
+not rebuild/replace the frozen ZIP. Corrected original-XL testing is pending.
+
 ---
 
 # Stage F installer/package validation follow-up (historical)

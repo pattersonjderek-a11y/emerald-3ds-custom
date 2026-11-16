@@ -27,9 +27,23 @@ values. Existing `make verify` and 286 builder tests pass (four inherited skips)
 Fresh bootstrap compares 307 engine paths and 883 canonical overlay files;
 production save/difficulty/optional-rule and actual-asset codec fixtures pass
 against that fresh engine source. This is not GPU execution, a successful
-console boot or a second clean native build. Final paired private packaging is
-recorded in BUILD.md and the repair output receipt when complete. Device retesting remains
-the next task; no emulator or physical SD test was performed here.
+console boot or a second clean native build. The production console pack parser
+passes all 17,511 real payloads on the host. The original-installer upgrade,
+whole-folder backup and interrupted-recovery rehearsal passes with 11 synthetic
+state files; the extracted portable installer verifies on Python 3.12.14.
+
+Frozen repair source: `a327ca6dff9549ad8b803ad26e90886def351c84`, pushed to
+`fix/stage-f-intro-boot`. Native engine/pack ABI **a62520cf**. Private package:
+`work/stage-f-bootfix-private/Emerald3DS-Custom-StageF-BootFix-private.zip`,
+22,030,047 bytes, SHA-256
+`d38b205034baa9755bc208e1cf8c63216ba6cdf622ddf752aad753a7add0785f`.
+Archive read-back and every entry's source hash pass. Native output paths,
+hashes, actual commands and evidence are in STAGE_F_BOOTFIX_OUTPUTS.json and
+STAGE_F_BOOTFIX_REHEARSAL.json. Source and engine-only publication audits pass;
+the content-bearing private ZIP is not committed or uploaded to GitHub/CI.
+Metadata follow-up commits do not replace this frozen ZIP. Device retesting is
+the next task; no emulator or physical SD test was performed here. The public
+retail-ROM-only expanded-content recipe remains a separate release blocker.
 
 Same F namespace/schema/rules; preserve existing F progress/settings with the
 checked installer. No new gameplay rules, dependency pins, donor content or save

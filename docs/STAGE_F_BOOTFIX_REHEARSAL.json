@@ -1,0 +1,18 @@
+{
+  "evidence": "host filesystem rehearsal; synthetic state; actual compiled engine/data",
+  "host": "Linux",
+  "source_commit": "a327ca6dff9549ad8b803ad26e90886def351c84",
+  "engine_abi": 2787451087,
+  "first_install": "passed",
+  "compatible_update": "passed",
+  "whole_folder_backup": "passed",
+  "preserved_state_files": 11,
+  "interruption_after_directory_commit": "passed",
+  "interruption_during_recovery": "passed",
+  "rollback": "passed",
+  "repeat_recovery": "no pending transaction",
+  "legacy_and_e_sentinels": "unchanged",
+  "physical_sd": "pending",
+  "hardware": "pending",
+  "baseline_installer_upgrade": "passed from original frozen F ZIP"
+}
